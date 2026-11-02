@@ -1,0 +1,26 @@
+/* ---------- any screen size ---------- */
+
+/* tables: columns have a minimum width (set in computeTableMeta). When those minimums add up to more
+   than the editor is wide, every row takes that same width and the editor scrolls sideways, so the
+   columns still line up. Otherwise the table fills the width as before. */
+.ln-trow { width: fit-content; min-width: 100%; box-sizing: border-box; }
+
+/* narrow (phones, tablets, a narrow window): the side panel floats over the editor instead of
+   squeezing it, and NarrowLayout keeps it closed until it's wanted. 900px matches NarrowLayout.BREAK. */
+@media (max-width: 900px) {
+  .mo-body { position: relative; }
+  .side { position: absolute; z-index: 20; top: 0; bottom: 0; height: auto; box-shadow: 6px 0 24px rgba(var(--shd-rgb), calc(.35 * var(--shd-k))); }
+  .side-closed { box-shadow: none; }
+  #sideGutter { display: none; }
+}
+@media (max-width: 900px) and (pointer: coarse) {
+  .side-item { min-height: 40px; }                     /* finger-sized rows in the list */
+}
+
+/* large screens at 100% scaling (a 27" or 32" monitor showing 2560 or 3840 pixels): the editor's text
+   grows gently with the width, from 15px at 1920 to at most 19px, and the note sits in a centred column
+   about 120 characters wide instead of running edge to edge. Below 1800px nothing changes. */
+@media (min-width: 1800px) {
+  .editor { font-size: clamp(15px, calc(15px + (100vw - 1920px) * 0.003), 19px); }
+  .editor-inner { max-width: 120ch; margin: 0 auto; }
+}

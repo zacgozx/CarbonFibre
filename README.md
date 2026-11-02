@@ -25,7 +25,7 @@ publishes the app only.
    git push -u origin main
    ```
 3. **Turn on Pages:** repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-4. **Watch it publish:** the **Actions** tab shows "Publish CarbonFibre". When it's green, the app is at
+4. **Watch it publish:** the **Actions** tab shows the "Pages" workflow. When it's green, the app is at
    `https://YOU.github.io/carbonfibre/`.
 
 ## Updating
@@ -33,6 +33,32 @@ publishes the app only.
 Edit files in `carbonfibre-src/src/`, then commit and push. The workflow rebuilds `index.html` from the
 source and republishes it within a minute or two. (Before pushing, you can check locally:
 `python carbonfibre-src/build.py public/index.html`, then the tests: see `carbonfibre-src/README.md`.)
+
+## Where notes live
+
+On a first visit the app asks:
+
+| Choice | Where the notes are | Works in |
+|---|---|---|
+| A folder you choose | `.md` files in that folder, readable by any editor | Edge, Chrome and other Chromium browsers on a desktop or laptop |
+| This browser | The browser's storage for this site, on this device | Any modern browser, including phones |
+
+Firefox, Safari and phone browsers don't offer the folder API, so there the folder choice is shown
+disabled with the reason. Switch any time from the bottom-left of the window.
+
+## Security
+
+- **No network.** A Content-Security-Policy in the page blocks every network request (`connect-src 'none'`),
+  external scripts, frames and form submissions. The app has nothing to send and no way to send it.
+- **Only its own code runs.** The policy allows the page's two script blocks by their SHA-256 hash
+  (`build.py` fills these in). An injected `<script>`, an `onerror=` handler or a `javascript:` link is
+  refused by the browser even if a bug let one into the page. `cf-tests/csp_test.py` checks both halves.
+- **Folder access is per folder.** The browser asks before CarbonFibre can read or write a folder, and only
+  that folder. Depending on the browser and your answer, it may ask again after a restart.
+- **One origin per GitHub account.** Every Pages site under `https://YOU.github.io/` shares one browser
+  origin, so any other Pages site on the same account can read this one's browser storage and saved folder
+  handle. Keep notes in a folder rather than browser storage, don't publish untrusted Pages sites on the
+  same account, or give CarbonFibre its own custom domain.
 
 ## Good to know
 

@@ -21,34 +21,35 @@ function normalizeUrl(u) {
 
 /* ---------------- inline scanner ---------------- */
 
-var INLINE_RE =
+const INLINE_RE =
   /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(__[^_\n]+__)|(~~[^~\n]+~~)|(\[\[[^\]\n]+\]\])|(\[[^\]\n]+\]\([^)\n]*\))|(\*[^*\n]+\*)|(_[^_\n]+_)|(https?:\/\/[^\s<>()]+)|(<span style="color:\s*([#a-zA-Z0-9]+);?\s*">([^<\n]+)<\/span>)/g;
 
 function scanInline(raw) {
-  var tokens = [], map = [], last = 0, m;
+  const tokens = [], map = [];
+  let last = 0, m;
   INLINE_RE.lastIndex = 0;
   function pushPlain(from, to) {
     if (to <= from) return;
     tokens.push({ kind: "text", text: raw.slice(from, to) });
-    for (var k = from; k < to; k++) map.push(k);
+    for (let k = from; k < to; k++) map.push(k);
   }
   /* marker is what the raw view shows around the token; bare marks a naked URL */
   function pushToken(kind, inner, rawStart, markerLen, extra, marker, bare) {
     tokens.push({ kind: kind, text: inner, extra: extra, marker: marker, bare: bare });
-    for (var k = 0; k < inner.length; k++) map.push(rawStart + markerLen + k);
+    for (let k = 0; k < inner.length; k++) map.push(rawStart + markerLen + k);
   }
   while ((m = INLINE_RE.exec(raw)) !== null) {
     pushPlain(last, m.index);
-    var s = m[0], start = m.index;
+    const s = m[0], start = m.index;
     if (m[1]) pushToken("code", s.slice(1, -1), start, 1);
     else if (m[2] || m[3]) pushToken("bold", s.slice(2, -2), start, 2, null, m[2] ? "**" : "__");
     else if (m[4]) pushToken("strike", s.slice(2, -2), start, 2, null, "~~");
     else if (m[5]) pushToken("wikilink", s.slice(2, -2), start, 2);
     else if (m[6]) {
-      var close = s.indexOf("]");
+      const close = s.indexOf("]");
       pushToken("link", s.slice(1, close), start, 1, s.slice(close + 2, -1));
     } else if (m[9]) pushToken("link", s, start, 0, s, null, true);
-    else if (m[10]) { var openLen = s.indexOf(">") + 1; pushToken("color", m[12], start, openLen, m[11].toLowerCase(), s.slice(0, openLen)); }   /* the tags are hidden markup, like ** */
+    else if (m[10]) { const openLen = s.indexOf(">") + 1; pushToken("color", m[12], start, openLen, m[11].toLowerCase(), s.slice(0, openLen)); }   /* the tags are hidden markup, like ** */
     else pushToken("italic", s.slice(1, -1), start, 1, null, m[7] ? "*" : "_");
     last = m.index + s.length;
   }
@@ -58,14 +59,14 @@ function scanInline(raw) {
 }
 
 /* how each token renders: [open, close] rendered, and the markers shown when the line is raw */
-var TOK = {
+const TOK = {
   bold: ["<strong>", "</strong>"], italic: ["<em>", "</em>"],
   strike: ["<del>", "</del>"], code: ['<code class="ic">', "</code>"]
 };
 function mk(t) { return '<span class="mk">' + t + "</span>"; }
 
 function tokenHtml(t, raw) {
-  var x = esc(t.text), pair = TOK[t.kind];
+  const x = esc(t.text), pair = TOK[t.kind];
   if (pair) {
     if (!raw) return pair[0] + x + pair[1];
     if (t.kind === "code") return mk("`") + '<span class="ic-hl">' + x + "</span>" + mk("`");
@@ -73,7 +74,7 @@ function tokenHtml(t, raw) {
   }
   if (t.kind === "wikilink") {
     if (raw) return mk("[[") + '<span class="wl-hl">' + x + "</span>" + mk("]]");
-    var known = !!noteByTitle(t.text);
+    const known = !!noteByTitle(t.text);
     return '<span class="wl' + (known ? "" : " wl-missing") + '" data-wikilink="' + escAttr(t.text) +
       '" title="' + (known ? "Open" : "Create") + ' \u201c' + escAttr(t.text) + '\u201d">' + x + "</span>";
   }
@@ -82,7 +83,7 @@ function tokenHtml(t, raw) {
     return "<span" + colourAttr(t.extra) + ">" + x + "</span>";
   }
   if (t.kind === "link") {
-    var u = t.extra || "";
+    const u = t.extra || "";
     if (raw) return t.bare ? '<span class="xl">' + x + "</span>"
       : mk("[") + '<span class="xl">' + x + "</span>" + mk("](") + '<span class="mk-url">' + esc(u) + "</span>" + mk(")");
     return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(normalizeUrl(u)) +
@@ -96,7 +97,7 @@ function tokenHtml(t, raw) {
    - notes: <span style="color:red"> shows .tc-red, whose colour comes from --tc-red per theme
    - sketches: swatches save the dark shade (what the dark board draws); on the light page
      INK_LIGHT maps it to the light shade, through the same skInk the board already used ---- */
-var PALETTE = [
+const PALETTE = [
   { key: "ink",    name: "White",  dark: "#e2e3e5", light: "#0f2b3d", text: false },   /* the sketch's default ink; plain text in notes */
   { key: "grey",   name: "Grey",   dark: "#a8aab0", light: "#475569" },
   { key: "red",    name: "Red",    dark: "#f2877c", light: "#c81e3a" },
@@ -108,21 +109,21 @@ var PALETTE = [
   { key: "blue",   name: "Blue",   dark: "#8ab4e0", light: "#0369a1" },
   { key: "purple", name: "Purple", dark: "#b9a0e3", light: "#7c3aed" }
 ];
-var PALETTE_BY = {};
+const PALETTE_BY = {};
 PALETTE.forEach(function (c) { PALETTE_BY[c.key] = c; });
 /* a palette colour by name, as the board stores it (its dark shade; skInk shows the light one on the light page) */
 function pc(key) { return PALETTE_BY[key].dark; }
-function pcA(key, alpha) { var h = pc(key); return "rgba(" + parseInt(h.slice(1, 3), 16) + "," + parseInt(h.slice(3, 5), 16) + "," + parseInt(h.slice(5, 7), 16) + "," + alpha + ")"; }
-var TEXT_COLOURS = PALETTE.filter(function (c) { return c.text !== false; }).map(function (c) { return c.key; });
+function pcA(key, alpha) { const h = pc(key); return "rgba(" + parseInt(h.slice(1, 3), 16) + "," + parseInt(h.slice(3, 5), 16) + "," + parseInt(h.slice(5, 7), 16) + "," + alpha + ")"; }
+const TEXT_COLOURS = PALETTE.filter(function (c) { return c.text !== false; }).map(function (c) { return c.key; });
 /* the text colours' theme variables and classes, written from the table */
 (function () {
-  var dark = "", light = "", cls = "";
+  let dark = "", light = "", cls = "";
   TEXT_COLOURS.forEach(function (k) {
-    var c = PALETTE.filter(function (x) { return x.key === k; })[0];
+    const c = PALETTE.filter(function (x) { return x.key === k; })[0];
     dark += "--tc-" + k + ":" + c.dark + ";"; light += "--tc-" + k + ":" + c.light + ";";
     cls += ".tc-" + k + "{color:var(--tc-" + k + ")}";
   });
-  var st = document.createElement("style");
+  const st = document.createElement("style");
   st.id = "cf-palette";
   st.textContent = ":root{" + dark + "}:root[data-theme=\"light\"]{" + light + "}" + cls;
   document.head.appendChild(st);
@@ -133,8 +134,8 @@ function colourAttr(c) {
   return ' class="tc"';
 }
 function tokensToHtml(tokens, raw) {
-  var out = "";
-  for (var i = 0; i < tokens.length; i++) out += tokenHtml(tokens[i], raw);
+  let out = "";
+  for (let i = 0; i < tokens.length; i++) out += tokenHtml(tokens[i], raw);
   return out;
 }
 
@@ -143,7 +144,7 @@ function styledRawInline(raw) { return tokensToHtml(scanInline(raw).tokens, true
 /* ---------------- line classification / fences ---------------- */
 
 function classifyLine(raw) {
-  var m;
+  let m;
   if ((m = raw.match(/^(#{1,6})\s+(.*)$/)))
     return { type: "heading", level: m[1].length, prefixLen: m[1].length + 1, prefix: m[1] + " ", text: m[2] };
   if ((m = raw.match(/^(\s*)- \[( |x|X)\](?:\s(.*))?$/)))
@@ -165,16 +166,17 @@ function isRow(raw) { return /^\s*\|/.test(raw); }
 
 /* split a row into cells, remembering where each cell's trimmed text starts in the raw line */
 function splitCells(raw) {
-  var cells = [], n = raw.length, i = 0;
+  const cells = [], n = raw.length;
+  let i = 0;
   while (i < n && raw.charAt(i) === " ") i++;
   if (raw.charAt(i) === "|") i++;
-  var cellStart = i;
+  let cellStart = i;
   for (; i <= n; i++) {
-    var ch = raw.charAt(i);
+    const ch = raw.charAt(i);
     if (i === n || (ch === "|" && raw.charAt(i - 1) !== "\\")) {
-      var text = raw.slice(cellStart, i);
-      var ls = text.match(/^\s*/)[0].length, rs = text.match(/\s*$/)[0].length;
-      var body = text.slice(ls, Math.max(ls, text.length - rs));
+      const text = raw.slice(cellStart, i);
+      const ls = text.match(/^\s*/)[0].length, rs = text.match(/\s*$/)[0].length;
+      const body = text.slice(ls, Math.max(ls, text.length - rs));
       cells.push({ text: body, start: cellStart + ls });
       cellStart = i + 1;
     }
@@ -185,33 +187,38 @@ function splitCells(raw) {
 
 function isDelimRow(raw) {
   if (!isRow(raw)) return false;
-  var cells = splitCells(raw);
+  const cells = splitCells(raw);
   if (!cells.length) return false;
-  for (var i = 0; i < cells.length; i++) if (!/^:?-+:?$/.test(cells[i].text)) return false;
+  for (let i = 0; i < cells.length; i++) if (!/^:?-+:?$/.test(cells[i].text)) return false;
   return true;
 }
 
 function computeTableMeta(ls, meta) {
-  var i = 0;
+  let i = 0;
   while (i < ls.length) {
     if (!meta[i].fence && isRow(ls[i]) && i + 1 < ls.length && !meta[i + 1].fence && isDelimRow(ls[i + 1])) {
-      var start = i, end = i + 1;
+      const start = i;
+      let end = i + 1;
       while (end + 1 < ls.length && !meta[end + 1].fence && isRow(ls[end + 1])) end++;
-      var header = splitCells(ls[start]), delim = splitCells(ls[start + 1]);
-      var cols = Math.max(header.length, delim.length, 1);
-      var aligns = [];
-      for (var c = 0; c < cols; c++) {
-        var d = delim[c] ? delim[c].text : "";
+      const header = splitCells(ls[start]), delim = splitCells(ls[start + 1]);
+      const cols = Math.max(header.length, delim.length, 1);
+      const aligns = [];
+      let c, r;
+      for (c = 0; c < cols; c++) {
+        const d = delim[c] ? delim[c].text : "";
         aligns.push(d.charAt(0) === ":" && d.charAt(d.length - 1) === ":" ? "center" : d.charAt(d.length - 1) === ":" ? "right" : "left");
       }
-      var widths = [];
+      const widths = [];
       for (c = 0; c < cols; c++) widths.push(3);
-      for (var r = start; r <= end; r++) {
+      for (r = start; r <= end; r++) {
         if (r === start + 1) continue;
-        var cells = splitCells(ls[r]);
+        const cells = splitCells(ls[r]);
         for (c = 0; c < cols && c < cells.length; c++) widths[c] = Math.max(widths[c], Math.min(40, cells[c].text.length));
       }
-      var template = widths.map(function (w) { return "minmax(0, " + w + "fr)"; }).join(" ");
+      /* columns share the width by content, but none gets narrower than its first few characters plus
+         the header's 26px filter button and padding: on a small screen the table scrolls sideways
+         instead of wrapping every letter onto its own line */
+      const template = widths.map(function (w) { return "minmax(calc(" + Math.min(w, 8) + "ch + 54px), " + w + "fr)"; }).join(" ");
       for (r = start; r <= end; r++) {
         meta[r].table = {
           cols: cols, aligns: aligns, template: template,
@@ -225,10 +232,10 @@ function computeTableMeta(ls, meta) {
 }
 
 function computeFenceMeta(ls) {
-  var meta = new Array(ls.length);
-  var inFence = false, lang = "";
-  for (var i = 0; i < ls.length; i++) {
-    var d = isDelim(ls[i]);
+  const meta = new Array(ls.length);
+  let inFence = false, lang = "", i;
+  for (i = 0; i < ls.length; i++) {
+    const d = isDelim(ls[i]);
     if (d && !inFence) { inFence = true; lang = ls[i].slice(3).trim(); meta[i] = { fence: "open", lang: lang }; }
     else if (d && inFence) { inFence = false; meta[i] = { fence: "close", lang: lang }; lang = ""; }
     else meta[i] = { fence: inFence ? "in" : null, lang: inFence ? lang : "" };
@@ -236,10 +243,11 @@ function computeFenceMeta(ls) {
   /* sketch boards: the open line becomes a card, the JSON inside is hidden */
   for (i = 0; i < ls.length; i++) {
     if (meta[i].fence !== "open" || meta[i].lang !== "excalidraw") continue;
-    var j = i + 1, body = [];
+    const body = [];
+    let j = i + 1;
     while (j < ls.length && meta[j].fence !== "close") { body.push(ls[j]); j++; }
-    var count = 0;
-    try { var doc = JSON.parse(body.join("\n")); count = Array.isArray(doc.elements) ? doc.elements.filter(function (e) { return !e.isDeleted; }).length : 0; } catch (e) {}
+    let count = 0;
+    try { const doc = JSON.parse(body.join("\n")); count = Array.isArray(doc.elements) ? doc.elements.filter(function (e) { return !e.isDeleted; }).length : 0; } catch (e) {}
     meta[i].sketch = count;
     meta[i].skBody = body.join("\n");               /* drawn as a picture in the note */
   }
@@ -248,13 +256,14 @@ function computeFenceMeta(ls) {
 }
 
 function tableRowHtml(raw, t) {
-  var cells = splitCells(raw), html = "";
-  for (var c = 0; c < t.cols; c++) {
-    var text = cells[c] ? cells[c].text.replace(/\\\|/g, "|") : "";
-    var inline = text ? tokensToHtml(scanInline(text).tokens) : '<span data-deco="1">&nbsp;</span>';
-    var funnel = "";
+  const cells = splitCells(raw);
+  let html = "";
+  for (let c = 0; c < t.cols; c++) {
+    const text = cells[c] ? cells[c].text.replace(/\\\|/g, "|") : "";
+    const inline = text ? tokensToHtml(scanInline(text).tokens) : '<span data-deco="1">&nbsp;</span>';
+    let funnel = "";
     if (t.role === "header") {
-      var tf = tableFilterFor(t), on = tf && tf[c];
+      const tf = tableFilterFor(t), on = tf && tf[c];
       funnel = '<span class="tf-btn' + (on ? " tf-on" : "") + '" data-tf="' + c + '" data-deco="1" role="button" title="' + (on ? "Filtered - click to change" : "Sort and filter") + '" aria-label="Sort and filter column">' +
         (on ? '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3h11l-4.2 5v4.5l-2.6 1.2V8z"/></svg>'
             : '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>') + '</span>';
@@ -265,8 +274,8 @@ function tableRowHtml(raw, t) {
 }
 
 function tableOverlay(raw) {
-  var out = "", last = 0;
-  for (var i = 0; i < raw.length; i++) {
+  let out = "", last = 0;
+  for (let i = 0; i < raw.length; i++) {
     if (raw.charAt(i) === "|" && raw.charAt(i - 1) !== "\\") {
       out += styledRawInline(raw.slice(last, i)) + '<span class="mk-pipe">|</span>';
       last = i + 1;

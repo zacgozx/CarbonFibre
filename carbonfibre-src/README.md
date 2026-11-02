@@ -11,7 +11,9 @@ python build.py --check FILE.html    # says whether FILE.html is exactly what sr
 ```
 
 The build only joins the files listed in `src/manifest.txt`, in that order. Nothing is
-transformed, so the output is byte-for-byte what you'd get by hand.
+transformed except one placeholder: `__SCRIPT_HASHES__` in the Content-Security-Policy (`html/01-head.html`)
+becomes the SHA-256 of each `<script>` block, so the browser runs those scripts and nothing else. Always
+rebuild after changing any JavaScript; a hand-joined file would have no valid hashes and run nothing.
 
 ## Layout
 

@@ -13,13 +13,13 @@ function systemTheme() {
   catch (e) { return "dark"; }
 }
 function savedTheme() {
-  try { var t = localStorage.getItem("carbonfibre-theme"); return t === "light" || t === "dark" ? t : null; }
+  try { const t = localStorage.getItem("carbonfibre-theme"); return t === "light" || t === "dark" ? t : null; }
   catch (e) { return null; }
 }
 /* The button: picking the theme Windows already uses clears the override, so you go back
    to following Windows. Picking the other one saves it as your choice. */
 function toggleTheme() {
-  var next = isLight() ? "dark" : "light";
+  const next = isLight() ? "dark" : "light";
   try {
     if (next === systemTheme()) localStorage.removeItem("carbonfibre-theme");
     else storeSet("carbonfibre-theme", next);
@@ -30,17 +30,17 @@ function toggleTheme() {
    Drawn in the current theme's colours for the tab's favicon and the logo in the top bar,
    and redrawn whenever the theme changes. The wings are folded facets in light, mid and
    dark tones with crease lines; the sheet is tilted, ruled, with a folded corner. */
-var APP_ICON_PALETTE = {
+const APP_ICON_PALETTE = {
   dark:  { tile: "#1a1a1f", paper: "#ece4e1", paperEdge: "#3a1f26", fold: "#fbf6f4", foldShade: 0.30, rule: "#ddd0cc",
            hi: "#e8b3a3", lite: "#d4917c", mid: "#b56a52", deep: "#9b3d4b", body: "#2a1418", shadow: 0.24, crease: "#fff2ee" },
   light: { tile: "#eef6fb", paper: "#ffffff", paperEdge: "#a9cde1", fold: "#aed4e8", foldShade: 0.14, rule: "#e3eff6",
            hi: "#aed4e8", lite: "#8ec3df", mid: "#2e86ab", deep: "#1a6585", body: "#0f2b3d", shadow: 0.16, crease: "#ffffff" }
 };
 function appIconSvg(pal) {
-  var P = function (pts, fill, extra) { return '<polygon points="' + pts + '" fill="' + fill + '"' + (extra || "") + '/>'; };
+  const P = function (pts, fill, extra) { return '<polygon points="' + pts + '" fill="' + fill + '"' + (extra || "") + '/>'; };
   /* right half of the butterfly (local coordinates, body on x = 0); the left half mirrors it */
-  var half = function (sx, tones) {
-    var m = function (pts) { return pts.split(" ").map(function (p) { var q = p.split(","); return (sx * +q[0]) + "," + q[1]; }).join(" "); };
+  const half = function (sx, tones) {
+    const m = function (pts) { return pts.split(" ").map(function (p) { const q = p.split(","); return (sx * +q[0]) + "," + q[1]; }).join(" "); };
     return [
       /* upper wing: four folded facets */
       P(m("6,-24 124,-84 62,-14"), tones[0]),
@@ -55,10 +55,10 @@ function appIconSvg(pal) {
         ' M' + m("6,10 64,88").replace(" ", " L") + '" fill="none" stroke="' + tones[4] + '" stroke-opacity="0.55" stroke-width="2.4" stroke-linecap="round"/>'
     ].join("");
   };
-  var silhouette = "0,-56 124,-84 108,4 86,22 64,88 22,72 0,66 -22,72 -64,88 -86,22 -108,4 -124,-84";
-  var page = "M-160 -184 L86 -184 L160 -110 L160 184 L-160 184 Z";
-  var rules = "";
-  for (var y = -128; y <= 150; y += 40) rules += '<rect x="-126" y="' + y + '" width="' + (y < -95 ? 176 : 252) + '" height="6" rx="3" fill="' + pal.rule + '"/>';
+  const silhouette = "0,-56 124,-84 108,4 86,22 64,88 22,72 0,66 -22,72 -64,88 -86,22 -108,4 -124,-84";
+  const page = "M-160 -184 L86 -184 L160 -110 L160 184 L-160 184 Z";
+  let rules = "";
+  for (let y = -128; y <= 150; y += 40) rules += '<rect x="-126" y="' + y + '" width="' + (y < -95 ? 176 : 252) + '" height="6" rx="3" fill="' + pal.rule + '"/>';
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">' +
     '<rect width="512" height="512" rx="112" fill="' + pal.tile + '"/>' +
     /* the sheet: tilted, ruled, with a folded corner */
@@ -80,18 +80,18 @@ function appIconSvg(pal) {
     '</g></svg>';
 }
 function appIconApply() {
-  var light = document.documentElement.getAttribute("data-theme") === "light";
-  var uri = "data:image/svg+xml," + encodeURIComponent(appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]));
-  var fav = document.getElementById("appFavicon");
+  const light = document.documentElement.getAttribute("data-theme") === "light";
+  const uri = "data:image/svg+xml," + encodeURIComponent(appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]));
+  const fav = document.getElementById("appFavicon");
   if (fav) fav.href = uri;
-  var logo = document.getElementById("appLogo");
+  const logo = document.getElementById("appLogo");
   if (logo) logo.src = uri;
 }
 appIconApply();                                  /* drawn once at start, in the theme the page opened in */
 function themeTitle() {
-  var b = document.getElementById("btnTheme");
+  const b = document.getElementById("btnTheme");
   if (!b) return;
-  var saved = savedTheme();
+  const saved = savedTheme();
   b.title = (saved ? "Using " + saved + " (your choice)" : "Following Windows (" + systemTheme() + ")") +
             " - click to switch, Alt+L";
 }
@@ -102,8 +102,8 @@ function setTheme(t) {
   themeTitle();
   appIconApply();                                /* the icon follows the theme */
   ["skPalette", "skTemplates"].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el && el.dataset.built) { var open = el.classList.contains("show"); el.innerHTML = ""; delete el.dataset.built;
+    const el = document.getElementById(id);
+    if (el && el.dataset.built) { const open = el.classList.contains("show"); el.innerHTML = ""; delete el.dataset.built;
       if (open) { if (id === "skPalette") skBuildPalette(); else sketchLibRender(document.getElementById("skTemplates")); } }
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-ink]"), function (b) { b.style.background = skInk(b.dataset.ink); });
@@ -121,12 +121,12 @@ try {
 } catch (e) {}
 themeTitle();
 document.getElementById("btnNewSheet").addEventListener("click", function () {
-  var name = window.prompt("Sheet name", "Sheet");
+  const name = window.prompt("Sheet name", "Sheet");
   if (!name) return;
-  var sh = createSheet(name);
+  const sh = createSheet(name);
   openSheetInPane(focusedPane || panes[0], sh.id);
 });
-var exportMenu = document.getElementById("exportMenu");
+const exportMenu = document.getElementById("exportMenu");
 document.getElementById("btnExport").addEventListener("click", function (e) {
   e.stopPropagation();
   exportMenu.classList.toggle("show");
@@ -140,7 +140,7 @@ document.getElementById("btnSidebar").addEventListener("click", function () {
   if (sideEl.classList.contains("side-closed")) showView(currentView);
   else showView(currentView, true);
 });
-document.getElementById("btnFolder").addEventListener("click", pickFolder);
+document.getElementById("btnFolder").addEventListener("click", NotesStorage.pick);
 document.getElementById("btnLocal").addEventListener("click", function () {
   if (window.confirm("Switch to browser storage? Your folder files stay on disk untouched.")) switchToLocal();
 });
@@ -163,7 +163,7 @@ document.getElementById("btnDual").addEventListener("click", toggleDual);
 document.getElementById("btnSketch").addEventListener("click", insertSketch);
 
 window.addEventListener("keydown", function (e) {
-  var mod = e.ctrlKey || e.metaKey;
+  const mod = e.ctrlKey || e.metaKey;
   /* VS Code's keys: Ctrl+P finds a note, Ctrl+Shift+P or F1 runs a command */
   if (mod && !e.altKey && e.key.toLowerCase() === "p") { e.preventDefault(); palOpen(e.shiftKey ? ">" : ""); return; }
   if (e.altKey && !mod && !e.shiftKey && e.code === "KeyC") { e.preventDefault(); palOpen(">Text colour"); return; }   /* colour the selection (by key position: Option+C on a Mac types "ç") */
@@ -172,11 +172,11 @@ window.addEventListener("keydown", function (e) {
   if (mod && e.altKey && !e.shiftKey && e.key.toLowerCase() === "d") { e.preventDefault(); openDailyNote(); return; }           /* today's daily note */
   if (e.key === "F1") { e.preventDefault(); palOpen(">"); return; }
   if (pal.open) return;
-  var fp = focusedPane || panes[0];
+  const fp = focusedPane || panes[0];
   if (sk) {   /* sketch board owns the keyboard while open */
     /* ...unless a field has focus. Typing in the rename dialog must never reach the board:
        Backspace belongs to the text box, not to the selected shapes. */
-    var tag = e.target && e.target.tagName;
+    const tag = e.target && e.target.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) {
       if (e.key === "Escape") { e.preventDefault(); skRenameClose(); }
       return;
@@ -190,7 +190,7 @@ window.addEventListener("keydown", function (e) {
     }
     if (e.key === "Escape") {
       e.preventDefault();
-      var kb = document.getElementById("skKeys");
+      const kb = document.getElementById("skKeys");
       if (kb && kb.classList.contains("show")) { kb.classList.remove("show"); return; }
       if (document.getElementById("skLibrary").classList.contains("show")) { skLibOpen(false); return; }
       if (sk.sels.length) { skSelect([]); skDraw(); return; }
@@ -203,7 +203,7 @@ window.addEventListener("keydown", function (e) {
     if (!mod && e.shiftKey && (e.key === "!" || e.code === "Digit1")) { e.preventDefault(); document.getElementById("skFit").click(); return; }
     /* text selected on the page means the copy is for that text */
     if (mod && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x")) {
-      var tsel = window.getSelection && window.getSelection();
+      const tsel = window.getSelection && window.getSelection();
       if (tsel && !tsel.isCollapsed && String(tsel).trim()) return;
     }
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); skUndo(); return; }
@@ -223,24 +223,25 @@ window.addEventListener("keydown", function (e) {
       e.preventDefault(); skRenameClose(); return;
     }
     if (e.key === "Escape" && sk.sels.length) { e.preventDefault(); skSelect([]); skDraw(); return; }
-    var oneSeg = sk.sels.length === 1 && skIsConnector(sk.sels[0]) && skIsOrthoStyle(sk.sels[0]) ? sk.sels[0] : null;
+    const oneSeg = sk.sels.length === 1 && skIsConnector(sk.sels[0]) && skIsOrthoStyle(sk.sels[0]) ? sk.sels[0] : null;
     if (!mod && oneSeg && e.key.indexOf("Arrow") === 0) {   /* move a run of the selected elbow link */
       e.preventDefault();
-      var kax = e.key === "ArrowLeft" || e.key === "ArrowRight" ? 0 : 1;
-      var ksign = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1, kstep = e.shiftKey ? 10 : 4;
-      var rp3 = skLinkRoute(oneSeg), pick = -1;
+      const kax = e.key === "ArrowLeft" || e.key === "ArrowRight" ? 0 : 1;
+      const ksign = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1, kstep = e.shiftKey ? 10 : 4;
+      const rp3 = skLinkRoute(oneSeg);
+      let pick = -1;
       if (sk.segActive && sk.segActive.id === oneSeg.id && sk.segActive.ax === kax && skSegMovable(rp3, sk.segActive.i) === kax) pick = sk.segActive.i;
       else {
-        var bestLen = -1;
-        for (var ki = 1; ki < rp3.length - 2; ki++) if (skSegMovable(rp3, ki) === kax) {
-          var kl = Math.hypot(rp3[ki + 1][0] - rp3[ki][0], rp3[ki + 1][1] - rp3[ki][1]);
+        let bestLen = -1;
+        for (let ki = 1; ki < rp3.length - 2; ki++) if (skSegMovable(rp3, ki) === kax) {
+          const kl = Math.hypot(rp3[ki + 1][0] - rp3[ki][0], rp3[ki + 1][1] - rp3[ki][1]);
           if (kl > bestLen) { bestLen = kl; pick = ki; }
         }
       }
       if (pick < 0) { pushToastLike(kax === 0 ? "This link has no upright run to move left or right." : "This link has no level run to move up or down."); return; }
       skSnapshot();
       oneSeg.segs = oneSeg.segs || {};
-      var prevOff = oneSeg.segs[pick] && oneSeg.segs[pick][0] === kax ? oneSeg.segs[pick][1] : 0;
+      const prevOff = oneSeg.segs[pick] && oneSeg.segs[pick][0] === kax ? oneSeg.segs[pick][1] : 0;
       oneSeg.segs[pick] = [kax, prevOff + ksign * kstep];
       sk.segActive = { id: oneSeg.id, i: pick, ax: kax };
       skChanged(); skDraw();
@@ -248,9 +249,9 @@ window.addEventListener("keydown", function (e) {
     }
     if (!mod && sk.sels.length && e.key.indexOf("Arrow") === 0) {   /* nudge, Shift for a bigger step */
       e.preventDefault();
-      var step = e.shiftKey ? 10 : 1;
-      var dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
-      var dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+      const step = e.shiftKey ? 10 : 1;
+      const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+      const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
       skSnapshot();
       sk.sels.forEach(function (el) { skMoveEl(el, dx, dy); });
       skChanged(); skDraw();
@@ -274,18 +275,18 @@ window.addEventListener("keydown", function (e) {
       return;
     }
     if (e.key === "F2" && sk.sel) { e.preventDefault(); skRename(sk.sel); return; }
-    var tools = { v: "select", h: "hand", p: "pen", r: "rectangle", o: "ellipse", d: "diamond", l: "line", a: "arrow", t: "text", c: "connect", e: "eraser", j: "splitter" };
+    const tools = { v: "select", h: "hand", p: "pen", r: "rectangle", o: "ellipse", d: "diamond", l: "line", a: "arrow", t: "text", c: "connect", e: "eraser", j: "splitter" };
     if (!mod && !e.altKey && tools[e.key.toLowerCase()]) { e.preventDefault(); skSetTool(tools[e.key.toLowerCase()]); }
     return;
   }
   if (mod && e.shiftKey && e.key.toLowerCase() === "d") { e.preventDefault(); insertSketch(); return; }
   if (mod && e.key.toLowerCase() === "a") {
-    var tg = e.target;
-    var inField = tg && (tg.tagName === "TEXTAREA" || tg.tagName === "INPUT" || tg.isContentEditable);
+    const tg = e.target;
+    const inField = tg && (tg.tagName === "TEXTAREA" || tg.tagName === "INPUT" || tg.isContentEditable);
     if (!inField && fp && fp.note() && fp.mode === "live") { e.preventDefault(); fp.selectAll(); return; }
   }
   if (mod && e.key.toLowerCase() === "z" && fp && fp.note()) {
-    var tg0 = e.target;
+    const tg0 = e.target;
     if (!tg0 || (tg0.tagName !== "TEXTAREA" && tg0.tagName !== "INPUT")) {
       e.preventDefault();
       if (e.shiftKey) histRedo(fp); else histUndo(fp);
@@ -300,7 +301,7 @@ window.addEventListener("keydown", function (e) {
   }
   if (mod && e.key.toLowerCase() === "h" && !e.altKey && !(typeof sk !== "undefined" && sk)) {
     e.preventDefault();
-    if (e.shiftKey) { showView("search"); var srr = document.getElementById("searchRep"); if (srr) setTimeout(function () { document.getElementById("search").focus(); }, 0); }
+    if (e.shiftKey) { showView("search"); const srr = document.getElementById("searchRep"); if (srr) setTimeout(function () { document.getElementById("search").focus(); }, 0); }
     else if (!findOpen(true)) showView("search");
   }
   if (mod && e.shiftKey && e.key.toLowerCase() === "e") { e.preventDefault(); showView("notes"); }
@@ -326,7 +327,7 @@ window.addEventListener("keydown", function (e) {
     else if (e.key === "ArrowLeft") { e.preventDefault(); fp.cycleTab(-1); }
     else if (/^[1-9]$/.test(e.key)) {
       e.preventDefault();
-      var t = fp.tabs[parseInt(e.key, 10) - 1];
+      const t = fp.tabs[parseInt(e.key, 10) - 1];
       if (t != null) fp.open(t);
     }
   }

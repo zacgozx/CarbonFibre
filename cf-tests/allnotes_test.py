@@ -23,6 +23,7 @@ VAULT = """() => {
   renderSidebar(); tb.view = 'notes'; tb.notesMode = 'all'; tbShow(); tbRenderAll(); }"""
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1500, "height": 950}, color_scheme=os.environ.get("CF_SCHEME", "light"))
+    pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     dialogs = []; pg.on("dialog", lambda d: (dialogs.append(d.message), d.accept()))
     pg.goto("file://" + CF); pg.evaluate("() => localStorage.clear()"); pg.reload(); pg.wait_for_timeout(400)

@@ -4,12 +4,13 @@
 
 
 (function boot() {
-  var first = createPane(0);
+  const first = createPane(0);
   panes.push(first);
   layoutPanes();
   focusedPane = first;
   first.root.classList.add("focused");
   updateStorageUI();
+  NarrowLayout.settle();                               /* before anything loads, so a phone never flashes the panel */
 
   function bootLocal() {
     loadLocalNotes();
@@ -19,6 +20,7 @@
     renderPanes();
     restoreSession();
     tbLaunchPin();
+    NarrowLayout.settle();
   }
 
   idbGet("sketchHandle").then(function (h) {
@@ -29,15 +31,15 @@
     });
   }).catch(function () {});
   idbGet("dirHandle").then(function (h) {
-    if (!h) { bootLocal(); return; }
+    if (!h) { bootLocal(); NotesStorage.welcomeIfNew(); return; }   /* a first visit asks where notes should live */
     return h.queryPermission({ mode: "readwrite" }).then(function (perm) {
       if (perm === "granted") {
         state.dirHandle = h;
         state.backend = "folder";
-        return loadFolder();
+        return loadFolder().then(NarrowLayout.settle);
       }
       showReconnect(h.name);
       bootLocal();
     });
-  }).catch(bootLocal);
+  }).catch(function () { bootLocal(); NotesStorage.welcomeIfNew(); });
 })();

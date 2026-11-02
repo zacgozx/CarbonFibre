@@ -24,6 +24,7 @@ SETUP = """data => {
   window.confirm = () => true; }"""
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1300, "height": 800})
+    pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.goto("file://" + CF); pg.evaluate("() => localStorage.clear()")
     pg.evaluate("d => localStorage.setItem('carbonfibre-sketches', JSON.stringify({ 'Old one': { text: d, mtime: 1 } }))", DRAW)

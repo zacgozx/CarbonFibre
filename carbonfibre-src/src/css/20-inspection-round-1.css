@@ -8,7 +8,7 @@
 .pin-btn { color: transparent; }
 .side-item:hover .pin-btn, .side-item:focus-within .pin-btn { color: var(--dim); }
 .pin-btn.on, .side-item:hover .pin-btn.on { color: var(--ora); }
-@media (max-width: 760px) { .statusbar .storage-row { display: none; } }
+@media (max-width: 760px) { .statusbar .storage-label { display: none; } }
 /* the sidebar overlay fills the body between the title bar and the status bar */
 @media (max-width: 700px) { .mo-body { position: relative; } .side { top: 0; bottom: 0; height: auto; } }/* ---------- detector findings: the secondary panels,
 raised to the same floor ----------

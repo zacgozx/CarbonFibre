@@ -23,6 +23,8 @@ css/19-command-palette.css
 css/20-inspection-round-1.css
 css/21-inspection-round-2-full-heig.css
 css/22-sketch-board-tools-on-top-st.css
+css/23-storage-welcome.css
+css/24-responsive.css
 html/02-body.html
 js/01-start.js
 js/02-core.js
@@ -91,5 +93,6 @@ js/41-mermaid-layout-ranks-follow-th.js
 js/42-mermaid-sketch-elements-groups.js
 js/43-session.js
 js/44-shortcuts.js
+js/44-narrow-layout.js
 js/45-boot.js
 html/03-tail.html

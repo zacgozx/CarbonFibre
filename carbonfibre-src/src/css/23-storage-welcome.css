@@ -1,0 +1,21 @@
+/* ---------- where notes live: the first-run dialog (NotesStorage) ---------- */
+.nsw-win { position: fixed; inset: 0; z-index: 220; background: rgba(var(--scrim-rgb), calc(.55 * var(--scrim-k))); display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+.nsw-win[hidden] { display: none; }
+.nsw-dialog { width: min(720px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); color: var(--txt); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 18px 50px rgba(var(--shd-rgb), calc(.35 * var(--shd-k))); padding: 22px 24px; font: 14px/1.5 var(--sans); }
+.nsw-dialog h2 { margin: 0 0 4px; font-size: 19px; font-weight: 600; }
+.nsw-lede { margin: 0 0 16px; color: var(--dim); }
+.nsw-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.nsw-opt { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.nsw-opt h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.nsw-opt p { margin: 0; color: var(--dim); font-size: 13px; }
+.nsw-opt code { font-family: var(--mono, Consolas, monospace); font-size: 12px; }
+.nsw-opt .nsw-why { color: var(--txt); }
+.nsw-off h3, .nsw-off p:not(.nsw-why) { opacity: .6; }
+.nsw-btn { margin-top: auto; align-self: flex-start; min-height: 34px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--txt); font: 600 13px var(--sans); cursor: pointer; }
+.nsw-btn:hover:not(:disabled) { border-color: var(--acc); }
+.nsw-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.nsw-primary { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-text); }
+.nsw-btn:disabled { opacity: .45; cursor: not-allowed; }
+.nsw-foot { margin: 14px 0 0; color: var(--dim); font-size: 12.5px; }

@@ -8,6 +8,7 @@ def check(label, good, detail=""):
     global ok; ok &= bool(good); print("  %-64s %s %s" % (label, "ok" if good else "FAIL", detail))
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1300, "height": 900}, color_scheme="dark")
+    pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.goto("file://" + CF); pg.wait_for_timeout(400)
     E = lambda js, *a: pg.evaluate(js, *a)

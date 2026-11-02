@@ -13,6 +13,7 @@ VAULT = """() => {
   const q = addPane(panes[0], 'Runbooks/Sensu decommission.md'); q.open('Daily.md'); panes[0].focusThis(); }"""
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1500, "height": 850})
+    pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.goto("file://" + CF); pg.evaluate("() => localStorage.clear()"); pg.reload(); pg.wait_for_timeout(400)
     E = lambda js, *a: pg.evaluate(js, *a)
