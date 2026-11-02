@@ -1,0 +1,112 @@
+/* ---------- agent panel ---------- */
+.agent { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.icon-mini {
+  background: none; border: none; cursor: pointer; padding: 5px; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background var(--t);
+}
+.icon-mini svg { width: 15px; height: 15px; fill: none; stroke: var(--c6a6a6a); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t); }
+.icon-mini:hover { background: var(--c1e1e1e); }
+.icon-mini:hover svg { stroke: var(--txt); }
+
+/* composer */
+.composer { margin: 0 12px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); transition: border-color var(--t); }
+.composer:focus-within { border-color: rgba(var(--acc-rgb), 0.55); }
+.composer-foot { display: flex; align-items: center; gap: 4px; padding: 4px 6px 6px 10px; }
+.composer-foot .spacer { flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid transparent; border-radius: 8px; padding: 2px 7px;
+  font-size: 12.5px; color: var(--c4f4f4f); cursor: pointer; user-select: none;
+  transition: color var(--t), background var(--t);
+}
+.chip input { display: none; }
+.chip:hover { color: var(--c9a9a9a); }
+.chip.on { color: var(--blu); background: var(--blu-soft); }
+.chip-check { font-size: 12.5px; color: var(--dim); }
+.chip-check.on { color: var(--blu); }
+
+.send-btn {
+  background: var(--acc); border: none; border-radius: 6px; width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: filter var(--t);
+}
+.send-btn svg { width: 15px; height: 15px; fill: none; stroke: var(--cffffff); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.send-btn:hover { filter: brightness(1.15); }
+
+.menu-wrap { position: relative; }
+.mo-head .menu { top: 34px; bottom: auto; }
+.menu {
+  position: absolute; right: 0; bottom: 34px; min-width: 160px;
+  background: var(--c171717); border: 1px solid var(--line); border-radius: 6px; padding: 4px;
+  display: none; z-index: 20; box-shadow: 0 8px 24px rgba(var(--shd-rgb), calc(0.5 * var(--shd-k)));
+}
+.menu.show { display: block; }
+.menu button {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--cbdbdbd); font-size: 12px; padding: 7px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;
+  transition: background var(--t), color var(--t);
+}
+.menu button:hover { background: var(--acc-soft); color: var(--acc-text); }
+
+@media (max-width: 900px) {
+  .split.show { flex-direction: column; }
+  .split-src { border-right: none; border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 700px) {
+  .editor { padding: 16px 16px 0; }
+  .side { position: absolute; z-index: 20; height: calc(100% - 46px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ============================================================
+   Workbench. The category-standard layout, played straight and finished to
+   VS Code's standard: a title bar with a command centre, an activity bar, the
+   explorer, tabbed editor groups with breadcrumbs, and a status bar that carries
+   live state. Both pinned palettes. Visibility first: AA text, 26px+ targets,
+   a focus ring on everything, filled selection rather than side stripes.
+   ============================================================ */
+:root {
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", ui-monospace, monospace;
+  --chrome: #16171b; --chrome-hi: #202228;
+  --line: #2b2d33;
+  --dim: #a4a7ae;
+  --sel: rgba(142, 167, 184, 0.26); --sel-soft: rgba(142, 167, 184, 0.12);
+  --focus: #d48795;
+  --sb-bg: #9b3d4b; --sb-fg: #ffffff; --sb-hover: rgba(255, 255, 255, 0.16);
+  --tab-edge: #d48795; --mark: #8ea7b8;}
+:root[data-theme="light"] {
+  --chrome: #eef6fb; --chrome-hi: #dceef8;
+  --line: #cfe3ee;
+  --sel: #c9e4f3; --sel-soft: #e4f1f9;
+  --focus: #1a6585;
+  --sb-bg: #1a6585; --sb-fg: #ffffff; --sb-hover: rgba(255, 255, 255, 0.16);
+  --tab-edge: #2e86ab; --mark: #2e86ab;}
+
+body { font-family: var(--sans); font-size: 13px; }
+.ico { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ico .f { fill: currentColor; stroke: none; }
+
+/* browser surfaces carry the design too */
+::selection { background: rgba(142, 167, 184, 0.38); }
+/* light mode's highlight must be see-through: on the line being edited the text you see is a copy
+   drawn under the (invisible) text box, and a solid highlight covered it, so highlighted words vanished */
+:root[data-theme="light"] ::selection { background: rgba(46, 134, 171, 0.28); }
+:root[data-theme="light"] .line-ta::selection, :root[data-theme="light"] .src-ta::selection { background: rgba(46, 134, 171, 0.3); color: transparent; }
+.line-ta, .split-src, #cmdIn, .search { caret-color: var(--focus); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.side-item:focus-visible, .tab:focus-visible, .fold-head:focus-visible, .sb-btn:focus-visible, .statusbar button:focus-visible,
+.cmd-row:focus-visible { outline-offset: -2px; }
+.line-ta:focus-visible, .split-src:focus-visible, #cmdIn:focus-visible { outline: none; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(121, 121, 121, 0.4); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 140, 0.7); }
+:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(26, 42, 79, 0.22); }
+:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(26, 42, 79, 0.4); }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+

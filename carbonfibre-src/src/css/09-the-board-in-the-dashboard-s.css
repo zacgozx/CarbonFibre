@@ -1,0 +1,89 @@
+/* ---- the board in the dashboard's style: lanes as panels with a dot title, compact two-row cards ---- */
+.tb { --tbl-lane: #121216; }
+:root[data-theme="light"] .tb { --tbl-lane: #f3f8fb; }
+.tb-filters { gap: 5px; }
+.tb-chip { min-height: 26px; padding: 2px 11px; font-size: 12.5px; }
+.tb-board { gap: 12px; padding: 12px 20px 16px; background: none; }
+.tb-lane { background: var(--tbl-lane); border: 1px solid var(--tbd-cardline); border-radius: 10px; box-shadow: var(--tbd-shadow); overflow: hidden; }
+.tb-lane.drop-on { background: var(--tbl-lane); box-shadow: 0 0 0 2px var(--lane), var(--tbd-shadow); }
+.tb-lane__head { background: transparent; box-shadow: none; border-bottom: 0; padding: 11px 12px 4px; gap: 8px; }
+.tb-lane__head h4 { color: var(--tb-ink); font: 600 13px/1.3 var(--sans); }
+.tb-lane__head .dot { width: 7px; height: 7px; box-shadow: none; }
+:root:not([data-theme="light"]) .tb-lane__head .dot { box-shadow: 0 0 8px var(--lane); }
+.tb-count { background: var(--tb-raised); border: 0; color: var(--tb-mute); font-size: 12px; font-weight: 600; min-width: 20px; padding: 0 7px; }
+.tb-quick { padding: 6px 10px 0; }
+.tb-quick-in { min-height: 30px; padding: 5px 10px; font-size: 12.5px; border-radius: 7px; border-style: solid; border-color: var(--tbd-cardline); background: var(--tbd-card); }
+.tb-cards { padding: 8px 10px 12px; gap: 6px; }
+.tb-lane .tb-empty { border: 0; padding: 6px 2px; font-size: 12.5px; color: var(--tb-mute); background: none; }
+/* cards */
+.tb-card { display: block; padding: 8px 10px; border-radius: 8px; background: var(--tbd-card); border: 1px solid var(--tbd-cardline); box-shadow: var(--tbd-shadow); }
+.tb-card:hover { border-color: var(--tb-hover); }
+.tb-cardbody { gap: 3px; }
+.tb-cardtop { gap: 2px 7px; align-items: center; flex-wrap: nowrap; }
+.tb-typesq { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.tb-card .id { font: 600 11.5px var(--mono); color: var(--tb-blu); }
+.tb-card a.id { color: var(--tb-blu); }
+.tb-cardtop .kind { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }
+.tb-cardtop .t { font-size: 11.5px; flex: none; }
+.tb-cardmid { display: flex; align-items: center; gap: 8px; min-width: 0; position: relative; }
+.tb-cardmid .name { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* the buttons appear on hover (or keyboard focus) over the end of the name row, so names use the
+   full width and cards stay two rows; the running card always shows its Pause and Done */
+.tb-acts { gap: 3px; margin-left: 0; flex: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  padding-left: 18px; background: linear-gradient(90deg, transparent, var(--tbd-card) 16px); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.tb-card:hover .tb-acts, .tb-card:focus-within .tb-acts, .tb-card--run .tb-acts { opacity: 1; pointer-events: auto; }
+.tb-card--run .tb-cardmid .name { padding-right: 110px; }
+@media (hover: none) { .tb-acts { opacity: 1; pointer-events: auto; position: static; transform: none; padding: 0; background: none; } }
+.tb .tb-act { width: 24px; height: 22px; min-height: 22px; min-width: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; border-radius: 5px;
+  border: 1px solid var(--tbd-cardline); background: none; color: var(--tb-mute); }
+.tb-act:hover { color: var(--tb-ink); border-color: var(--tb-hover); }
+.tb-act.tb-start { color: var(--tb-blu); border-color: rgba(var(--tb-blu-rgb), .45); }
+.tb-act.tb-start:hover { background: rgba(var(--tb-blu-rgb), .1); color: var(--tb-blu); }
+.tb-act.tb-todone:hover { color: var(--tb-ok); border-color: var(--tb-ok); }
+.tb .tb-act.tb-cardpause { font-size: 8px; letter-spacing: -1px; }
+.tb .tb-act.tb-more { font-weight: 700; font-size: 12px; letter-spacing: 0; }
+.tb-cardbar { height: 2px; margin-top: 2px; }
+.tb-cardfoot { min-height: 0; }
+.tb .tb-notelink { font-size: 11.5px; min-height: 0; padding: 0; color: var(--tb-mute); flex: 1; }
+.tb-notelink:not(.none)::before { content: "\21b3 "; }
+.tb-notelink.none { display: none; font-style: normal; }
+/* an unlinked card offers linking as the ↳ button among its hover buttons, so the card never grows under the pointer */
+.tb-card--run { background: var(--tbd-card); border-color: rgba(var(--tb-acc-rgb), .6); box-shadow: 0 0 0 1px rgba(var(--tb-acc-rgb), .25), var(--tbd-shadow); }
+:root:not([data-theme="light"]) .tb-card--run { box-shadow: 0 0 14px rgba(var(--tb-acc-rgb), .25); }
+.tb-card--done { opacity: .85; }
+.tb-card--done .name { text-decoration: line-through; color: var(--tb-mute); }
+.tb-card--done .tb-cardtop .t { color: var(--tb-ok); }
+.tb-edit .tb-btn { min-height: 26px; }
+/* ---- the header's buttons: one height, + Task first, the note buttons joined into one group; in a
+   narrow pane (split view) labels shorten and the actions wrap below the title, never past the pane ---- */
+.tb-top { overflow: hidden; }
+.tb-titlerow { flex-wrap: wrap; row-gap: 8px; column-gap: 12px; }
+.tb-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; min-width: 0; }
+.tb-titlerow .tb-summary { flex: 1 1 0; min-width: 120px; }   /* shortens with "..." first; the buttons wrap only when they really don't fit */
+.tb-qa-row { display: inline-flex; align-items: center; gap: 8px; margin-left: 0; flex-wrap: nowrap; flex: none; }
+.tb .tb-qa, .tb .tb-view, .tb .tb-pin { height: 28px; min-height: 28px; box-sizing: border-box; font: 600 12.5px/1 var(--sans); display: inline-flex; align-items: center; gap: 6px; }
+.tb .tb-qa { padding: 0 11px; border-radius: 7px; border: 1px solid var(--tbd-cardline); background: var(--tbd-card); color: var(--tb-ink); }
+.tb .tb-qa:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
+.tb .tb-qa--primary { background: var(--tb-acc-text); border-color: var(--tb-acc-text); color: var(--tb-carbon); padding: 0 12px; }
+:root[data-theme="light"] .tb .tb-qa--primary { color: #fff; }
+.tb .tb-qa--primary:hover { filter: brightness(1.08); color: var(--tb-carbon); border-color: var(--tb-acc-text); }
+:root[data-theme="light"] .tb .tb-qa--primary:hover { color: #fff; }
+/* the joined group: a quiet label, then three buttons sharing their borders */
+.tb-qa-group { display: inline-flex; align-items: center; border: 1px solid var(--tbd-cardline); border-radius: 7px; background: var(--tbd-card); overflow: hidden; }
+.tb-qa-lbl { padding: 0 8px 0 10px; font-size: 12px; color: var(--tb-mute); white-space: nowrap; border-right: 1px solid var(--tbd-cardline); height: 26px; display: inline-flex; align-items: center; }
+.tb .tb-qa-group .tb-qa { border: 0; border-radius: 0; height: 26px; min-height: 26px; background: none; }
+.tb .tb-qa-group .tb-qa + .tb-qa { border-left: 1px solid var(--tbd-cardline); }
+.tb .tb-qa-group .tb-qa:hover { background: rgba(var(--tb-blu-rgb), .1); color: var(--tb-blu); }
+.tb-short { display: none; }
+.tb .tb-views { height: 28px; box-sizing: border-box; padding: 2px; border-radius: 7px; border-color: var(--tbd-cardline); }
+.tb .tb-view { height: 22px; min-height: 22px; padding: 0 11px; border-radius: 5px; }
+.tb .tb-pin { padding: 0 11px; border-radius: 7px; border-color: var(--tbd-cardline); background: var(--tbd-card); }
+.tb .tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); border-color: rgba(var(--tb-acc-rgb), .55); }
+/* filter chips: one row, scrolling sideways when they don't fit */
+.tb-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); padding-bottom: 1px; }
+.tb-filters::-webkit-scrollbar { display: none; }
+.tb .tb-chip { flex: none; height: 26px; min-height: 26px; display: inline-flex; align-items: center; }
+@container (max-width: 1150px) { .tb-summary { display: none; } }
+@container (max-width: 980px) { .tb-long { display: none; } .tb-short { display: inline; } .tb-qa-lbl { display: none; } }
+@container (max-width: 720px) { .tb-actions { margin-left: 0; width: 100%; } .tb-date { display: none; } }
+@container (max-width: 520px) { .tb-qa-group { display: none; } }

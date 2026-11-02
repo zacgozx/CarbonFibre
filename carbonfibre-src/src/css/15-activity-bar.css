@@ -1,0 +1,15 @@
+/* ---------- activity bar ---------- */
+.activity { width: 48px; min-width: 48px; background: var(--chrome); border-right: 1px solid var(--line); padding: 4px 0; }
+.act-btn { width: 40px; height: 40px; margin: 2px 4px; border-left: 0; border-radius: 6px; }
+/* the menu button lines up with the sidebar icons below it: same 40px rounded square, centred on
+   the same 23.5px line (header padding 2px + 1.5px + half of 40px), lines as heavy as the icons */
+#btnSidebar { width: 40px; height: 40px; margin-left: 1.5px; border-radius: 6px; flex: none; }
+#btnSidebar:hover { background: var(--chrome-hi); }
+#btnSidebar .ham, #btnSidebar .ham::before, #btnSidebar .ham::after { width: 18px; height: 1.7px; border-radius: 1px; }
+#btnSidebar .ham::before { top: -5.5px; }
+#btnSidebar .ham::after { top: 5.5px; }
+.act-btn svg { width: 22px; height: 22px; stroke: var(--dim); }
+.act-btn:hover { background: var(--chrome-hi); }
+.act-btn:hover svg, .act-btn.on svg { stroke: var(--txt); }
+.act-btn.on { background: var(--sel); }
+

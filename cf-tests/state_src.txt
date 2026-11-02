@@ -1,0 +1,295 @@
+stateDiagram-v2
+    direction TB
+
+    state "01 — Detection & Intake" as INTAKE {
+        [*] --> TelemetryReceived
+        TelemetryReceived --> AlertValidation
+        AlertValidation --> Enrichment
+
+        state "Signal Quality Gate" as SIGNAL {
+            Enrichment --> Correlation
+            Correlation --> ConfidenceCheck
+            ConfidenceCheck --> FalsePositive: Benign / duplicate
+            ConfidenceCheck --> CandidateIncident: Suspicious
+            ConfidenceCheck --> Watchlist: Insufficient evidence
+            Watchlist --> Correlation: New telemetry arrives
+        }
+    }
+
+    state "02 — Triage & Classification" as TRIAGE {
+        CandidateIncident --> SeverityAssessment
+
+        state "Severity Decision" as SEVERITY {
+            SeverityAssessment --> Sev1: Critical impact
+            SeverityAssessment --> Sev2: High impact
+            SeverityAssessment --> Sev3: Moderate impact
+            SeverityAssessment --> Sev4: Low impact
+
+            Sev1 --> ExecutiveEscalation
+            Sev2 --> SOCLeadEscalation
+            Sev3 --> StandardQueue
+            Sev4 --> StandardQueue
+
+            ExecutiveEscalation --> ScopeAssessment
+            SOCLeadEscalation --> ScopeAssessment
+            StandardQueue --> ScopeAssessment
+        }
+
+        ScopeAssessment --> IncidentDeclared: Confirmed threat
+        ScopeAssessment --> MonitoringOnly: Unconfirmed
+        MonitoringOnly --> ScopeAssessment: New evidence
+    }
+
+    state "03 — Coordinated Investigation" as INVESTIGATION {
+        IncidentDeclared --> WorkstreamDispatch
+
+        state "Parallel Workstreams" as PARALLEL {
+            state "Technical Investigation" as TECH {
+                [*] --> EndpointAnalysis
+                EndpointAnalysis --> MalwareAnalysis
+                MalwareAnalysis --> ProcessTreeAnalysis
+                ProcessTreeAnalysis --> TechnicalFindings
+                TechnicalFindings --> [*]
+            }
+
+            state "Identity Investigation" as IDENTITY {
+                [*] --> AccountAudit
+                AccountAudit --> SessionReview
+                SessionReview --> PrivilegeReview
+                PrivilegeReview --> IdentityFindings
+                IdentityFindings --> [*]
+            }
+
+            state "Network & Cloud Investigation" as NETWORK {
+                [*] --> TrafficAnalysis
+                TrafficAnalysis --> DNSReview
+                DNSReview --> CloudAudit
+                CloudAudit --> NetworkFindings
+                NetworkFindings --> [*]
+            }
+
+            state "Business Impact Assessment" as BUSINESS {
+                [*] --> AssetCriticality
+                AssetCriticality --> DataExposureReview
+                DataExposureReview --> ServiceImpact
+                ServiceImpact --> BusinessFindings
+                BusinessFindings --> [*]
+            }
+        }
+
+        WorkstreamDispatch --> EvidencePreservation
+        EvidencePreservation --> FindingsCorrelation
+        FindingsCorrelation --> InvestigationReview
+        InvestigationReview --> MoreEvidenceRequired: Gaps remain
+        MoreEvidenceRequired --> WorkstreamDispatch
+        InvestigationReview --> ResponseDecision: Findings sufficient
+    }
+
+    state "04 — Containment & Decision Control" as CONTAINMENT {
+        state "Containment Strategy" as STRATEGY {
+            ResponseDecision --> ThreatConfirmed
+            ResponseDecision --> ThreatUnconfirmed
+
+            ThreatUnconfirmed --> ExtendedHunting
+            ExtendedHunting --> ResponseDecision: New findings
+            ExtendedHunting --> BenignResolution: Cleared
+
+            ThreatConfirmed --> ContainmentApproval
+            ContainmentApproval --> EmergencyAuthorization: Critical emergency
+            ContainmentApproval --> StandardAuthorization: Standard response
+
+            StandardAuthorization --> ContainmentExecution
+            EmergencyAuthorization --> ContainmentExecution
+
+            ContainmentExecution --> ContainmentValidation
+            ContainmentValidation --> ContainmentFailed: Threat persists
+            ContainmentFailed --> ContainmentApproval: Revise controls
+            ContainmentValidation --> Contained: Verified effective
+        }
+
+        state "Containment Actions" as ACTIONS {
+            ContainmentExecution --> IsolateEndpoint
+            ContainmentExecution --> DisableIdentity
+            ContainmentExecution --> BlockIndicators
+            ContainmentExecution --> RestrictCloudAccess
+            ContainmentExecution --> PreserveVolatileState
+
+            IsolateEndpoint --> ActionVerification
+            DisableIdentity --> ActionVerification
+            BlockIndicators --> ActionVerification
+            RestrictCloudAccess --> ActionVerification
+            PreserveVolatileState --> ActionVerification
+
+            ActionVerification --> ContainmentValidation
+        }
+    }
+
+    state "05 — Eradication & Recovery" as RECOVERY {
+        Contained --> EradicationPlanning
+
+        state "Eradication Controls" as ERADICATION {
+            EradicationPlanning --> RemoveMalware
+            EradicationPlanning --> RevokePersistence
+            EradicationPlanning --> RotateCredentials
+            EradicationPlanning --> PatchVulnerability
+            EradicationPlanning --> HuntRelatedAssets
+
+            RemoveMalware --> EradicationVerification
+            RevokePersistence --> EradicationVerification
+            RotateCredentials --> EradicationVerification
+            PatchVulnerability --> EradicationVerification
+            HuntRelatedAssets --> EradicationVerification
+
+            EradicationVerification --> EradicationFailed: Persistence remains
+            EradicationFailed --> EradicationPlanning
+            EradicationVerification --> Eradicated: Clean state confirmed
+        }
+
+        state "Service Restoration" as RESTORATION {
+            Eradicated --> RecoveryPlan
+            RecoveryPlan --> RestoreFromTrustedBackup
+            RecoveryPlan --> RebuildFromKnownGoodImage
+            RecoveryPlan --> RestoreIdentityServices
+            RecoveryPlan --> ValidateDependencies
+
+            RestoreFromTrustedBackup --> RecoveryValidation
+            RebuildFromKnownGoodImage --> RecoveryValidation
+            RestoreIdentityServices --> RecoveryValidation
+            ValidateDependencies --> RecoveryValidation
+
+            RecoveryValidation --> RecoveryFailed: Integrity failure
+            RecoveryFailed --> RecoveryPlan
+            RecoveryValidation --> RecoveryReady: Integrity confirmed
+
+            RecoveryReady --> BusinessApproval
+            BusinessApproval --> ProductionRestore: Approved
+            BusinessApproval --> RecoveryPlan: Rejected
+            ProductionRestore --> HeightenedMonitoring
+            HeightenedMonitoring --> StabilityCheck
+            StabilityCheck --> Reopened: Indicators recur
+            Reopened --> ContainmentApproval
+            StabilityCheck --> RecoveryComplete: Stable
+        }
+    }
+
+    state "06 — Closure & Assurance" as CLOSURE {
+        RecoveryComplete --> ClosureChecklist
+        BenignResolution --> ClosureChecklist
+
+        ClosureChecklist --> EvidenceCompleteness
+        EvidenceCompleteness --> ClosureBlocked: Evidence gaps
+        ClosureBlocked --> EvidencePreservation
+        EvidenceCompleteness --> RootCauseAnalysis: Complete
+
+        RootCauseAnalysis --> LessonsLearned
+        LessonsLearned --> ControlImprovements
+        ControlImprovements --> DetectionEngineering
+        DetectionEngineering --> RuleValidation
+        RuleValidation --> RegressionTesting
+        RegressionTesting --> ImprovementDeployment
+        ImprovementDeployment --> MetricsReview
+        MetricsReview --> FinalApproval
+        FinalApproval --> Closed: Approved
+        FinalApproval --> RootCauseAnalysis: More work required
+        Closed --> [*]
+    }
+
+    state "Cross-Cutting Evidence Governance" as EVIDENCE {
+        state "Evidence Lifecycle" as EVIDENCE_FLOW {
+            [*] --> EvidenceAcquisition
+            EvidenceAcquisition --> HashAndTimestamp
+            HashAndTimestamp --> ChainOfCustody
+            ChainOfCustody --> SecureEvidenceStore
+            SecureEvidenceStore --> AccessAudit
+            AccessAudit --> RetentionReview
+            RetentionReview --> [*]
+        }
+    }
+
+    state "Cross-Cutting Risk & Communications" as GOVERNANCE {
+        state "Governance Controls" as GOV {
+            [*] --> RiskTracking
+            RiskTracking --> StakeholderUpdates
+            StakeholderUpdates --> LegalPrivacyReview
+            LegalPrivacyReview --> NotificationDecision
+            NotificationDecision --> RegulatoryNotification: Required
+            NotificationDecision --> InternalReporting: Not required
+            RegulatoryNotification --> GovernanceComplete
+            InternalReporting --> GovernanceComplete
+            GovernanceComplete --> [*]
+        }
+    }
+
+    state "Continuous Feedback Loops" as FEEDBACK {
+        state "Security Improvement" as IMPROVEMENT {
+            [*] --> ThreatIntelUpdate
+            ThreatIntelUpdate --> DetectionTuning
+            DetectionTuning --> PlaybookRevision
+            PlaybookRevision --> ControlHardening
+            ControlHardening --> PurpleTeamValidation
+            PurpleTeamValidation --> EffectivenessMeasurement
+            EffectivenessMeasurement --> ImprovementComplete
+            ImprovementComplete --> [*]
+        }
+    }
+
+    FalsePositive --> Closed
+    IncidentDeclared --> EvidenceAcquisition
+    FindingsCorrelation --> EvidenceAcquisition
+    EvidenceAcquisition --> HashAndTimestamp
+    ChainOfCustody --> SecureEvidenceStore
+
+    IncidentDeclared --> RiskTracking
+    RiskTracking --> StakeholderUpdates
+    ContainmentExecution --> RiskTracking
+    BusinessFindings --> LegalPrivacyReview
+    LegalPrivacyReview --> NotificationDecision
+
+    RootCauseAnalysis --> ThreatIntelUpdate
+    ControlImprovements --> DetectionTuning
+    ImprovementDeployment --> PurpleTeamValidation
+    EffectivenessMeasurement --> TelemetryReceived
+
+    note right of PARALLEL
+        Workstreams proceed concurrently.
+        Correlate findings before major
+        response decisions where feasible.
+    end note
+
+    note right of EVIDENCE
+        Preserve original artifacts,
+        hashes, timestamps, provenance,
+        access logs, and retention controls.
+    end note
+
+    note right of CONTAINMENT
+        Authorization must follow the
+        organization's emergency policy.
+        Preserve evidence when practical.
+    end note
+
+    note right of FEEDBACK
+        Lessons learned feed detection,
+        automation, threat intelligence,
+        control design, and validation.
+    end note
+
+    classDef intake fill:#38BDF8,stroke:#075985,color:#082F49,stroke-width:2px
+    classDef triage fill:#A78BFA,stroke:#6D28D9,color:#2E1065,stroke-width:2px
+    classDef investigation fill:#F472B6,stroke:#BE185D,color:#500724,stroke-width:2px
+    classDef containment fill:#FB923C,stroke:#C2410C,color:#431407,stroke-width:2px
+    classDef recovery fill:#FACC15,stroke:#A16207,color:#422006,stroke-width:2px
+    classDef closure fill:#4ADE80,stroke:#15803D,color:#052E16,stroke-width:2px
+    classDef evidence fill:#94A3B8,stroke:#334155,color:#0F172A,stroke-width:2px
+    classDef feedback fill:#2DD4BF,stroke:#0F766E,color:#042F2E,stroke-width:2px
+    classDef exception fill:#F87171,stroke:#B91C1C,color:#450A0A,stroke-width:2px
+
+    class TelemetryReceived,AlertValidation,Enrichment,Correlation,ConfidenceCheck intake
+    class CandidateIncident,SeverityAssessment,Sev1,Sev2,Sev3,Sev4,ScopeAssessment triage
+    class IncidentDeclared,WorkstreamDispatch,EndpointAnalysis,MalwareAnalysis,AccountAudit,TrafficAnalysis,AssetCriticality investigation
+    class ContainmentApproval,ContainmentExecution,IsolateEndpoint,DisableIdentity,BlockIndicators containment
+    class EradicationPlanning,RemoveMalware,RotateCredentials,RecoveryPlan,RecoveryValidation,ProductionRestore recovery
+    class ClosureChecklist,RootCauseAnalysis,LessonsLearned,FinalApproval,Closed closure
+    class EvidenceAcquisition,HashAndTimestamp,ChainOfCustody,SecureEvidenceStore,AccessAudit evidence
+    class ThreatIntelUpdate,DetectionTuning,PlaybookRevision,ControlHardening,PurpleTeamValidation,EffectivenessMeasurement feedback
+    class FalsePositive,ContainmentFailed,EradicationFailed,RecoveryFailed,Reopened,ClosureBlocked exception

@@ -1,0 +1,29 @@
+/* ---------- graph ---------- */
+.graph {
+  position: absolute; inset: 0; background: var(--bg);
+  display: none; flex-direction: column; z-index: 10;
+}
+.graph.show { display: flex; }
+.graph-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--line);
+  font-size: 12px; color: var(--dim);
+}
+.graph-body { flex: 1; display: flex; min-height: 0; }
+.graph-canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+#graphCanvas { display: block; width: 100%; height: 100%; cursor: grab; }
+#graphCanvas:active { cursor: grabbing; }
+.graph-hint { margin-left: auto; font-size: 12.5px; color: var(--c5a5a5a); }
+.graph-side {
+  width: 380px; min-width: 300px; border-left: 1px solid var(--line); background: var(--c0f0f0f);
+  display: none; flex-direction: column;
+}
+.graph-side.show { display: flex; }
+.gs-head { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.gs-title { font-size: 15px; font-weight: 600; }
+.gs-meta { font-size: 12.5px; color: var(--dim); margin-top: 3px; }
+.gs-actions { display: flex; gap: 6px; margin-top: 10px; }
+.gs-links { padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--dim); line-height: 1.8; }
+.gs-body { flex: 1; overflow-y: auto; padding: 12px 14px 30px; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+.gs-body .ln { min-height: 1.6em; }
+

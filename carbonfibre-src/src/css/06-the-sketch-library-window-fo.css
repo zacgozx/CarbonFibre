@@ -1,0 +1,122 @@
+/* ---- the sketch library: window, folder tree and thumbnails (also the board's Files tab) ---- */
+.skl-win { position: fixed; inset: 0; z-index: 180; background: rgba(10, 12, 16, .45); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.skl-win[hidden] { display: none; }
+.skl-dialog { width: min(980px, 100%); height: min(640px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); display: flex; overflow: hidden; }
+.skl-host { display: flex; flex-direction: column; min-height: 0; flex: 1; color: var(--txt); font: 13px var(--sans); }
+.skl-top { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.skl-q { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--txt); font: 13px var(--sans); }
+.skl-q:focus { outline: none; border-color: var(--acc); }
+.skl-btn { height: 30px; padding: 0 11px; border-radius: 7px; border: 1px solid var(--acc); background: var(--acc-soft); color: var(--acc-text); font: 600 12.5px var(--sans); cursor: pointer; white-space: nowrap; }
+.skl-x { width: 30px; height: 30px; border: 0; border-radius: 7px; background: none; color: var(--dim); font-size: 18px; cursor: pointer; }
+.skl-x:hover { background: var(--acc-soft); color: var(--txt); }
+.skl-body { display: flex; flex: 1; min-height: 0; }
+.skl-tree { width: 210px; flex: none; overflow: auto; padding: 8px 6px; border-right: 1px solid var(--line); }
+.skl-node { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; cursor: pointer; color: var(--txt); user-select: none; }
+.skl-node .ico { width: 14px; height: 14px; color: var(--dim); flex: none; }
+.skl-node span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl-node b { font-size: 11.5px; color: var(--dim); font-weight: 600; }
+.skl-node:hover { background: var(--acc-soft); }
+.skl-node.on { background: var(--acc-soft); color: var(--acc-text); font-weight: 600; }
+.skl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.skl-crumbs { padding: 8px 12px 4px; font-size: 12.5px; color: var(--dim); }
+.skl-crumb { cursor: pointer; } .skl-crumb:hover { color: var(--acc-text); text-decoration: underline; }
+.skl-grid { flex: 1; overflow: auto; padding: 6px 12px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+.skl-card { display: flex; flex-direction: column; gap: 3px; padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; min-width: 0; outline: none; }
+.skl-card:hover, .skl-card:focus-visible { border-color: var(--acc); }
+.skl-thumb { height: 92px; border-radius: 5px; background: var(--panel); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.skl-thumb img { max-width: 100%; max-height: 100%; display: block; }
+.skl-thumb i { font-size: 11.5px; color: var(--dim); }
+.skl-folder { justify-content: center; align-items: center; min-height: 120px; }
+.skl-folder .ico { width: 34px; height: 34px; color: var(--dim); }
+.skl-name { font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl-sub { font-size: 11.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl-empty { color: var(--dim); font-size: 13px; grid-column: 1 / -1; }
+.skl-hint { padding: 6px 12px 8px; font-size: 11.5px; color: var(--dim); border-top: 1px solid var(--line); }
+/* in the board's narrow Files tab: folders above the drawings */
+.sk-library .skl-body { flex-direction: column; }
+.sk-library .skl-tree { width: auto; max-height: 150px; border-right: 0; border-bottom: 1px solid var(--line); }
+.sk-library .skl-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.sk-library .skl-top { padding: 0 0 8px; border-bottom: 0; flex-wrap: wrap; }
+.sk-library .skl-hint { display: none; }
+.sk-templates.skl-host { display: none; }
+.sk-templates.skl-host.show { display: flex; }
+.skl-where-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px 0; font-size: 12.5px; color: var(--dim); }
+.skl-where { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--txt); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl-where .ico { width: 14px; height: 14px; color: var(--dim); flex: none; }
+.skl-link { border: 0; background: none; padding: 0; color: var(--acc-text); font: 12.5px var(--sans); cursor: pointer; }
+.skl-link:hover { text-decoration: underline; }
+.skl-pick { margin: auto; max-width: 420px; padding: 30px 20px; text-align: center; color: var(--dim); font-size: 13.5px; line-height: 1.55; }
+.skl-pick p { margin: 0 0 14px; }
+.sk-library .skl-where-row { padding: 0 0 6px; flex-wrap: wrap; }
+.skp-missing { display: block; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--dim); font-size: 13px; }
+/* the Open tabs tree */
+.tt-count { margin-left: auto; font-size: 12px; color: var(--dim); font-weight: 600; }
+.tt-tree { padding: 4px 6px 10px; }
+.tt-pane { border-radius: 7px; padding: 2px 0 4px; margin-bottom: 4px; }
+.tt-pane.drop-on { box-shadow: inset 0 0 0 2px var(--acc); }
+.tt-phead { display: flex; align-items: center; gap: 7px; padding: 6px 8px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--dim); cursor: pointer; border-radius: 5px; }
+.tt-phead:hover { background: var(--hover, rgba(127,127,127,.08)); color: var(--txt); }
+.tt-pdot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); flex: none; }
+.tt-pane.focused .tt-pdot { background: var(--acc); }
+.tt-pane.focused .tt-phead { color: var(--txt); }
+.tt-extra { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--acc-text); }
+.tt-n { margin-left: auto; font-weight: 600; font-size: 11.5px; color: var(--dim); text-transform: none; }
+.tt-folder { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 12px; font-size: 13px; color: var(--dim); cursor: pointer; border-radius: 5px; user-select: none; }
+.tt-folder:hover { background: var(--hover, rgba(127,127,127,.08)); color: var(--txt); }
+.tt-folder .ico { width: 14px; height: 14px; flex: none; }
+.tt-caret { width: 10px; font-size: 10px; transition: transform .12s; }
+.tt-folder.folded .tt-caret { transform: rotate(-90deg); }
+.tt-fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tt-tab { display: flex; align-items: center; gap: 7px; padding: 5px 6px 5px 14px; font-size: 13.5px; color: var(--txt); border-radius: 5px; cursor: pointer; outline: none; min-width: 0; }
+.tt-tab.nested { padding-left: 34px; }
+.tt-tab .ico { width: 14px; height: 14px; flex: none; color: var(--dim); }
+.tt-tab:hover, .tt-tab:focus-visible { background: var(--hover, rgba(127,127,127,.08)); }
+.tt-tab:focus-visible { box-shadow: inset 0 0 0 1px var(--acc); }
+.tt-tab.active { background: var(--acc-soft); color: var(--acc-text); font-weight: 600; }
+.tt-tab.active .ico { color: var(--acc-text); }
+.tt-tab.dragging { opacity: .45; }
+.tt-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-x { flex: none; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--dim); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; }
+.tt-tab:hover .tt-x, .tt-tab:focus-visible .tt-x, .tt-tab.active .tt-x { opacity: 1; }
+.tt-x:hover { background: var(--acc-soft); color: var(--txt); }
+.tt-empty { padding: 6px 14px; font-size: 12.5px; color: var(--dim); }
+/* moving tabs: a marker where the tab will land, the target pane outlined, and the tab menu */
+.tab.dragging { opacity: .45; }
+.tab.drop-before { box-shadow: inset 2px 0 0 var(--acc); }
+.tab.drop-after { box-shadow: inset -2px 0 0 var(--acc); }
+.tabs.drop-into, .pane-bar .drop-into { box-shadow: inset 0 -2px 0 var(--acc); }
+.pane-col.tab-drop-on { box-shadow: inset 0 0 0 2px var(--acc); }
+.pane-col.tab-drop-on .editor, .pane-col.tab-drop-on .tb { opacity: .85; }
+.tab-menu { position: fixed; z-index: 200; min-width: 230px; padding: 5px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--pop-shadow, 0 8px 24px rgba(0,0,0,.3)); display: flex; flex-direction: column; }
+.tab-menu-item { display: flex; align-items: center; gap: 12px; justify-content: space-between; border: 0; background: none; color: var(--txt); text-align: left; padding: 6px 10px; min-height: 30px; border-radius: 5px; font: 13px var(--sans); cursor: pointer; }
+.tab-menu-item:hover:not(:disabled), .tab-menu-item:focus-visible { background: var(--acc-soft); outline: none; }
+.tab-menu-item:disabled { color: var(--dim); cursor: default; opacity: .6; }
+.tab-menu-item kbd { font: 11.5px var(--mono); color: var(--dim); }
+.tab-menu-sep { height: 1px; background: var(--line); margin: 4px 2px; }
+mark.fnd { background: rgba(var(--acc-rgb), 0.5); color: inherit; border-radius: 2px; box-shadow: 0 0 0 1px rgba(var(--acc-rgb), 0.6); }
+mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--acc); }
+
+.ln-codefence {
+  font-family: var(--mono); font-size: 13.5px; background: var(--c131313);
+  padding-left: 14px; padding-right: 14px;
+  border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+}
+.ln-fencedelim { color: var(--c555555); }
+/* copy button in the top corner of each code block */
+.ln-codefence.ln-fencedelim { position: relative; }
+.code-copy { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1;
+  font: 600 12.5px/1 var(--sans); padding: 5px 11px; min-height: 24px; box-sizing: border-box; border-radius: 6px; cursor: pointer;
+  color: var(--txt); background: var(--panel); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(var(--shd-rgb), calc(0.12 * var(--shd-k))); }
+.code-copy:hover { border-color: var(--acc); color: var(--acc-text); }
+.code-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }
+.fence-tick { color: var(--c555555); }
+.fence-lang { color: var(--ora); margin-left: 8px; font-size: 12px; }
+/* while a line is being edited, its coloured copy sits under the text box and must match it
+   character for character: no extra spacing or smaller size, or the caret lands in the wrong place */
+.ta-hl .fence-lang { margin-left: 0; font-size: inherit; }
+
+.tk-kw { color: var(--blu); }
+.tk-str { color: var(--cb8f27c); }
+.tk-num { color: var(--ora); }
+.tk-com { color: var(--c5e5e5e); font-style: italic; }
+

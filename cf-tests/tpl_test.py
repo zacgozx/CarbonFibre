@@ -1,0 +1,46 @@
+import os, sys, json, datetime
+HERE = os.path.dirname(os.path.abspath(__file__)); CF = os.environ.get("CF_HTML", os.path.join(HERE, "..", "CarbonFibre.html"))
+if not os.path.exists(CF): CF = "/mnt/user-data/outputs/CarbonFibre.html"
+from playwright.sync_api import sync_playwright
+ok = True
+def check(label, good, detail=""):
+    global ok; ok &= bool(good); print("  %-62s %s %s" % (label, "ok" if good else "FAIL", detail))
+today = datetime.date.today().isoformat()
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1300, "height": 800})
+    errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto("file://" + CF)
+    pg.evaluate("s => { localStorage.clear(); localStorage.setItem('carbonfibre-v1', s); }", json.dumps({"notes": [{"id": 1, "title": "Scratch", "content": "# Scratch\nfirst line\n\nlast line"},
+        {"id": 2, "title": "Template: Splunk check", "content": "# Template: Splunk check\n## Splunk check for {{ticket}}\n- [ ] HEC healthy {{cursor}}\n- [ ] Indexers green"}], "seq": 3}))
+    pg.reload(); pg.wait_for_timeout(500)
+    E = lambda js, *a: pg.evaluate(js, *a)
+    pg.keyboard.press("Control+Alt+n"); pg.wait_for_timeout(150)
+    rows = E("() => [...document.querySelectorAll('#cmdList .cmd-row .cmd-label')].map(e => e.textContent)")
+    check("Ctrl+Alt+N lists the templates, built-in and yours", rows == ["Incident", "Change / downtime", "Shift handover", "Meeting", "Daily note", "Splunk check"], str(rows))
+    pg.keyboard.type("inc"); pg.wait_for_timeout(100)
+    pg.once("dialog", lambda d: d.accept("INC0048812 Exchange node not reporting"))
+    pg.keyboard.press("Enter"); pg.wait_for_timeout(400)
+    n = E("() => { const p = panes[0]; return { title: p.note().title, lines: p.lines.slice(0, 6), caret: [p.activeLine, p.ta ? p.ta.selectionStart : -1], at: p.lines[p.activeLine] }; }")
+    check("an Incident note, titled as typed", n["title"] == "INC0048812 Exchange node not reporting", n["title"])
+    check("the ticket is pulled from the title, today's date filled in", n["lines"][2] == "**Ticket:** INC0048812" and today in n["lines"][3], str(n["lines"][2:4]))
+    check("the caret waits under Summary", n["at"] == "" and E("() => panes[0].lines[panes[0].activeLine - 1]") == "## Summary", str(n["caret"]))
+    pg.keyboard.press("Control+Alt+d"); pg.wait_for_timeout(400)
+    d = E("() => ({ title: panes[0].note().title, head: panes[0].lines[0], task: panes[0].lines[panes[0].activeLine] })")
+    check("Ctrl+Alt+D creates today's daily note", d["title"] == today and d["head"].startswith("# " + today), str(d))
+    check("...with the caret on its first task", d["task"] == "- [ ] ", repr(d["task"]))
+    pg.keyboard.type("check HEC tokens")
+    pg.locator("#notesList .side-item", has_text="Scratch").first.click(); pg.wait_for_timeout(200)
+    pg.keyboard.press("Control+Alt+d"); pg.wait_for_timeout(300)
+    check("pressing it again opens the same note (not a second one)", E("() => state.notes.filter(n => n.title === '%s').length" % today) == 1 and "check HEC tokens" in E("() => panes[0].lines.join('\\n')"))
+    pg.locator("#notesList .side-item", has_text="Scratch").first.click(); pg.wait_for_timeout(200)
+    pg.locator(".pane-col .editor-inner > div").nth(2).click(); pg.wait_for_timeout(100)
+    pg.keyboard.press("Control+p"); pg.keyboard.type(">insert template"); pg.wait_for_timeout(100); pg.keyboard.press("Enter"); pg.wait_for_timeout(150)
+    pg.keyboard.type("splunk"); pg.wait_for_timeout(100); pg.keyboard.press("Enter"); pg.wait_for_timeout(300)
+    L = E("() => panes[0].lines.slice()")
+    check("Insert template on an empty line: it takes that line", L == ["# Scratch", "first line", "## Splunk check for ", "- [ ] HEC healthy ", "- [ ] Indexers green", "last line"], str(L))
+    check("...caret at your template's {{cursor}}", E("() => [panes[0].activeLine, panes[0].ta.selectionStart]") == [3, 18], str(E("() => [panes[0].activeLine, panes[0].ta.selectionStart]")))
+    pg.keyboard.press("Control+z"); pg.wait_for_timeout(150)
+    check("one undo removes it", E("() => panes[0].lines.slice()") == ["# Scratch", "first line", "", "last line"])
+    print("  errors:", errs or "none"); ok &= not errs
+    b.close()
+print("ALL PASS" if ok else "FAILURES")

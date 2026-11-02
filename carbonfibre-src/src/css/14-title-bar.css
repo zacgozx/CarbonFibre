@@ -1,0 +1,27 @@
+/* ---------- title bar ---------- */
+.mo-head { height: 46px; gap: 8px; padding: 0 6px 0 2px; background: var(--chrome); border-bottom: 1px solid var(--line); position: relative; }
+.icon-btn { width: 32px; height: 28px; padding: 0; justify-content: center; border-radius: 4px; }
+.icon-btn:hover { background: var(--chrome-hi); }
+.logo { font-size: 15px; gap: 9px; }
+.logo-mark { color: var(--acc-text); display: inline-flex; }
+.logo-mark .ico { width: 17px; height: 17px; }
+.cmd-center {
+  position: absolute; left: 50%; top: 5px; transform: translateX(-50%);
+  width: min(520px, 40vw); height: 26px; padding: 0 10px; gap: 8px;
+  display: flex; align-items: center; cursor: pointer;
+  background: var(--bg); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+  font: 13px var(--sans); transition: border-color var(--t), color var(--t);
+}
+.cmd-center:hover { border-color: var(--dim); color: var(--txt); }
+.cmd-center span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmd-center kbd, .cmd-meta kbd {
+  margin-left: auto; font: 11.5px var(--sans); color: var(--dim);
+  padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--chrome);
+}
+.head-right { gap: 2px; }
+.mo-head .pill {
+  height: 28px; padding: 0 9px; gap: 6px; display: inline-flex; align-items: center;
+  background: none; border: 1px solid transparent; border-radius: 4px; color: var(--txt); font-size: 13px;
+}
+.mo-head .pill:hover { background: var(--chrome-hi); border-color: transparent; color: var(--txt); }
+

@@ -1,0 +1,96 @@
+/* ---------- panes ---------- */
+.workarea { flex: 1; min-width: 0; display: flex; position: relative; }
+
+.pane-col {
+  flex: 1 1 0px; min-width: 220px; display: flex; flex-direction: column;
+}
+
+.pane-bar {
+  display: flex; align-items: stretch; gap: 8px;
+  padding: 0 8px 0 0; height: 36px; flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--c101010);
+}
+.pane-col.focused .pane-bar { background: var(--c131313); }
+
+/* tabs */
+.tabs {
+  flex: 1; min-width: 0; display: flex; align-items: stretch;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  display: flex; align-items: center; cursor: pointer; user-select: none;
+  transition: color var(--t), background var(--t);}
+.tab.on { border-bottom-color: var(--acc);}
+.pane-col:not(.focused) .tab.on { border-bottom-color: var(--c5e3038); }
+.tab-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab-x { border: none; font-size: 14px; line-height: 1; cursor: pointer; flex-shrink: 0;
+  transition: color var(--t), background var(--t);}
+.tab:hover .tab-x, .tab.on .tab-x { color: var(--c6e6e6e); }
+.tabs-empty { display: flex; align-items: center; padding: 0 12px; font-size: 12px; color: var(--c4f4f4f); }
+.pane-tools { display: flex; flex-shrink: 0; align-self: center;}
+.mini-pill {
+  background: none; border: 1px solid var(--line); color: var(--c6e6e6e);
+  border-radius: 4px; padding: 2px 8px; font-size: 12.5px; cursor: pointer;
+  font-family: inherit; transition: color var(--t), background var(--t), border-color var(--t);
+}
+.mini-pill:hover { color: var(--txt); }
+.mini-pill.on { background: var(--acc-soft); color: var(--acc-text); border-color: rgba(var(--acc-rgb), 0.45); }
+
+/* pane-bar icons: drawn, not glyphs, so each has its own silhouette */
+.pb-ico { display: inline-flex; align-items: center; justify-content: center; padding: 2px 6px; }
+.pb-ico svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
+.pb-ico svg .fill { fill: currentColor; stroke: none; opacity: 0.55; }
+.md-sheet { color: var(--ora); border-color: rgba(var(--ora-rgb), 0.35); }
+.md-sheet:hover { color: var(--cefb57a); border-color: rgba(var(--ora-rgb), 0.6); }
+
+.pane-empty {
+  flex: 1; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; color: var(--dim);
+}
+.pane-empty.show { display: flex; }
+
+.editor {
+  flex: 1; overflow-y: auto; padding: 26px 34px 0;
+  cursor: text;
+  display: none;}
+.editor.show { display: block; }
+.editor-inner { width: 100%; }
+.editor-tail { height: 38vh; }
+
+.split { flex: 1; display: none; min-height: 0; }
+.split.show { display: flex; }
+.split-src {
+  flex: 1; min-width: 0; background: var(--bg); border: none; resize: none; tab-size: 4;
+  color: var(--txt); font-family: var(--mono);
+  padding: 22px 22px; border-right: 1px solid var(--line); white-space: pre-wrap;}
+.split-src:focus { outline: none; }
+.split-prev {
+  flex: 1; min-width: 0; overflow-y: auto; padding: 22px 22px 40px;
+  font-family: var(--mono); font-size: 14.5px; line-height: 1.7;
+}
+
+/* backlinks */
+.backlinks { background: var(--c111111); flex-shrink: 0;
+  max-height: 40%; display: flex; flex-direction: column;}
+.bl-head {
+  display: flex; align-items: center;
+  padding: 7px 14px;
+  cursor: pointer; user-select: none;
+  transition: color var(--t);}
+.bl-head:hover { color: var(--txt); }
+.bl-chev { transition: transform var(--t2);}
+.backlinks.collapsed .bl-chev { transform: rotate(-90deg); }
+.bl-count { color: var(--blu); }
+.bl-body { overflow-y: auto; padding: 0 10px 8px; }
+.backlinks.collapsed .bl-body { display: none; }
+.bl-item {
+  padding: 5px 8px; cursor: pointer;
+  margin-bottom: 3px;
+  transition: background var(--t), border-color var(--t);}
+.bl-src { font-size: 12.5px; color: var(--acc-text); }
+.bl-line { font-size: 12.5px; color: var(--c8f8f8f); line-height: 1.45; margin-top: 2px;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.bl-empty { padding: 6px 10px 10px; font-size: 12.5px; color: var(--dim); }
+

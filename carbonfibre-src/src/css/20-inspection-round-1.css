@@ -1,0 +1,92 @@
+/* ---------- inspection round 1 ---------- */
+.statusbar .storage-row { color: inherit; font-size: 12.5px; }
+.statusbar .storage-label { flex: none; }
+#btnTheme .i-moon { display: none; }
+:root[data-theme="light"] #btnTheme .i-sun { display: none; }
+:root[data-theme="light"] #btnTheme .i-moon { display: block; }
+/* stars appear on hover, stay only when pinned */
+.pin-btn { color: transparent; }
+.side-item:hover .pin-btn, .side-item:focus-within .pin-btn { color: var(--dim); }
+.pin-btn.on, .side-item:hover .pin-btn.on { color: var(--ora); }
+@media (max-width: 760px) { .statusbar .storage-row { display: none; } }
+/* the sidebar overlay fills the body between the title bar and the status bar */
+@media (max-width: 700px) { .mo-body { position: relative; } .side { top: 0; bottom: 0; height: auto; } }/* ---------- detector findings: the secondary panels,
+raised to the same floor ----------
+   text never under 12px,
+secondary text in the theme's AA grey,
+one popover shadow
+   that is tight rather than a wide glow,
+and no animated layout properties */
+.tm-unit,
+.tm-opt,
+.tm-sub,
+.tm-today-head,
+.tm-clear,
+.tm-when,
+.tm-plan,
+.tm-empty,
+.tm-totals,
+.storage-row,
+.btn-mini,
+.search-count,
+.side-item-path,
+.sheet-head,
+.pin-head,
+.side-foot,
+.hit,
+.hit-no,
+.hit-more,
+.mini-pill,
+.bl-head,
+.bl-src,
+.bl-line,
+.bl-empty,
+.graph-hint,
+.gs-meta,
+.gs-links,
+.sh-info,
+.sh-table thead th,
+.sh-rownum,
+.sk-parked-hint,
+.sketch.docked .sk-bar,
+.sk-open-split,
+.sk-pop-head,
+.sk-recent:empty::before,
+.sk-custom,
+.sk-hex,
+.sk-hint,
+.sk-width-num,
+.sk-lbl,
+.rn-count,
+.rn-grid label,
+.rn-err,
+.rn-row,
+.rn-more,
+.rn-hint,
+.sk-stencil,
+.chip,
+.chip-check { font-size: 12.5px; }.search::placeholder,
+.search-count,
+.side-item-path,
+.sheet-head,
+.pin-head,
+.side-foot,
+.hit-no,
+.hit-more,
+.tabs-empty,
+.ln-fencedelim,
+.fence-tick,
+.graph-hint,
+.sk-pop-head,
+.sk-hex,
+.sk-hint,
+.sk-lbl,
+.rn-hint,
+.chip { color: var(--dim); }
+input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
+:root { --pop-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35); }
+:root[data-theme="light"] { --pop-shadow: 0 4px 12px rgba(26, 42, 79, 0.14), 0 1px 3px rgba(26, 42, 79, 0.08); }
+.timer-pop, .timer-alert, .sk-pop, .rn-box, .menu, .cmdpal-box, .ac { box-shadow: var(--pop-shadow); }
+.timer-bar { width: 100%; transform: scaleX(0); transform-origin: left center; transition: transform 1s linear; }
+
+

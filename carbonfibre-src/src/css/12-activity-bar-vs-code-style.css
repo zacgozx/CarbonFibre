@@ -1,0 +1,17 @@
+/* ---------- activity bar (VS Code style) ---------- */
+.activity {
+  position: relative; z-index: 4;
+  display: flex; flex-direction: column; align-items: center;}
+.act-btn { background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; position: relative;
+  transition: border-color var(--t);}
+.act-btn svg { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--t);}
+.act-btn:hover svg { stroke: var(--txt); }
+.act-btn.on { border-left-color: var(--acc); }
+.act-btn.on svg { stroke: var(--txt); }
+.act-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: -3px; }
+.act-spacer { flex: 1; }
+
+.side-view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+.side-view.show { display: flex; }
+

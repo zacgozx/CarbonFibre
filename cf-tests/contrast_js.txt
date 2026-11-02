@@ -1,0 +1,21 @@
+(scope) => {
+  const parse = c => { const m = String(c || '').match(/^rgba?\(([^)]+)\)/); if (!m) return { r: 0, g: 0, b: 0, a: 0 };
+    const v = m[1].split(',').map(x => parseFloat(x)); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+  const lum = o => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(o.r) + 0.7152 * f(o.g) + 0.0722 * f(o.b); };
+  const bgOf = e => { const layers = []; while (e && e.nodeType === 1) { const c = parse(getComputedStyle(e).backgroundColor); if (c.a > 0) { layers.push(c); if (c.a >= 1) break; } e = e.parentElement; }
+    let out = document.documentElement.getAttribute('data-theme') === 'light' ? { r: 251, g: 253, b: 255 } : { r: 26, g: 26, b: 31 };
+    if (layers.length && layers[layers.length - 1].a >= 1) out = layers.pop();
+    for (let i = layers.length - 1; i >= 0; i--) { const l = layers[i]; out = { r: l.r * l.a + out.r * (1 - l.a), g: l.g * l.a + out.g * (1 - l.a), b: l.b * l.a + out.b * (1 - l.a) }; } return out; };
+  const fails = [];
+  document.querySelectorAll(scope).forEach(e => {
+    if (!e.offsetParent || ![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+    if (e.closest('.tb-card--done .name, .task-done, .ln-fencedelim .fence-tick') || e.disabled || e.closest('button:disabled, .cm-ph, [aria-hidden=true]')) return;
+    const st = getComputedStyle(e); if (st.visibility === 'hidden' || parseFloat(st.opacity) < 0.5) return;
+    const fg = parse(st.color); if (fg.a === 0) return;
+    const bg = bgOf(e), F = { r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a) };
+    const L1 = lum(F), L2 = lum(bg), r = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+    const big = parseFloat(st.fontSize) >= 24 || (parseFloat(st.fontSize) >= 18.66 && parseInt(st.fontWeight) >= 700);
+    if (r < (big ? 3 : 4.5)) fails.push((typeof e.className === 'string' && e.className ? e.className.split(' ')[0] : e.tagName) + ' "' + e.textContent.trim().slice(0, 16) + '" ' + r.toFixed(2));
+  });
+  return [...new Set(fails)];
+}

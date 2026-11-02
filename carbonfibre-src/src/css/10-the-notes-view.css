@@ -1,0 +1,38 @@
+/* ---- the Notes view ---- */
+.tb-notes { flex: 1; min-height: 0; overflow: auto; padding: 14px 20px 22px; display: grid; gap: 14px; align-content: start; }
+.tb-notes[hidden] { display: none; }
+.tbn-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.tbn-card { position: relative; display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--tbd-cardline); background: var(--tbl-lane); cursor: pointer; min-width: 0; outline: none; }
+.tbn-card:hover { border-color: var(--tb-hover); }
+.tbn-card:focus-visible, .tbn-row:focus-visible { outline: 2px solid var(--tb-blu); outline-offset: 1px; }
+.tbn-card-top { display: flex; align-items: flex-start; gap: 6px; }
+.tbn-card h4 { margin: 0; flex: 1; min-width: 0; font: 600 13.5px/1.3 var(--sans); color: var(--tb-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tbn-pv { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--tb-mute); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; }
+.tbn-pv--empty { font-style: italic; }
+.tbn-card-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.tbn-when { margin-left: auto; font-size: 11.5px; color: var(--tb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbn-dir { color: var(--tb-mute); }
+.tbn-ticket { display: inline-flex; align-items: center; gap: 5px; font: 600 11px var(--mono); color: var(--tb-blu); white-space: nowrap; }
+.tbn-ticket i { width: 6px; height: 6px; border-radius: 50%; background: var(--tb-blu); }
+.tbn-ticket--run { color: var(--tb-acc-text); } .tbn-ticket--run i { background: var(--tb-acc-text); box-shadow: 0 0 0 3px rgba(var(--tb-acc-rgb), .2); }
+.tbn-ticket--held { color: var(--tb-ora); } .tbn-ticket--held i { background: var(--tb-ora); }
+.tbn-todo { font-size: 11px; font-weight: 600; color: var(--tb-mute); background: var(--tb-raised); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
+.tb .tbn-unpin, .tb .tbn-pinme { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--tb-ora); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; opacity: 0; }
+.tbn-unpin .ico, .tbn-pinme .ico, .tbn-unpinf .ico { width: 14px; height: 14px; }
+.tbn-card:hover .tbn-unpin, .tbn-card:focus-within .tbn-unpin, .tbn-row:hover .tbn-pinme, .tbn-row:focus-within .tbn-pinme { opacity: 1; }
+.tb .tbn-pinme { color: var(--tb-mute); } .tb .tbn-pinme:hover { color: var(--tb-ora); }
+.tbn-folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.tbn-fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tbd-panel.tbn-folder .tbd-head h3 { min-width: 0; flex: 1; }
+.tb .tbn-act { height: 24px; padding: 0 9px; border: 1px solid var(--tbd-cardline); border-radius: 6px; background: none; color: var(--tb-ink); font: 600 12px var(--sans); cursor: pointer; display: inline-flex; align-items: center; flex: none; }
+.tb .tbn-act:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
+.tb .tbn-unpinf { width: 24px; padding: 0; justify-content: center; color: var(--tb-ora); }
+.tbn-folder .tbd-count { margin-left: 0; }
+.tbn-rows { list-style: none; margin: 0 -6px; padding: 0; }
+.tbn-row { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--tb-ink); min-width: 0; outline: none; }
+.tbn-row + .tbn-row { border-top: 1px solid var(--tbd-cardline); border-radius: 0; }
+.tbn-row:hover { background: rgba(var(--tb-blu-rgb), .06); }
+.tbn-row-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tbn-sub { color: var(--tb-mute); }
+.tb .tbn-more { margin-top: 6px; border: 0; background: none; color: var(--tb-blu); font: 600 12.5px var(--sans); cursor: pointer; padding: 2px 0; }
+.tb .tbn-more:hover { text-decoration: underline; }

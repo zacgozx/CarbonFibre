@@ -1,0 +1,31 @@
+/* ---------- inspection round 2: full-height status items, 24px targets ---------- */
+.statusbar .menu-wrap { display: flex; align-items: stretch; }
+.sb-btn, .statusbar .btn-mini { height: 24px; }
+.pin-btn, .del-btn, .tab-x { width: 24px; height: 24px; }.cmd-center kbd,
+.cmd-meta kbd,
+.pin-head,
+.bl-src,
+.bl-line,
+.tm-sub,
+.tm-clear,
+.chip { font-size: 12.5px; }
+.pane-tools .mini-pill, .tm-presets .mini-pill, .tm-ctrl .mini-pill { font-size: 12.5px; }
+.graph-bar, .graph-bar span, #graphStats { font-size: 12.5px; color: var(--dim); }
+.graph-bar b, .graph-bar strong { color: var(--txt); }
+
+.bl-item { border-left: 0; border-radius: 4px; }
+.bl-item:hover { border-left-color: transparent; background: var(--chrome-hi); }
+
+
+/* ---------- review round 1 ---------- */
+.crumb-btn { background: none; border: 0; font: inherit; color: inherit; min-height: 24px; padding: 0 5px; margin: 0 -3px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+.crumb-btn:hover { background: var(--chrome-hi); color: var(--txt); }
+.side-head .btn-mini#btnSort { gap: 5px; }
+.side-head .btn-mini#btnSort .ico { width: 14px; height: 14px; }
+
+
+/* checkbox tick: drawn, and white on the filled box in both themes */
+.cb-tick { width: 11px; height: 11px; stroke-width: 2.4; color: #ffffff; }
+
+
+

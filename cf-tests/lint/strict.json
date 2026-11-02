@@ -1,0 +1,2 @@
+{ "root": true, "env": { "browser": true, "es2021": true }, "parserOptions": { "ecmaVersion": 2021, "sourceType": "script" },
+  "rules": { "no-var": "error", "prefer-const": "error", "eqeqeq": ["error", "smart"], "no-shadow": "warn", "no-implicit-globals": "off" } }

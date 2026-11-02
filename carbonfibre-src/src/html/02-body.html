@@ -1,0 +1,272 @@
+</style>
+<script>try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
+</head>
+<body>
+
+<header class="mo-head">
+  <button class="icon-btn" id="btnSidebar" title="Toggle notes panel" aria-label="Toggle notes panel"><span class="ham"></span></button>
+  <div class="logo"><span class="logo-mark"><img id="appLogo" class="logo-img" width="34" height="34" alt=""></span><span class="logo-name">CarbonFibre</span></div>
+  <button class="cmd-center" id="btnCmd" title="Search notes and commands (Ctrl+P)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.4 10.4L14 14"/></svg><span>Search notes and commands</span><kbd>Ctrl+P</kbd></button>
+  <div class="head-right">
+    <button class="pill" id="btnSketch" title="Insert a sketch board at the cursor (Ctrl+Shift+D)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.6l2.6 2.6-7.9 7.9H2.9v-2.6z"/><path d="M9.3 4.1l2.6 2.6"/></svg><span class="hb-label">Sketch</span></button>
+    <span class="menu-wrap">
+      <button class="pill" id="btnExport" title="Export this note"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2.5M5 5.3L8 2.5l3 2.8"/><path d="M2.8 9.5v3.2a.8.8 0 0 0 .8.8h8.8a.8.8 0 0 0 .8-.8V9.5"/></svg><span class="hb-label">Export</span></button>
+      <div class="menu" id="exportMenu">
+        <button data-export="docx">Word (.docx)</button>
+        <button data-export="pdf">PDF (print dialog)</button>
+      </div>
+    </span>
+    <button class="pill" id="btnDual" title="Split the editor (Ctrl+\)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M8 2.5v11"/></svg><span class="hb-label">Split</span></button>
+  </div>
+</header>
+<div class="timer-alert" id="timerAlert">
+  <span class="ta-text"></span>
+  <button class="btn-mini" id="taKeep" title="Dismiss and keep counting the overtime">Keep going</button>
+  <button class="mini-pill" id="taPlus5">+5 min</button>
+  <button class="new-btn" id="taDone">Done</button>
+</div>
+
+<div class="cmdpal" id="cmdPal">
+  <div class="cmdpal-box" role="dialog" aria-label="Search notes and commands">
+    <input id="cmdIn" autocomplete="off" spellcheck="false" placeholder="Search notes by name. Type &gt; for commands, @ for headings" aria-controls="cmdList" />
+    <div class="cmdpal-list" id="cmdList" role="listbox"></div>
+  </div>
+</div>
+<div class="mo-body">
+  <nav class="activity" id="activity">
+    <button class="act-btn on" data-view="notes" title="Notes (Ctrl+Shift+E)">
+      <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+    </button>
+    <button class="act-btn" data-view="search" title="Search all notes (Ctrl+Shift+F)">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </button>
+    <button class="act-btn" id="actLibrary" title="All notes: every note, sortable and filterable (Alt+N)" aria-label="All notes">
+      <svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="m16 6 3.7-1 3.3 13.5-3.7 1z"/></svg>
+    </button>
+    <button class="act-btn" data-view="tabs" title="Open tabs (Alt+O)" aria-label="Open tabs">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/><path d="M8 13h8M8 16.5h5"/></svg>
+    </button>
+    <div class="act-spacer"></div>
+    <button class="act-btn" id="actBoard" title="Task board" aria-label="Task board"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h3.2v11H2zM6.4 2.5h3.2v7H6.4zM10.8 2.5H14v4.5h-3.2z"/></svg></button>
+    <button class="act-btn" id="actGraph" title="Graph (Ctrl+G)">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8.2 7.2 15.6 8M7 8.4l1.4 7.2M16.2 10.2l-5.4 6.2"/></svg>
+    </button>
+  </nav>
+
+  <aside class="side" id="side">
+    <!-- NOTES view -->
+    <div class="side-view show" id="viewNotes">
+      <div class="side-head">
+        <span class="side-title">Notes</span>
+        <span style="display:flex;gap:6px;">
+          <button class="btn-mini" id="btnSort" title="Sort by name or by most recently changed"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5v11M2.5 11.5l2 2 2-2M8.5 4h5M8.5 8h3.5M8.5 12h2"/></svg>Recent</button>
+          <button class="icon-act" id="btnNewFolder" title="New folder (use / to nest)" aria-label="New folder" style="display:none;"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 4.2a.9.9 0 0 1 .9-.9h3.4l1.5 1.5h5.7a.9.9 0 0 1 .9.9v6.6a.9.9 0 0 1-.9.9H2.7a.9.9 0 0 1-.9-.9z"/><path d="M8 7.3v3.4M6.3 9h3.4"/></svg></button>
+          <button class="icon-act" id="btnNew" title="New note" aria-label="New note"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.8H4.2a.9.9 0 0 0-.9.9v10.6a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V5.5z"/><path d="M9 1.8v3.7h3.7M8 7.8v4M6 9.8h4"/></svg></button>
+        </span>
+      </div>
+      <div class="banner" id="reconnectBanner">
+        <span id="reconnectText"></span><br />
+        <button class="new-btn" id="btnReconnect">Reconnect</button>
+      </div>
+      <div class="side-list" id="notesList"></div>
+      <div class="sheet-head" id="sheetHead">
+        <span class="sheet-chev" aria-hidden="true"><svg class="ico" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg></span><span>Sheets</span><span class="sheet-count" id="sheetCount"></span>
+        <button class="icon-act" id="btnNewSheet" title="New sheet" aria-label="New sheet"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 6.2h12M6.2 6.2v7.3"/></svg></button>
+      </div>
+      <div class="sheet-list" id="sheetList"></div>
+    </div>
+
+    <!-- SEARCH view -->
+    <div class="side-view" id="viewTabs">
+      <div class="side-head"><span class="side-title">Open tabs</span><span class="tt-count" id="ttCount"></span></div>
+      <div class="search-wrap">
+        <input class="search" id="tabFilter" placeholder="Filter open tabs" autocomplete="off" aria-label="Filter open tabs" />
+      </div>
+      <div class="side-list tt-tree" id="tabTree" role="tree"></div>
+      <div class="side-foot"><span>Click to switch &middot; drag to another pane &middot; right-click for more</span></div>
+    </div>
+    <div class="side-view" id="viewSearch">
+      <div class="side-head"><span class="side-title">Search</span></div>
+      <div class="search-wrap">
+        <input class="search" id="search" placeholder="Search notes and content" autocomplete="off" />
+        <button class="search-clear" id="searchClear" aria-label="Clear search"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
+      </div>
+      <div class="search-wrap search-repwrap">
+        <input class="search" id="searchRep" placeholder="Replace in every note (Ctrl+Shift+H)" autocomplete="off" aria-label="Replace with" />
+        <button class="search-repall" id="searchRepAll" title="Replace every match in every note">Replace all</button>
+      </div>
+      <div class="search-count" id="searchCount" style="display:none;"></div>
+      <div class="side-list" id="searchList"></div>
+      <div class="side-foot"><span>Enter jumps to first hit &middot; Shift+click opens in next pane</span></div>
+    </div>
+
+    <!-- AGENT view -->
+  </aside>
+
+  <div class="gutter" id="sideGutter" title="Drag to resize"></div>
+  <div class="workarea" id="workarea">
+    <div class="sketch" id="sketch">
+      <div class="sk-rename" id="skRename">
+        <div class="rn-box">
+          <div class="rn-head">Rename labels <span class="rn-count" id="skRnCount"></span></div>
+          <div class="rn-grid">
+            <label>Find</label>
+            <input type="text" id="skRnFind" placeholder="blank = replace the whole label" autocomplete="off" />
+            <label>Replace</label>
+            <input type="text" id="skRnRepl" placeholder="SRV-{n}   or   $1-prod" autocomplete="off" />
+          </div>
+          <div class="rn-opts">
+            <label class="chip chip-check"><input type="checkbox" id="skRnRegex" />Regex</label>
+            <label class="chip chip-check"><input type="checkbox" id="skRnCase" />Ignore case</label>
+            <span class="sk-lbl">{n} starts at</span>
+            <input type="number" id="skRnStart" value="1" min="0" />
+          </div>
+          <div class="rn-err" id="skRnErr"></div>
+          <div class="rn-rows" id="skRnRows"></div>
+          <div class="rn-foot">
+            <span class="rn-hint">$1 backreferences work with Regex on &middot; {n} numbers each label</span>
+            <button class="btn-mini" id="skRnCancel">Cancel</button>
+            <button class="new-btn" id="skRnApply">Rename</button>
+          </div>
+        </div>
+      </div>
+      <div class="sk-top" role="toolbar" aria-label="Board"><button class="sk-ib" id="skUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 5.5H10a3.3 3.3 0 0 1 0 6.6H6.5"/><path d="M7.8 3.2L5.5 5.5l2.3 2.3"/></svg></button><button class="sk-ib" id="skRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 5.5H6a3.3 3.3 0 0 0 0 6.6h3.5"/><path d="M8.2 3.2l2.3 2.3-2.3 2.3"/></svg></button><span class="sep"></span><button class="sk-ib" id="skZoomOut" title="Zoom out (Ctrl+-)" aria-label="Zoom out"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"/></svg></button><button class="sk-zoom" id="skZoomPct" title="Back to 100%">100%</button><button class="sk-ib" id="skZoomIn" title="Zoom in (Ctrl+=)" aria-label="Zoom in"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg></button><button class="mini-pill" id="skFit" title="Fit the drawing to the view (Shift+1)">Fit</button><span class="sep"></span><button class="mini-pill" id="skTreeBtn" title="Orientate: turn the layout a quarter turn clockwise (down, left, up, right)">Orientate</button><button class="mini-pill" id="skTidy" title="Tidy up: lay out everything that is connected, keeping the way it reads (top-down unless it already reads left to right). Shift+T">Tidy up</button><span class="sep"></span><button class="mini-pill on" id="skHighlightBtn" title="Selecting or hovering a shape fades everything it is not connected to">Highlight</button><button class="mini-pill on" id="skStatusBtn" title="Show system status dots">Status</button><button class="mini-pill on" id="skSnap" title="Snap to the grid and to other shapes while dragging (hold Alt to bypass)">Snap</button><span class="spacer"></span><button class="mini-pill" id="skExport" title="Download as .excalidraw for excalidraw.com">Export</button><span class="sk-morewrap"><button class="sk-ib" id="skMoreBtn" title="More" aria-label="More" aria-haspopup="menu"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="3.5" cy="8" r="1.2"/><circle class="f" cx="8" cy="8" r="1.2"/><circle class="f" cx="12.5" cy="8" r="1.2"/></svg></button><div class="menu sk-more" id="skMore" role="menu"><button role="menuitem" data-more="tidy-tb">Tidy up, top to bottom</button><button role="menuitem" data-more="tidy-lr">Tidy up, left to right</button><button role="menuitem" data-more="wrapfans" id="skWrapBtn">Wrap wide fan-outs: on</button><button role="menuitem" data-more="autosplit" id="skAutoSplitBtn">Auto splitters: on</button><button role="menuitem" data-more="netcolours" id="skNetColBtn">Colour links by source</button><button role="menuitem" data-more="rename">Rename labels in bulk<kbd>Ctrl+R</kbd></button><button role="menuitem" data-more="clear">Clear the board</button><button role="menuitem" data-more="keys">Keyboard shortcuts</button></div></span><button class="new-btn" id="skClose">Done</button></div>
+      <div class="sk-body">
+        <nav class="sk-rail" role="toolbar" aria-label="Tools" aria-orientation="vertical"><button class="sk-tool" data-tool="select" title="Select (V)" aria-label="Select (V)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5l8.5 6-3.8.9 2.2 4.3-1.6.8-2.2-4.3L4 13z"/></svg></button><button class="sk-tool" data-tool="hand" title="Hand: drag to pan (H)" aria-label="Hand: drag to pan (H)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 8.5V4a1 1 0 0 1 2 0v3.5M7.5 6.5V3a1 1 0 0 1 2 0v4M9.5 7V4a1 1 0 0 1 2 0v5.5c0 2.6-1.7 4.5-4.2 4.5-1.6 0-2.7-.8-3.6-2.2L2.4 9.6a1 1 0 0 1 1.6-1.2l1.5 1.7"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="rectangle" title="Rectangle (R)" aria-label="Rectangle (R)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/></svg></button><button class="sk-tool" data-tool="ellipse" title="Ellipse (O)" aria-label="Ellipse (O)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="5.6" ry="4.6"/></svg></button><button class="sk-tool" data-tool="diamond" title="Diamond (D)" aria-label="Diamond (D)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2l5.8 5.8L8 13.8 2.2 8z"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="connect" title="Connector: drag from one shape to another (C)" aria-label="Connector: drag from one shape to another (C)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.3" width="4.4" height="4.4" rx=".8"/><rect x="9.8" y="9.3" width="4.4" height="4.4" rx=".8"/><path d="M6.2 4.5h2.8a1 1 0 0 1 1 1v3.8"/></svg></button><button class="sk-tool" data-tool="splitter" title="Splitter: a junction to split one line into several (J). Or start a Connector on a line to tap into it" aria-label="Splitter (J)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h5M7 8l5-4.5M7 8h6M7 8l5 4.5"/><circle cx="7" cy="8" r="1.8" fill="currentColor"/></svg></button><button class="sk-tool" data-tool="arrow" title="Arrow (A)" aria-label="Arrow (A)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L13 3M7.5 3H13v5.5"/></svg></button><button class="sk-tool" data-tool="line" title="Line (L)" aria-label="Line (L)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L13 3"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="text" title="Text (T)" aria-label="Text (T)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.5V3h9v1.5M8 3v10M6 13h4"/></svg></button><button class="sk-tool" data-tool="pen" title="Pen (P)" aria-label="Pen (P)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.6l2.6 2.6-7.9 7.9H2.9v-2.6z"/><path d="M9.3 4.1l2.6 2.6"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="eraser" title="Eraser: click or drag across shapes (E)" aria-label="Eraser: click or drag across shapes (E)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 13.5h7"/><path d="M2.9 9.6l6-6a1.4 1.4 0 0 1 2 0l2.5 2.5a1.4 1.4 0 0 1 0 2l-5.2 5.4H5.6L2.9 10.8a.8.8 0 0 1 0-1.2z"/><path d="M5.6 7l3.9 3.9"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" id="skLibBtn" title="Library: shapes and templates (S)" aria-label="Library: shapes and templates (S)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.3" y="2.3" width="4.6" height="4.6" rx="1"/><rect x="9.1" y="2.3" width="4.6" height="4.6" rx="1"/><rect x="2.3" y="9.1" width="4.6" height="4.6" rx="1"/><rect x="9.1" y="9.1" width="4.6" height="4.6" rx="1"/></svg></button><button class="sk-tool" id="skSticky" title="Keep the tool after drawing (Q)" aria-label="Keep the tool after drawing (Q)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></button></nav>
+        <aside class="sk-library" id="skLibrary" aria-label="Library"><input class="sk-lib-search" id="skLibSearch" placeholder="Search shapes and templates" autocomplete="off" spellcheck="false" /><div class="sk-lib-tabs" role="tablist"><button role="tab" class="on" data-lib="stencils">Shapes</button><button role="tab" data-lib="files">Files</button></div><div class="sk-palette show" id="skPalette"></div><div class="sk-templates skl-host" id="skTemplates" data-where="panel"></div><div class="sk-lib-empty" id="skLibEmpty">Nothing matches.</div></aside>
+      <div class="sk-canvas-wrap"><canvas id="sketchCanvas"></canvas></div>
+        <aside class="sk-panel" id="skPanel" aria-label="Selected shape">
+          <button class="sk-panel-head" id="skPanelHeadBtn" aria-expanded="true" title="Show or hide the properties"><span id="skPanelHead"></span><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button>
+          <section>
+            <div class="sk-sec-h">Colour <i id="skColorChip"></i><span class="sk-hex" id="skHex"></span></div>
+            <div class="sk-grid" id="skGrid"></div>
+            <div class="sk-sec-sub">Recent</div>
+            <div class="sk-grid sk-recent" id="skRecent"></div>
+            <button class="sk-disclose" id="skCustomBtn" aria-expanded="false" aria-controls="skPicker"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg>Custom colour</button>
+            <div class="sk-picker" id="skPicker">
+              <div class="sk-sv" id="skSV" title="Saturation and brightness"><i class="sk-sv-dot" id="skSVDot"></i></div>
+              <div class="sk-hue" id="skHue" title="Hue"><i id="skHueDot"></i></div>
+              <input class="sk-hexin" id="skHexIn" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Colour as hex, for example #3a7bd5" />
+            </div>
+          </section>
+          <section data-sec="fill">
+            <div class="sk-sec-h">Fill</div>
+            <div class="sk-row"><button class="mini-pill" id="skFill" title="Fill shapes with the colour">Fill with colour</button></div>
+          </section>
+          <section data-sec="stroke">
+            <div class="sk-sec-h">Stroke</div>
+            <span class="sk-width">
+              <input type="range" id="skWidthRange" min="1" max="20" step="1" value="2" title="Stroke thickness" aria-label="Stroke thickness" />
+              <span class="sk-width-dot"><i id="skWidthDot"></i></span>
+              <span class="sk-width-num" id="skWidthNum">2</span>
+            </span>
+            <div class="sk-row sk-seg"><button class="mini-pill on" data-stroke="solid">Solid</button><button class="mini-pill" data-stroke="dashed">Dashed</button></div>
+          </section>
+          <section data-sec="status">
+            <div class="sk-sec-h">Status</div>
+            <div class="sk-status-row" id="skStatusRow"></div>
+            <div class="sk-sec-sub sk-hint" id="skStatusWhy"></div>
+          </section>
+          <section data-sec="link">
+            <div class="sk-sec-h">Connector</div>
+            <div class="sk-row sk-seg"><button class="mini-pill" data-curve="curved" title="A smooth curve through the bends">Curved</button><button class="mini-pill" data-curve="sharp" title="Straight runs with rounded joins">Sharp</button><button class="mini-pill" data-curve="elbow" title="Right angles, routed for you">Elbow</button><button class="mini-pill" data-curve="circuit" title="Circuit-board traces: chamfered corners, pads and junction dots">Circuit</button></div>
+            <div class="sk-row"><button class="mini-pill" id="skStraighten" title="Remove every bend">Straighten</button><button class="mini-pill" id="skReverse" title="Swap which end the arrow points at">Reverse direction</button></div>
+            <div class="sk-row"><button class="mini-pill" id="skImpact" title="Status flows back along this arrow: the end it points at is what the other end depends on">Carries impact</button></div>
+            <div class="sk-sec-sub sk-hint" id="skBendHint">Drag the small dot on a line to bend it. Double-click a bend to remove it.</div>
+          </section>
+          <section data-sec="text">
+            <div class="sk-sec-h">Text size</div>
+            <span class="sk-textrow" id="skTextRow">
+              <input type="range" id="skTextRange" min="8" max="72" step="1" value="20" title="Text size: for text boxes and the labels of selected shapes" aria-label="Text size" />
+              <span class="sk-width-num" id="skTextNum">20</span>
+            </span>
+          </section>
+          <section data-sec="label">
+            <div class="sk-sec-h">Label</div>
+            <input class="sk-labelin" id="skLabelIn" autocomplete="off" spellcheck="false" aria-label="Label of the selected shape" />
+          </section>
+          <section data-sec="arrange">
+            <div class="sk-sec-h">Arrange</div>
+            <div class="sk-row"><button class="mini-pill" data-order="front" title="Bring to front">Bring to front</button><button class="mini-pill" data-order="back" title="Send to back">Send to back</button></div>
+          </section>
+          <section data-sec="actions">
+            <div class="sk-row"><button class="mini-pill" id="skDup" title="Duplicate (Ctrl+D)">Duplicate</button><button class="mini-pill sk-danger" id="skDelete" title="Delete (Del)">Delete</button></div>
+          </section>
+        </aside>
+
+      </div>
+    </div>
+    <div class="graph" id="graph">
+      <div class="graph-bar">
+        <span>Solar system</span>
+        <span id="graphStats"></span>
+        <span class="graph-hint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
+      </div>
+      <div class="graph-body">
+        <div class="graph-canvas-wrap"><canvas id="graphCanvas"></canvas></div>
+        <aside class="graph-side" id="graphSide"></aside>
+      </div>
+    </div>
+  </div>
+</div>
+<footer class="statusbar" id="statusbar">
+  <div class="timer-bar" id="timerBar"></div>
+  <div class="sb-left">
+      <div class="storage-row">
+        <span class="storage-label" id="storageLabel">Browser storage</span>
+        <button class="btn-mini" id="btnReload" title="Re-read the folder from disk" style="display:none;">Reload</button>
+        <button class="btn-mini" id="btnFolder" title="Store notes as .md files in a folder you choose">Open folder</button>
+        <button class="btn-mini" id="btnLocal" title="Switch back to browser storage" style="display:none;">Browser</button>
+      </div>
+    <span class="sb-item" id="saveState"></span>
+  </div>
+  <div class="sb-right">
+    <span class="sb-item" id="sbPos"></span>
+    <span class="sb-item" id="sbWords"></span>
+    <span class="menu-wrap tm-wrap">
+      <button class="sb-btn tm-pill" id="btnTimer" title="Time-block a task (Alt+T)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/></svg>
+        <span class="tm-label">Timer</span>
+      </button>
+      <div class="timer-pop" id="timerPop">
+        <div id="tmIdle">
+          <div class="tm-head">Time-block a task</div>
+          <input type="text" id="tmTaskIn" placeholder="What are you working on?" autocomplete="off" />
+          <div class="tm-presets">
+            <button class="mini-pill" data-mins="15">15</button><button class="mini-pill" data-mins="25">25</button>
+            <button class="mini-pill" data-mins="45">45</button><button class="mini-pill" data-mins="60">60</button>
+            <button class="mini-pill" data-mins="90">90</button>
+            <input type="number" id="tmMins" min="1" max="480" value="25" title="Minutes" /><span class="tm-unit">min</span>
+          </div>
+          <label class="tm-opt"><input type="checkbox" id="tmLogNote" /> Log the time to the note when done</label>
+          <label class="tm-opt"><input type="checkbox" id="tmSound" checked /> Chime when time is up</label>
+          <button class="new-btn tm-go" id="tmStart">Start</button>
+        </div>
+        <div id="tmRun" style="display:none">
+          <div class="tm-task" id="tmTask"></div>
+          <div class="tm-big" id="tmBig">0:00</div>
+          <div class="tm-sub" id="tmSub"></div>
+          <div class="tm-ctrl">
+            <button class="mini-pill" id="tmPause">Pause</button>
+            <button class="mini-pill" id="tmPlus5">+5</button>
+            <button class="mini-pill" id="tmPlus15">+15</button>
+            <span class="tm-sp"></span>
+            <button class="btn-mini" id="tmDiscard">Discard</button>
+            <button class="new-btn" id="tmDone">Done</button>
+          </div>
+        </div>
+        <div class="tm-today">
+          <div class="tm-today-head"><span>Today</span><button class="tm-clear" id="tmClear" title="Clear today's log">clear</button></div>
+          <div id="tmLog"></div>
+          <div class="tm-totals" id="tmTotals"></div>
+        </div>
+      </div>
+    </span>
+    <button class="sb-btn" id="btnTheme" title="Light or dark (Alt+L)" aria-label="Toggle light and dark theme">
+      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+</footer>
+
+<script>

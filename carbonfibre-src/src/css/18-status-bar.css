@@ -1,0 +1,27 @@
+/* ---------- status bar ---------- */
+.statusbar {
+  position: relative; height: 24px; flex-shrink: 0; display: flex; align-items: stretch; justify-content: space-between;
+  padding: 0 4px; background: var(--sb-bg); color: var(--sb-fg); font-size: 12.5px; z-index: 5;
+}
+.sb-left, .sb-right { display: flex; align-items: stretch; min-width: 0; }
+.statusbar .storage-row { display: flex; align-items: stretch; padding: 0; margin: 0; gap: 0; border: 0; background: none; }
+.sb-item, .statusbar .storage-label {
+  display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; white-space: nowrap; color: inherit; font-size: 12.5px;
+}
+.sb-item:empty { display: none; }
+.sb-btn, .statusbar .btn-mini {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 0; padding: 0 8px;
+  background: none; border: 0; border-radius: 0; color: inherit; font: 12.5px var(--sans); cursor: pointer; white-space: nowrap;}
+.sb-btn:hover, .statusbar .btn-mini:hover { background: var(--sb-hover); color: inherit; }
+.sb-btn svg { width: 14px; height: 14px; stroke: currentColor; }
+.statusbar #saveState, .statusbar #saveState.saving, .statusbar #saveState.saved { color: inherit; }
+.statusbar #saveState.error { color: inherit; font-weight: 700; }
+/* the timer as a status item, with VS Code's warning and error treatments */
+.statusbar .tm-pill { max-width: 300px; }
+.statusbar .tm-pill.running { color: inherit; border-color: transparent; }
+.statusbar .tm-pill.warn { background: #FFDBB6; color: #3B2410; }
+.statusbar .tm-pill.over { background: #FFFFFF; color: #B4323F; font-weight: 700; }
+.statusbar .tm-pill.paused { font-style: italic; }
+.statusbar .timer-pop { top: auto; bottom: calc(100% + 6px); right: 0; color: var(--txt); font-size: 13px; text-align: left; }
+.statusbar .timer-bar { top: -2px; bottom: auto; height: 2px; }
+

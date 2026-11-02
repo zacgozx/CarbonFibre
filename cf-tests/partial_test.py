@@ -1,0 +1,77 @@
+import os, sys
+HERE = os.path.dirname(os.path.abspath(__file__))
+CF = os.environ.get("CF_HTML", os.path.join(HERE, "..", "CarbonFibre.html"))   # the app under test
+import json
+from playwright.sync_api import sync_playwright
+content = "# Notes\nalpha bravo charlie\ndelta echo foxtrot\ngolf hotel india\njuliet kilo lima"
+ok = True
+def check(label, good, detail=""):
+    global ok; ok &= bool(good); print("  %-62s %s %s" % (label, "ok" if good else "FAIL", detail))
+with sync_playwright() as p:
+    b = p.chromium.launch(); ctx = b.new_context(viewport={"width": 1200, "height": 700}, permissions=["clipboard-read", "clipboard-write"]); pg = ctx.new_page()
+    errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto("file://" + CF)
+    pg.evaluate("s => { localStorage.clear(); localStorage.setItem('carbonfibre-v1', s); }", json.dumps({"notes": [{"id": 1, "title": "Notes", "content": content}], "seq": 2}))
+    pg.reload(); pg.wait_for_timeout(500)
+    E = lambda js, *a: pg.evaluate(js, *a)
+    L = lambda: E("() => panes[0].lines.slice()")
+    txt = lambda: E("() => panes[0].selectedText()")
+    reset = lambda: E("c => { panes[0].clearSelectAll(); panes[0].lines = c.split('\\n'); panes[0].commit(true); panes[0].activeLine = null; panes[0].render(); }", content)
+    def caret_at(line, col):
+        pg.locator(".pane-col .editor-inner > div").nth(line).click(); pg.wait_for_timeout(50)
+        E("a => panes[0].ta.setSelectionRange(a, a)", col)
+    print("KEYBOARD")
+    caret_at(1, 6)                                   # alpha |bravo
+    pg.keyboard.press("Shift+ArrowDown"); pg.wait_for_timeout(80)
+    check("Shift+Down from mid-line selects to the same column below", txt() == "bravo charlie\ndelta ", repr(txt()))
+    check("the far end shows its part tinted, in place (formatted)", E("() => { const h = CSS.highlights.get('cf-sel'); return h ? [...h].map(r => r.toString()).join('|') : null; }") == "delta " and E("() => !document.querySelector('.ln-rawsel')"))
+    pg.keyboard.press("Shift+ArrowRight"); pg.keyboard.press("Shift+ArrowRight"); pg.wait_for_timeout(80)
+    check("Shift+Right extends a character at a time", txt() == "bravo charlie\ndelta ec", repr(txt()))
+    pg.keyboard.press("Shift+End"); pg.wait_for_timeout(80)
+    check("Shift+End takes it to the end of that line", txt() == "bravo charlie\ndelta echo foxtrot", repr(txt()))
+    pg.keyboard.press("Shift+ArrowUp"); pg.keyboard.press("Shift+ArrowUp"); pg.wait_for_timeout(80)
+    check("Shift+Up back past the start: selects upward from the caret", txt() == "otes\nalpha " or txt().endswith("alpha "), repr(txt()))
+    reset(); caret_at(1, 19)                         # end of line 1
+    pg.keyboard.press("Shift+ArrowRight"); pg.wait_for_timeout(80)
+    check("Shift+Right at a line's end crosses into the next line", txt() == "\n", repr(txt()))
+    pg.keyboard.press("Shift+ArrowRight"); pg.keyboard.press("Shift+ArrowRight"); pg.wait_for_timeout(80)
+    check("...and keeps going", txt() == "\nde", repr(txt()))
+    print("EDITING A MID-LINE HIGHLIGHT")
+    reset(); caret_at(1, 6); pg.keyboard.press("Shift+ArrowDown"); pg.keyboard.press("Shift+ArrowRight"); pg.keyboard.press("Shift+ArrowRight"); pg.keyboard.press("Shift+ArrowRight"); pg.keyboard.press("Shift+ArrowRight"); pg.wait_for_timeout(80)
+    pg.keyboard.type("X"); pg.wait_for_timeout(100)
+    check("typing replaces exactly the highlighted text", L()[1:3] == ["alpha X foxtrot", "golf hotel india"], str(L()[1:3]))
+    check("...with the caret right after it", E("() => [panes[0].activeLine, panes[0].ta.selectionStart]") == [1, 7], str(E("() => [panes[0].activeLine, panes[0].ta.selectionStart]")))
+    pg.keyboard.press("Control+z"); pg.wait_for_timeout(100)
+    check("one undo brings it all back", L() == content.split("\n"), str(L()))
+    reset(); caret_at(2, 6); pg.keyboard.press("Shift+ArrowDown"); pg.wait_for_timeout(80)
+    pg.keyboard.press("Control+c"); pg.wait_for_timeout(80)
+    check("Ctrl+C copies just the highlighted text", E("() => navigator.clipboard.readText()") == "echo foxtrot\ngolf h", repr(E("() => navigator.clipboard.readText()")))
+    pg.keyboard.press("Backspace"); pg.wait_for_timeout(100)
+    check("Backspace deletes just that, joining the two halves", L()[2] == "delta otel india" and len(L()) == 4, str(L()))
+    reset(); E("t => navigator.clipboard.writeText(t)", "ONE\nTWO")
+    caret_at(1, 6); pg.keyboard.press("Shift+ArrowDown"); pg.wait_for_timeout(80); pg.keyboard.press("Control+v"); pg.wait_for_timeout(120)
+    check("pasting two lines over a mid-line highlight", L()[1:3] == ["alpha ONE", "TWOecho foxtrot"], str(L()[1:4]))
+    print("WHOLE LINES STILL WORK")
+    reset(); caret_at(1, 0); pg.keyboard.press("Shift+ArrowDown"); pg.keyboard.press("Shift+ArrowDown"); pg.wait_for_timeout(80)
+    check("Shift+Down twice from a line's start: two whole lines", txt() == "alpha bravo charlie\ndelta echo foxtrot", repr(txt()))
+    E("t => navigator.clipboard.writeText(t)", "NEW")
+    pg.keyboard.press("Control+v"); pg.wait_for_timeout(120)
+    check("...and pasting replaces those lines (not joined onto the next)", L() == ["# Notes", "NEW", "golf hotel india", "juliet kilo lima"], str(L()))
+    reset(); caret_at(1, 3); pg.keyboard.press("Shift+ArrowDown"); pg.wait_for_timeout(80)
+    pg.keyboard.press("Tab"); pg.wait_for_timeout(100)
+    check("Tab on a mid-line highlight indents both lines it touches", L()[1].startswith("  alpha") and L()[2].startswith("  delta"), str(L()[1:3]))
+    print("MOUSE")
+    reset(); E("() => panes[0].deactivate()")
+    # the screen position of character n on a line, from the text itself
+    at = lambda line, n: E("""a => { const el = panes[0].linesEl.children[a[0]], w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let node, left = a[1];
+        while ((node = w.nextNode())) { if (left <= node.length) { const r = document.createRange(); r.setStart(node, left); r.setEnd(node, left); const b = r.getBoundingClientRect(); return [b.left + 1, b.top + b.height / 2]; } left -= node.length; } return null; }""", [line, n])
+    a1 = at(1, 6); pg.mouse.move(a1[0], a1[1]); pg.mouse.down()
+    a3 = at(3, 4); pg.mouse.move(a3[0], a3[1], steps=8); pg.mouse.up(); pg.wait_for_timeout(100)
+    check("dragging from mid-line to mid-line selects exactly that", txt() == "bravo charlie\ndelta echo foxtrot\ngolf", repr(txt()))
+    E("() => panes[0].clearSelectAll()"); caret_at(1, 6); pg.wait_for_timeout(80)
+    a3 = at(3, 10)
+    pg.keyboard.down("Shift"); pg.mouse.click(a3[0], a3[1]); pg.keyboard.up("Shift"); pg.wait_for_timeout(100)
+    check("Shift+click extends from the caret to the click", txt() == "bravo charlie\ndelta echo foxtrot\ngolf hotel", repr(txt()))
+    print("  errors:", errs or "none"); ok &= not errs
+    b.close()
+print("ALL PASS" if ok else "FAILURES")

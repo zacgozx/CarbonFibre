@@ -1,0 +1,182 @@
+
+:root {
+  --bg: #1a1a1f;
+  --panel: #202027;
+  --txt: #e4e4e8;
+  --acc: #9b3d4b;                          /* primary #9b3d4b: caret, active tab, buttons */
+  --acc-soft: rgba(155, 61, 75, 0.24);
+  --acc-text: #d48795;
+  --ora: #d4917c;                          /* orange: code, bullets, highlights */
+  --ora-soft: rgba(181, 106, 82, 0.2);
+  --blu: #8ea7b8;                          /* royal blue: links, selection */
+  --blu-soft: rgba(106, 127, 143, 0.24);
+  --t: 120ms ease;
+  --t2: 140ms ease;
+  --t3: 160ms ease;
+  color-scheme: dark;
+  --acc-rgb: 155, 61, 75;
+  --ora-rgb: 212, 145, 124;
+  --blu-rgb: 106, 127, 143;
+  --shd-rgb: 0, 0, 0; --shd-k: 1;
+  --scrim-rgb: 10, 11, 13; --scrim-k: 1;
+  --danger: #b8322c; --on-danger: #ffffff;
+  --hair-12: rgba(255,255,255,0.12); --hair-15: rgba(255,255,255,0.15); --hair-35: rgba(255,255,255,0.35);
+  /* greys and accents that used to be written inline; light values below */
+  --c0a0a0a: #131316;
+  --c0f0f0f: #17171b;
+  --c101010: #18181b;
+  --c101114: #18181e;
+  --c111111: #19191c;
+  --c131313: #1a1a1e;
+  --c141414: #1b1b1f;
+  --c141518: #1c1c22;
+  --c171717: #1d1d22;
+  --c171819: #1e1e23;
+  --c17181b: #1f1f24;
+  --c17181c: #1e1e25;
+  --c181818: #1e1e23;
+  --c1a1a1a: #202024;
+  --c1b1c20: #222228;
+  --c1c1c1c: #212126;
+  --c1e1e1e: #232328;
+  --c1f1f1f: #242429;
+  --c232323: #27272d;
+  --c262626: #29292f;
+  --c2a2a2a: #2c2c33;
+  --c2f2f2f: #303037;
+  --c333333: #33333b;
+  --c35373b: #37373f;
+  --c3a3a3a: #393941;
+  --c4a4a4a: #4a4a4a;
+  --c4a4c52: #4a4c52;
+  --c4a5a8a: #4a5a8a;
+  --c4f4f4f: #4f4f4f;
+  --c555555: #555555;
+  --c565656: #565656;
+  --c5a5a5a: #5a5a5a;
+  --c5c5c5c: #5c5c5c;
+  --c5c5e63: #5c5e63;
+  --c5e3038: #5e3038;
+  --c5e5e5e: #5e5e5e;
+  --c5f5f5f: #5f5f5f;
+  --c6a6a6a: #6a6a6a;
+  --c6a6c71: #6a6c71;
+  --c6b6b6b: #6b6b6b;
+  --c6e6e6e: #6e6e6e;
+  --c7a7a7a: #7a7a7a;
+  --c7f8fb8: #7f8fb8;
+  --c8a8a8a: #8a8a8a;
+  --c8f8f8f: #8f8f8f;
+  --c9a9a9a: #9a9a9a;
+  --cb5b5b5: #b5b5b5;
+  --cb8f27c: #b8f27c;
+  --cbdbdbd: #bdbdbd;
+  --ce06c6c: #e06c6c;
+  --cefb57a: #efb57a;
+  --cff5c5c: #ff5c5c;
+  --cffffff: #ffffff;
+  /* colour that makes a note scannable: headings, bullets, quote edges, table heads */
+  --h1c: #bf6a78; --h2c: #d4917c; --h3c: var(--tc-green); --h4c: var(--tc-orange); --h5c: var(--tc-purple); --h6c: var(--tc-grey); --h1rule: rgba(155, 61, 75, 0.55);
+  --bulletc: #d4917c; --quote-edge: #b56a52; --quote-bg: rgba(181, 106, 82, 0.07); --thead-bg: rgba(155, 61, 75, 0.16);}
+
+/* ---------- light theme ----------
+   The named colours are re-pointed; everything built on them follows. Greys were
+   converted from inline values by inverting their lightness, so surfaces become light
+   surfaces and light text becomes dark text with similar contrast. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* Light palette: sky #5ba3c9 / #8ec3df / #aed4e8, teal-blue #2e86ab, deep #1a6585, page #eef6fb.
+     The pale and mid blues are fills, borders, tints and bars: as text on these backgrounds they
+     fall under 4.5:1, so anything that must be read uses the deep end (#1a6585 and darker). */
+  --bg: #fbfdff;
+  --panel: #f2f8fc;
+  --txt: #0f2b3d;
+  --dim: #46606f;
+  --acc: #1a6585;
+  --acc-soft: #d6ebf6;
+  --acc-text: #1a6585;
+  --ora: #23708f;
+  --ora-soft: #e3f1f9;
+  --blu: #1f6f94;
+  --blu-soft: #dbeef8;
+  --acc-rgb: 26, 101, 133;
+  --ora-rgb: 46, 134, 171;
+  --blu-rgb: 46, 134, 171;
+  --shd-rgb: 15, 43, 61; --shd-k: 0.22;
+  --scrim-rgb: 15, 43, 61; --scrim-k: 0.4;
+  --danger: #B4323F; --on-danger: #FFFFFF;
+  --hair-12: rgba(15,43,61,0.10); --hair-15: rgba(15,43,61,0.13); --hair-35: rgba(15,43,61,0.28);
+  --nav-bg: #eef6fb;
+  --nav-rail: #e1eff7;
+  --nav-line: #cbe1ee;
+  --brand-pink: #8ec3df;
+  --brand-pink-hi: #5ba3c9;
+  --c0a0a0a: #ffffff;
+  --c0f0f0f: #ffffff;
+  --c101010: #fdfeff;
+  --c101114: #f9fcfe;
+  --c111111: #fcfdfe;
+  --c131313: #fbfdfe;
+  --c141414: #f7fbfd;
+  --c141518: #f5fafd;
+  --c171717: #f4f9fc;
+  --c171819: #f4f9fc;
+  --c17181b: #f2f8fc;
+  --c17181c: #f2f8fc;
+  --c181818: #f3f9fc;
+  --c1a1a1a: #e9f3fa;
+  --c1b1c20: #e9f3fa;
+  --c1c1c1c: #ebf4fa;
+  --c1e1e1e: #e9f3f9;
+  --c1f1f1f: #e7f2f9;
+  --c232323: #e1eff8;
+  --c262626: #ddedf6;
+  --c2a2a2a: #d8eaf5;
+  --c2f2f2f: #d0e6f3;
+  --c333333: #c9e2f2;
+  --c35373b: #c2def0;
+  --c3a3a3a: #badaee;
+  --c4a4a4a: #597385;
+  --c4a4c52: #597385;
+  --c4a5a8a: #b5d7ed;
+  --c4f4f4f: #597385;
+  --c555555: #587284;
+  --c565656: #597385;
+  --c5a5a5a: #597385;
+  --c5c5c5c: #597385;
+  --c5c5e63: #597385;
+  --c5e3038: #8ec3df;
+  --c5e5e5e: #597385;
+  --c5f5f5f: #597385;
+  --c6a6a6a: #6291ae;
+  --c6a6c71: #5f8fad;
+  --c6b6b6b: #6190ad;
+  --c6e6e6e: #536d7e;
+  --c7a7a7a: #607d91;
+  --c7f8fb8: #5f7c90;
+  --c8a8a8a: #516f83;
+  --c8f8f8f: #4c6b80;
+  --c9a9a9a: #436378;
+  --cb5b5b5: #2d5067;
+  --cb8f27c: #3d7a3a;
+  --cbdbdbd: #274a61;
+  --ce06c6c: #b4323f;
+  --cefb57a: #874f2a;
+  --cff5c5c: #b4323f;
+  --cffffff: #0f2b3d;
+  --h1c: #0b62a4; --h2c: #0e7c86; --h3c: var(--tc-green); --h4c: var(--tc-orange); --h5c: var(--tc-purple); --h6c: var(--tc-grey); --h1rule: #8ec3df;
+  --bulletc: #2e86ab; --quote-edge: #3a7fa3; --quote-bg: #eef6fb; --thead-bg: #e3f1f9;}
+
+
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+/* Paint the page colour explicitly rather than relying on it showing through from behind.
+   Embedded views - the iPhone app's file viewer, for one - can leave the root unpainted
+   behind a scrolling area, and the host's own dark background then shows through
+   wherever an area has no colour of its own. The editor was exactly that area. */
+html { background: var(--bg); }
+.mo-head, .mo-body, .workarea, .pane-col, .editor, .split-prev, .pane-empty, .sheet-wrap, .sh-scroll { background: var(--bg); }
+body {
+  display: flex; flex-direction: column;
+  background: var(--bg); color: var(--txt); overflow: hidden;}
+
