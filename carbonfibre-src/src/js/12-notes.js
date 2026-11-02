@@ -3,7 +3,7 @@
    ============================================================ */
 
 function followLink(url) {
-  var href = normalizeUrl(url);
+  const href = normalizeUrl(url);
   if (!href) return;
   window.open(href, "_blank", "noopener");
 }
@@ -14,42 +14,42 @@ function openInPane(id, pane) {
 
 /* render markdown text as rendered line nodes inside el */
 function renderMarkdownInto(el, text) {
-  var ls = String(text).split("\n"), fm = computeFenceMeta(ls);
-  for (var i = 0; i < ls.length; i++) el.appendChild(makeRenderedNode(ls[i], fm[i], -1));
+  const ls = String(text).split("\n"), fm = computeFenceMeta(ls);
+  for (let i = 0; i < ls.length; i++) el.appendChild(makeRenderedNode(ls[i], fm[i], -1));
   return el;
 }
 
 /* a wikilink or external link was clicked somewhere that renders markdown.
    Returns true if it handled the event, so callers can stop there. */
 function linkClick(e, pane) {
-  var wl = e.target.closest("[data-wikilink]");
+  const wl = e.target.closest("[data-wikilink]");
   if (wl) {
     e.preventDefault();
     openOrCreateByTitle(wl.dataset.wikilink, e.shiftKey && pane ? paneForShift(pane) : pane || focusedPane || panes[0]);
     return true;
   }
-  var xl = e.target.closest("[data-extlink]");
+  const xl = e.target.closest("[data-extlink]");
   if (xl) { e.preventDefault(); followLink(xl.dataset.extlink); return true; }
   return false;
 }
 
 /* ---- pinned notes ---- */
 
-var PIN_KEY = "carbonfibre-pins";
-var pinned = {};
+const PIN_KEY = "carbonfibre-pins";
+let pinned = {};
 try { pinned = JSON.parse(localStorage.getItem(PIN_KEY) || "{}") || {}; } catch (e) {}
 function savePins() { storeSet(PIN_KEY, JSON.stringify(pinned)); }
 function isPinned(n) { return !!pinned[String(n.id)]; }
 /* folders can be pinned too: they ride at the top with their notes, under the same Pinned heading */
 function isFolderPinned(path) { return !!pinned["folder:" + path]; }
 function toggleFolderPin(path) {
-  var k = "folder:" + path;
+  const k = "folder:" + path;
   if (pinned[k]) delete pinned[k]; else pinned[k] = 1;
   savePins(); renderSidebar();
   if (typeof tbRenderAll === "function") tbRenderAll();
 }
 function togglePin(n) {
-  var k = String(n.id);
+  const k = String(n.id);
   if (pinned[k]) delete pinned[k]; else pinned[k] = 1;
   savePins();
   renderSidebar();
@@ -75,31 +75,33 @@ function sortNotes() { state.notes.sort(function (a, b) { return a.path.localeCo
 
 /* ---- folders (folder backend only) ---- */
 
-var collapsedFolders = {};
+let collapsedFolders = {}; // eslint-disable-line prefer-const -- reassigned in 43-session.js
 
 function folderOf(path) {
-  var i = path.lastIndexOf("/");
+  const i = path.lastIndexOf("/");
   return i === -1 ? "" : path.slice(0, i);
 }
 function folderHandle(path) {
   if (!path) return state.dirHandle;
-  for (var i = 0; i < state.folders.length; i++) if (state.folders[i].path === path) return state.folders[i].handle;
+  for (let i = 0; i < state.folders.length; i++) if (state.folders[i].path === path) return state.folders[i].handle;
   return state.dirHandle;
 }
 
 function createFolder() {
   if (state.backend !== "folder") return;
-  var name = window.prompt("Folder name (use / to nest, e.g. Projects/2026)", "");
+  Dialogs.prompt("Folder name (use / to nest, e.g. Projects/2026)", "").then(createFolderNamed);
+}
+function createFolderNamed(name) {
   if (!name) return;
-  var parts = name.split("/").map(function (seg) {
+  const parts = name.split("/").map(function (seg) {
     return seg.replace(/[\\/:*?"<>|]/g, "-").trim();
   }).filter(Boolean);
   if (!parts.length) return;
-  var dir = state.dirHandle, path = "";
-  var chain = Promise.resolve();
+  let dir = state.dirHandle, path = "";
+  let chain = Promise.resolve();
   parts.forEach(function (seg) {
     chain = chain.then(function () {
-      var parentH = dir;
+      const parentH = dir;
       path = path ? path + "/" + seg : seg;
       return parentH.getDirectoryHandle(seg, { create: true }).then(function (h) {
         dir = h;
@@ -118,20 +120,20 @@ function createFolder() {
 
 /* move a note into another folder: write the file in the new parent, remove the old one */
 function moveNote(id, dirPath) {
-  var n = findNote(id);
+  const n = findNote(id);
   if (!n || state.backend !== "folder") return;
   if (folderOf(n.path) === dirPath) return;
   syncAllPanes();
-  var prefix = dirPath ? dirPath + "/" : "";
-  var oldBase = n.path.split("/").pop();
-  var oldParent = n.parent || state.dirHandle;
-  var newParent = folderHandle(dirPath);
-  var newBase = uniqueBasename(oldBase.replace(/\.md$/i, ""), prefix);
+  const prefix = dirPath ? dirPath + "/" : "";
+  const oldBase = n.path.split("/").pop();
+  const oldParent = n.parent || state.dirHandle;
+  const newParent = folderHandle(dirPath);
+  const newBase = uniqueBasename(oldBase.replace(/\.md$/i, ""), prefix);
   writeFile(newParent, newBase, n.content).then(function (fh) {
     n.handle = fh;
     return oldParent.removeEntry(oldBase).catch(function () {});
   }).then(function () {
-    var oldId = n.id;
+    const oldId = n.id;
     n.path = prefix + newBase;
     n.id = n.path;
     n.title = newBase.replace(/\.md$/i, "");
@@ -150,13 +152,15 @@ function moveNote(id, dirPath) {
 /* rename a folder: make the new directory, move every file under it, drop the old one */
 function renameFolder(path) {
   if (state.backend !== "folder") return;
-  var current = path.slice(path.lastIndexOf("/") + 1);
-  var name = window.prompt("Rename folder", current);
+  const current = path.slice(path.lastIndexOf("/") + 1);
+  Dialogs.prompt("Rename folder", current).then(function (name) { renameFolderTo(path, current, name); });
+}
+function renameFolderTo(path, current, name) {
   if (!name) return;
   name = name.replace(/[\\/:*?"<>|]/g, "-").trim();
   if (!name || name === current) return;
-  var parentPath = folderOf(path);
-  var newPath = parentPath ? parentPath + "/" + name : name;
+  const parentPath = folderOf(path);
+  const newPath = parentPath ? parentPath + "/" + name : name;
   if (state.folders.some(function (f) { return f.path.toLowerCase() === newPath.toLowerCase(); })) {
     alert('A folder called "' + name + '" is already there.');
     return;
@@ -166,21 +170,21 @@ function renameFolder(path) {
     if (k === "folder:" + path || k.indexOf("folder:" + path + "/") === 0) { pinned["folder:" + newPath + k.slice(7 + path.length)] = 1; delete pinned[k]; }
   });
   savePins();
-  var moving = state.notes.filter(function (n) { return n.path === path || n.path.indexOf(path + "/") === 0; });
-  var parentH = parentPath ? folderHandle(parentPath) : state.dirHandle;
-  var chain = parentH.getDirectoryHandle(name, { create: true }).then(function (h) {
+  const moving = state.notes.filter(function (n) { return n.path === path || n.path.indexOf(path + "/") === 0; });
+  const parentH = parentPath ? folderHandle(parentPath) : state.dirHandle;
+  let chain = parentH.getDirectoryHandle(name, { create: true }).then(function (h) {
     state.folders.push({ path: newPath, handle: h, parent: parentH });
     /* recreate the subfolder tree under the new name */
-    var subs = state.folders.filter(function (f) { return f.path.indexOf(path + "/") === 0; })
+    const subs = state.folders.filter(function (f) { return f.path.indexOf(path + "/") === 0; })
       .sort(function (a, b) { return a.path.length - b.path.length; });
-    var c = Promise.resolve();
+    let c = Promise.resolve();
     subs.forEach(function (f) {
-      var rel = f.path.slice(path.length + 1);
+      const rel = f.path.slice(path.length + 1);
       c = c.then(function () {
-        var segs = rel.split("/"), dir = h, np = newPath, cc = Promise.resolve();
+        const segs = rel.split("/"); let dir = h, np = newPath, cc = Promise.resolve();
         segs.forEach(function (seg) {
           cc = cc.then(function () {
-            var par = dir;
+            const par = dir;
             np = np + "/" + seg;
             return par.getDirectoryHandle(seg, { create: true }).then(function (dh) {
               dir = dh;
@@ -195,15 +199,15 @@ function renameFolder(path) {
   });
   moving.forEach(function (n) {
     chain = chain.then(function () {
-      var rest = n.path.slice(path.length + 1);
-      var destDir = rest.indexOf("/") === -1 ? newPath : newPath + "/" + rest.slice(0, rest.lastIndexOf("/"));
-      var base = n.path.split("/").pop();
-      var oldParent = n.parent || state.dirHandle;
+      const rest = n.path.slice(path.length + 1);
+      const destDir = rest.indexOf("/") === -1 ? newPath : newPath + "/" + rest.slice(0, rest.lastIndexOf("/"));
+      const base = n.path.split("/").pop();
+      const oldParent = n.parent || state.dirHandle;
       return folderHandle(destDir).getFileHandle(base, { create: true }).then(function (fh) {
         return fh.createWritable().then(function (w) {
           return w.write(n.content).then(function () { return w.close(); });
         }).then(function () {
-          var oldId = n.id;
+          const oldId = n.id;
           n.handle = fh;
           n.parent = folderHandle(destDir);
           n.path = destDir + "/" + base;
@@ -233,11 +237,13 @@ function renameFolder(path) {
 
 function deleteFolder(path) {
   if (state.backend !== "folder") return;
-  var inside = state.notes.filter(function (n) { return n.path.indexOf(path + "/") === 0; });
-  if (!window.confirm('Delete "' + path + '"' + (inside.length ? " and move the " + inside.length + " note(s) inside it to .trash" : "") + "?")) return;
-  var parentPath = folderOf(path);
-  var parentH = parentPath ? folderHandle(parentPath) : state.dirHandle;
-  var chain = Promise.resolve();
+  const inside = state.notes.filter(function (n) { return n.path.indexOf(path + "/") === 0; });
+  Dialogs.confirm('Delete "' + path + '"' + (inside.length ? " and move the " + inside.length + " note(s) inside it to .trash" : "") + "?").then(function (ok) { if (ok) deleteFolderNow(path, inside); });
+}
+function deleteFolderNow(path, inside) {
+  const parentPath = folderOf(path);
+  const parentH = parentPath ? folderHandle(parentPath) : state.dirHandle;
+  let chain = Promise.resolve();
   inside.forEach(function (n) { chain = chain.then(function () { return trashNote(n).catch(function () {}); }); });
   chain.then(function () {
     return parentH.removeEntry(path.slice(path.lastIndexOf("/") + 1), { recursive: true });
@@ -260,18 +266,18 @@ function deleteFolder(path) {
 
 function createNote(dirPath) {
   dirPath = typeof dirPath === "string" ? dirPath : "";
-  var target = focusedPane || panes[0];
-  var id;
+  const target = focusedPane || panes[0];
+  let id;
   if (state.backend === "folder") {
-    var prefix = dirPath ? dirPath + "/" : "";
-    var base = uniqueBasename("Untitled", prefix);
-    var n = { id: prefix + base, path: prefix + base, title: base.replace(/\.md$/i, ""), content: "", handle: null, parent: folderHandle(dirPath), mtime: 0 };
+    const prefix = dirPath ? dirPath + "/" : "";
+    const base = uniqueBasename("Untitled", prefix);
+    const n = { id: prefix + base, path: prefix + base, title: base.replace(/\.md$/i, ""), content: "", handle: null, parent: folderHandle(dirPath), mtime: 0 };
     state.notes.push(n);
     sortNotes();
     writeNoteFile(n).catch(function (e) { console.error(e); setSaveState("error"); });
     id = n.id;
   } else {
-    var ln = { id: noteSeq++, title: "Untitled", content: "", path: null, handle: null, parent: null };
+    const ln = { id: noteSeq++, title: "Untitled", content: "", path: null, handle: null, parent: null };
     state.notes.push(ln);
     schedulePersist();
     id = ln.id;
@@ -288,8 +294,8 @@ function createNote(dirPath) {
 function stampNow() { return new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""); }
 
 function trashNote(n) {
-  var base = n.path.split("/").pop();
-  var stamp = stampNow();
+  const base = n.path.split("/").pop();
+  const stamp = stampNow();
   return state.dirHandle.getDirectoryHandle(".trash", { create: true }).then(function (tdir) {
     return writeFile(tdir, base.replace(/\.md$/i, "") + " " + stamp + ".md", n.content);
   }).then(function () {
@@ -298,17 +304,16 @@ function trashNote(n) {
 }
 
 function deleteNote(id) {
-  var n = findNote(id);
+  const n = findNote(id);
   if (!n) return;
-  var msg = state.backend === "folder"
+  const msg = state.backend === "folder"
     ? 'Move "' + n.path + '" to .trash?'
     : 'Delete "' + n.title + '"?';
-  if (!window.confirm(msg)) return;
-  removeNoteNow(id);
+  Dialogs.confirm(msg).then(function (ok) { if (ok) removeNoteNow(id); });
 }
 /* remove a note without asking (deleteNote asks; bulk delete asks once for all) */
 function removeNoteNow(id) {
-  var n = findNote(id);
+  const n = findNote(id);
   if (!n) return;
   if (state.backend === "folder" && n.parent) {
     trashNote(n).catch(function (e) { console.error(e); setSaveState("error"); });
@@ -334,7 +339,7 @@ function removeNoteNow(id) {
 function commitRename(n, title) {
   syncAllPanes();
   state.renamingId = null;
-  var clean = sanitizeName(title);
+  const clean = sanitizeName(title);
   if (state.backend === "local") {
     n.title = clean;
     schedulePersist();
@@ -343,15 +348,15 @@ function commitRename(n, title) {
     return;
   }
   if (clean === n.title) { renderSidebar(); return; }
-  var dirPrefix = n.path.indexOf("/") !== -1 ? n.path.slice(0, n.path.lastIndexOf("/") + 1) : "";
-  var oldBase = n.path.split("/").pop();
-  var newBase = uniqueBasename(clean, dirPrefix);
-  var parent = n.parent || state.dirHandle;
+  const dirPrefix = n.path.indexOf("/") !== -1 ? n.path.slice(0, n.path.lastIndexOf("/") + 1) : "";
+  const oldBase = n.path.split("/").pop();
+  const newBase = uniqueBasename(clean, dirPrefix);
+  const parent = n.parent || state.dirHandle;
   writeFile(parent, newBase, n.content).then(function (fh) {
     n.handle = fh;
     return parent.removeEntry(oldBase).catch(function () {});
   }).then(function () {
-    var oldId = n.id;
+    const oldId = n.id;
     n.path = dirPrefix + newBase;
     n.id = n.path;
     n.title = newBase.replace(/\.md$/i, "");
@@ -365,17 +370,17 @@ function commitRename(n, title) {
 }
 
 function openOrCreateByTitle(title, pane) {
-  var existing = noteByTitle(title);
+  const existing = noteByTitle(title);
   if (existing) { openInPane(existing.id, pane); return; }
   if (state.backend === "folder") {
-    var base = uniqueBasename(sanitizeName(title), "");
-    var n = { id: base, path: base, title: base.replace(/\.md$/i, ""), content: "# " + title + "\n\n", handle: null, parent: state.dirHandle };
+    const base = uniqueBasename(sanitizeName(title), "");
+    const n = { id: base, path: base, title: base.replace(/\.md$/i, ""), content: "# " + title + "\n\n", handle: null, parent: state.dirHandle };
     state.notes.push(n);
     sortNotes();
     writeNoteFile(n).catch(function (e) { console.error(e); });
     openInPane(n.id, pane);
   } else {
-    var ln = { id: noteSeq++, title: title, content: "# " + title + "\n\n", path: null, handle: null, parent: null };
+    const ln = { id: noteSeq++, title: title, content: "# " + title + "\n\n", path: null, handle: null, parent: null };
     state.notes.push(ln);
     schedulePersist();
     openInPane(ln.id, pane);

@@ -23,6 +23,7 @@ rebuild after changing any JavaScript; a hand-joined file would have no valid ha
 | `src/css/` | Styles by area: header, layout, panes, editor lines, sketch board, task board, notes views, status bar, palette, narrow screens |
 | `src/js/` | Code by area: state, find, paste, undo, panes, notes, backlinks, graph, search, sketch board (format, docking, links, arrange, tidy, layout), export (zip, docx, pdf), sheets, formulas, timer, task board, workbench, templates, Mermaid, session, shortcuts, boot |
 | `src/js/pane/` | The editor pane, by job: DOM, content, focus and live view, line selection, extra cursors, line operations, mouse, dropping, the edited line (completion, input and paste, keys), split view, render |
+| `src/js/01-host-bridge.js` | Inside the VS Code extension: folders, dialogs, storage and links go through VS Code. Does nothing in a browser |
 | `src/js/grid/` | The sheet grid: view, render, editing, structure, sorting, clipboard, find, fill |
 
 **Note:** the files in `js/pane/` are consecutive parts of one function (`createPane`), and
@@ -53,3 +54,5 @@ file at a time, whenever a file is being changed anyway:
   `const SketchLibrary = { open() {...}, render() {...} }`, instead of adding more global names.
   Name clashes between files are already caught by the code checker (`no-redeclare`).
 - `js/05-indexeddb.js` is the first file converted, as an example.
+- To ask before doing something, use `Dialogs.confirm(msg)` / `Dialogs.prompt(msg, value)` (they return promises),
+  not `window.confirm` / `window.prompt`: those never show inside VS Code, or in some embedded browsers.

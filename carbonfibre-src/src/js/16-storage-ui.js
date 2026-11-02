@@ -98,7 +98,7 @@ const NotesStorage = {
   choose(kind) {
     NotesStorage.close();
     if (kind === "folder") pickFolder();
-    else if (state.backend === "folder" && window.confirm("Switch to browser storage? Your folder files stay on disk untouched.")) switchToLocal();
+    else if (state.backend === "folder") Dialogs.confirm("Switch to browser storage? Your folder files stay on disk untouched.").then(function (ok) { if (ok) switchToLocal(); });
   }
 };
 

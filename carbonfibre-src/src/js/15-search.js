@@ -2,16 +2,17 @@
    search
    ============================================================ */
 
-var HIT_CAP = 4;
-var notesListEl = document.getElementById("notesList");
-var searchListEl = document.getElementById("searchList");
+const HIT_CAP = 4;
+const notesListEl = document.getElementById("notesList");
+const searchListEl = document.getElementById("searchList");
 
 function searchMatches(n, q) {
-  var titleHit = n.title.toLowerCase().indexOf(q) !== -1;
-  var hits = [], total = 0;
-  var ls = n.content.split("\n");
-  for (var i = 0; i < ls.length; i++) {
-    var low = ls[i].toLowerCase(), from = 0, idx;
+  const titleHit = n.title.toLowerCase().indexOf(q) !== -1;
+  const hits = []; let total = 0;
+  const ls = n.content.split("\n");
+  for (let i = 0; i < ls.length; i++) {
+    const low = ls[i].toLowerCase();
+    let from = 0, idx;
     while ((idx = low.indexOf(q, from)) !== -1) {
       total++;
       if (hits.length < HIT_CAP) hits.push({ line: i, col: idx, text: ls[i] });
@@ -22,36 +23,36 @@ function searchMatches(n, q) {
 }
 
 function snippetHtml(text, col, qlen) {
-  var start = Math.max(0, col - 26), end = Math.min(text.length, col + qlen + 46);
+  const start = Math.max(0, col - 26), end = Math.min(text.length, col + qlen + 46);
   return (start > 0 ? "\u2026" : "") + esc(text.slice(start, col)) +
     "<mark>" + esc(text.slice(col, col + qlen)) + "</mark>" +
     esc(text.slice(col + qlen, end)) + (end < text.length ? "\u2026" : "");
 }
 
 function highlightTitle(title, q) {
-  var idx = title.toLowerCase().indexOf(q);
+  const idx = title.toLowerCase().indexOf(q);
   if (idx === -1) return esc(title);
   return esc(title.slice(0, idx)) + "<mark>" + esc(title.slice(idx, idx + q.length)) + "</mark>" +
     esc(title.slice(idx + q.length));
 }
 
 function jumpTo(noteId, lineIdx, col, qlen, pane) {
-  var p = pane || focusedPane || panes[0];
+  const p = pane || focusedPane || panes[0];
   if (String(noteId) !== String(p.noteId)) p.open(noteId);
   if (p.mode === "live") {
     if (lineIdx >= p.lines.length) return;
     p.setActive(lineIdx, col);
     if (p.ta && qlen) p.ta.setSelectionRange(col, col + qlen);
-    var node = p.nodeAt(lineIdx);
+    const node = p.nodeAt(lineIdx);
     if (node && node.scrollIntoView) node.scrollIntoView({ block: "center" });
   } else {
-    var pos = 0;
-    for (var i = 0; i < lineIdx && i < p.lines.length; i++) pos += p.lines[i].length + 1;
+    let pos = 0;
+    for (let i = 0; i < lineIdx && i < p.lines.length; i++) pos += p.lines[i].length + 1;
     p.srcEl.focus();
     p.srcEl.setSelectionRange(pos + col, pos + col + qlen);
-    var frac = p.lines.length > 1 ? lineIdx / p.lines.length : 0;
+    const frac = p.lines.length > 1 ? lineIdx / p.lines.length : 0;
     p.srcEl.scrollTop = frac * (p.srcEl.scrollHeight - p.srcEl.clientHeight);
-    var pn = p.prevEl.children[lineIdx];
+    const pn = p.prevEl.children[lineIdx];
     if (pn) {
       if (pn.scrollIntoView) pn.scrollIntoView({ block: "center" });
       pn.classList.add("flash");
@@ -62,26 +63,26 @@ function jumpTo(noteId, lineIdx, col, qlen, pane) {
 
 /* click the Sheets heading to fold the list away; remembered */
 (function () {
-  var head = document.getElementById("sheetHead"), list = document.getElementById("sheetList");
-  var apply = function (folded) { head.classList.toggle("folded", folded); list.classList.toggle("folded", folded); head.setAttribute("aria-expanded", String(!folded)); };
+  const head = document.getElementById("sheetHead"), list = document.getElementById("sheetList");
+  const apply = function (folded) { head.classList.toggle("folded", folded); list.classList.toggle("folded", folded); head.setAttribute("aria-expanded", String(!folded)); };
   try { apply(localStorage.getItem("carbonfibre-sheets-folded") === "1"); } catch (e) {}
   head.addEventListener("click", function (e) {
     if (e.target.closest("button")) return;            /* the New sheet button is its own */
-    var folded = !list.classList.contains("folded");
+    const folded = !list.classList.contains("folded");
     apply(folded);
     storeSet("carbonfibre-sheets-folded", folded ? "1" : "0");
   });
 })();
 function renderSheetList() {
-  var cntEl = document.getElementById("sheetCount");
+  const cntEl = document.getElementById("sheetCount");
   if (cntEl) cntEl.textContent = sheets.length ? sheets.length : "";
-  var head = document.getElementById("sheetHead");
-  var list = document.getElementById("sheetList");
+  const head = document.getElementById("sheetHead");
+  const list = document.getElementById("sheetList");
   if (!head || !list) return;
   head.classList.toggle("show", true);
   list.innerHTML = "";
   if (!sheets.length) {
-    var e0 = document.createElement("div");
+    const e0 = document.createElement("div");
     e0.className = "side-empty";
     e0.style.padding = "6px 12px";
     e0.textContent = state.backend === "folder"
@@ -89,21 +90,21 @@ function renderSheetList() {
     list.appendChild(e0);
     return;
   }
-  var openIds = panes.filter(function (p) { return p.type === "sheet"; }).map(function (p) { return String(p.sheetId); });
+  const openIds = panes.filter(function (p) { return p.type === "sheet"; }).map(function (p) { return String(p.sheetId); });
   sheets.slice().sort(function (a, b) { return a.title.localeCompare(b.title); }).forEach(function (sh) {
-    var it = document.createElement("div");
+    const it = document.createElement("div");
     it.className = "sheet-item" + (openIds.indexOf(String(sh.id)) !== -1 ? " on" : "");
     it.innerHTML = '<span class="grid-icon">' + ico("table") + '</span><span class="nm"></span>';
     it.querySelector(".nm").textContent = sh.title;
     it.title = sh.path || sh.title;
-    var del = document.createElement("button");
+    const del = document.createElement("button");
     del.className = "del-btn";
     del.innerHTML = ico("x");
     del.title = "Delete sheet";
     del.addEventListener("click", function (e) { e.stopPropagation(); deleteSheet(sh.id); });
     it.appendChild(del);
     it.addEventListener("click", function (e) {
-      var fp = focusedPane || panes[0];
+      const fp = focusedPane || panes[0];
       if (e.shiftKey) openSheetSplit(fp, sh.id); else openSheetInPane(fp, sh.id);
     });
     list.appendChild(it);
@@ -115,12 +116,12 @@ function renderSheetList() {
    took. Anything that changes the list itself still does the full render below. */
 function markSidebar() {
   if (state.renamingId != null) { renderSidebar(); return; }
-  var fp = focusedPane || panes[0], focusedId = fp ? String(fp.noteId) : "", open = {};
+  const fp = focusedPane || panes[0], focusedId = fp ? String(fp.noteId) : "", open = {};
   panes.forEach(function (p) { p.tabs.forEach(function (t) { open[String(t)] = 1; }); });
   [notesListEl, searchListEl].forEach(function (listEl) {
     if (!listEl) return;
     Array.prototype.forEach.call(listEl.querySelectorAll(".side-item[data-nid]"), function (item) {
-      var id = item.dataset.nid, on = id === focusedId, on2 = !on && !!open[id];
+      const id = item.dataset.nid, on = id === focusedId, on2 = !on && !!open[id];
       if (item.classList.contains("on") !== on) item.classList.toggle("on", on);
       if (item.classList.contains("on2") !== on2) item.classList.toggle("on2", on2);
     });
@@ -135,16 +136,16 @@ function renderSidebar() {
 
 function renderList(listEl, q) {
   listEl.innerHTML = "";
-  var countEl = document.getElementById("searchCount");
-  var isSearch = listEl === searchListEl;
-  var fp = focusedPane || panes[0];
-  var focusedId = fp ? String(fp.noteId) : "";
-  var openIds = [];
+  const countEl = document.getElementById("searchCount");
+  const isSearch = listEl === searchListEl;
+  const fp = focusedPane || panes[0];
+  const focusedId = fp ? String(fp.noteId) : "";
+  const openIds = [];
   panes.forEach(function (p) { p.tabs.forEach(function (t) { openIds.push(String(t)); }); });
 
   if (state.notes.length === 0) {
     if (isSearch) countEl.style.display = "none";
-    var d = document.createElement("div");
+    const d = document.createElement("div");
     d.className = "side-empty";
     d.textContent = state.backend === "folder"
       ? "No .md files in this folder yet. Create one above."
@@ -153,17 +154,17 @@ function renderList(listEl, q) {
     return;
   }
 
-  var rows = [], totalHits = 0;
-  var ordered = state.notes;
+  let rows = [], totalHits = 0;
+  let ordered = state.notes;
   if (sortMode === "recent") {
     ordered = state.notes.slice().sort(function (a, b) {
-      var d = noteStamp(b) - noteStamp(a);
+      const d = noteStamp(b) - noteStamp(a);
       return d || (a.path || a.title).localeCompare(b.path || b.title);
     });
   }
   ordered.forEach(function (n) {
     if (!q) { rows.push({ note: n, res: null }); return; }
-    var res = searchMatches(n, q);
+    const res = searchMatches(n, q);
     if (res.titleHit || res.total > 0) { rows.push({ note: n, res: res }); totalHits += res.total; }
   });
 
@@ -175,7 +176,7 @@ function renderList(listEl, q) {
           rows.length + (rows.length === 1 ? " note" : " notes");
     } else countEl.style.display = "none";
     if (!q) {
-      var hint = document.createElement("div");
+      const hint = document.createElement("div");
       hint.className = "side-empty";
       hint.textContent = "Type to search titles and content across every note.";
       listEl.appendChild(hint);
@@ -184,25 +185,25 @@ function renderList(listEl, q) {
   }
 
   if (rows.length === 0) {
-    var e0 = document.createElement("div");
+    const e0 = document.createElement("div");
     e0.className = "side-empty";
     e0.textContent = "Nothing matches that search.";
     listEl.appendChild(e0);
     return;
   }
 
-  var tree = !q && state.backend === "folder" && sortMode === "name";
+  const tree = !q && state.backend === "folder" && sortMode === "name";
 
   function buildItem(row) {
-    var n = row.note, res = row.res;
-    var item = document.createElement("div");
-    var isFocused = String(n.id) === focusedId;
-    var isOpen = openIds.indexOf(String(n.id)) !== -1;
+    const n = row.note, res = row.res;
+    const item = document.createElement("div");
+    const isFocused = String(n.id) === focusedId;
+    const isOpen = openIds.indexOf(String(n.id)) !== -1;
     item.className = "side-item" + (isFocused ? " on" : isOpen ? " on2" : "");
     item.dataset.nid = String(n.id);
 
     if (state.renamingId === n.id) {
-      var input = document.createElement("input");
+      const input = document.createElement("input");
       input.className = "rename-input";
       input.value = n.title;
       item.appendChild(input);
@@ -216,18 +217,18 @@ function renderList(listEl, q) {
       return item;
     }
 
-    var rowEl = document.createElement("div");
+    const rowEl = document.createElement("div");
     rowEl.className = "side-item-row";
-    var title = document.createElement("span");
+    const title = document.createElement("span");
     title.className = "side-item-title";
     if (q) title.innerHTML = highlightTitle(n.title, q);
     else title.textContent = n.title;
-    var pin = document.createElement("button");
+    const pin = document.createElement("button");
     pin.className = "pin-btn" + (isPinned(n) ? " on" : "");
     pin.innerHTML = isPinned(n) ? ico("starFill") : ico("star");
     pin.title = isPinned(n) ? "Unpin" : "Pin to the top";
     pin.addEventListener("click", function (e) { e.stopPropagation(); togglePin(n); });
-    var del = document.createElement("button");
+    const del = document.createElement("button");
     del.className = "del-btn";
     del.innerHTML = ico("x");
     del.title = 'Delete "' + n.title + '"';
@@ -236,22 +237,22 @@ function renderList(listEl, q) {
     item.appendChild(rowEl);
 
     if (!tree && n.path && n.path.indexOf("/") !== -1) {
-      var pth = document.createElement("div");
+      const pth = document.createElement("div");
       pth.className = "side-item-path";
       pth.textContent = n.path.slice(0, n.path.lastIndexOf("/"));
       item.appendChild(pth);
     }
 
     if (res && res.hits.length) {
-      var hl = document.createElement("div");
+      const hl = document.createElement("div");
       hl.className = "hit-list";
       res.hits.forEach(function (h) {
-        var hit = document.createElement("div");
+        const hit = document.createElement("div");
         hit.className = "hit";
-        var no = document.createElement("span");
+        const no = document.createElement("span");
         no.className = "hit-no";
         no.textContent = h.line + 1;
-        var tx = document.createElement("span");
+        const tx = document.createElement("span");
         tx.className = "hit-txt";
         tx.innerHTML = snippetHtml(h.text, h.col, q.length);
         hit.appendChild(no); hit.appendChild(tx);
@@ -263,7 +264,7 @@ function renderList(listEl, q) {
         hl.appendChild(hit);
       });
       if (res.total > res.hits.length) {
-        var more = document.createElement("div");
+        const more = document.createElement("div");
         more.className = "hit-more";
         more.textContent = "+" + (res.total - res.hits.length) + " more in this note";
         hl.appendChild(more);
@@ -272,12 +273,12 @@ function renderList(listEl, q) {
     }
 
     item.addEventListener("click", function (e) {
-      var fp = focusedPane || panes[0];
+      const fpNow = focusedPane || panes[0];
       if (e.shiftKey) {
-        if (panes.length < 2) addPane(fp, n.id);
-        else openInPane(n.id, nextPane(fp));
+        if (panes.length < 2) addPane(fpNow, n.id);
+        else openInPane(n.id, nextPane(fpNow));
       } else {
-        openInPane(n.id, fp);
+        openInPane(n.id, fpNow);
       }
       panes.forEach(function (p) { p.renderBacklinks(); });
     });
@@ -298,21 +299,21 @@ function renderList(listEl, q) {
 
   /* pinned notes ride at the top, in both the flat list and the tree; pinned folders (tree only)
      join them there with everything inside them */
-  var pins = rows.filter(function (r) { return isPinned(r.note); });
-  var pinnedDirs = tree && !q ? Object.keys(pinned).filter(function (k) { return k.indexOf("folder:") === 0; }).map(function (k) { return k.slice(7); })
+  const pins = rows.filter(function (r) { return isPinned(r.note); });
+  const pinnedDirs = tree && !q ? Object.keys(pinned).filter(function (k) { return k.indexOf("folder:") === 0; }).map(function (k) { return k.slice(7); })
     .filter(function (d) { return state.folders.some(function (f) { return f.path === d; }) || rows.some(function (r) { return (r.note.path || "").indexOf(d + "/") === 0; }); })
     .filter(function (d, i, all) { return !all.some(function (o) { return o !== d && d.indexOf(o + "/") === 0; }); })    /* inside another pinned folder: shown there */
     .sort(function (a, b) { return a.localeCompare(b); }) : [];
   if ((pins.length || pinnedDirs.length) && !q) {
-    var ph = document.createElement("div");
+    const ph = document.createElement("div");
     ph.className = "pin-head";
     ph.textContent = "Pinned";
     listEl.appendChild(ph);
     pins.forEach(function (row) { listEl.appendChild(buildItem(row)); });
-    var pinHolder = document.createElement("div");
+    const pinHolder = document.createElement("div");
     pinHolder.className = "pin-folders";
     listEl.appendChild(pinHolder);
-    var sep = document.createElement("div");
+    const sep = document.createElement("div");
     sep.className = "pin-sep";
     listEl.appendChild(sep);
     rows = rows.filter(function (r) { return !isPinned(r.note); });
@@ -324,9 +325,9 @@ function renderList(listEl, q) {
   }
 
   /* folder tree: folders first (alphabetical), then the notes in that folder */
-  var byDir = {}, dirs = {};
+  const byDir = {}, dirs = {};
   rows.forEach(function (row) {
-    var d = folderOf(row.note.path || "");
+    let d = folderOf(row.note.path || "");
     (byDir[d] = byDir[d] || []).push(row);
     while (d) { dirs[d] = 1; d = folderOf(d); }
   });
@@ -340,27 +341,27 @@ function renderList(listEl, q) {
   }
   function emitFolder(sub, container, asPin) {
     (function () {
-      var isCollapsed = !!collapsedFolders[sub];
-      var head = document.createElement("div");
+      const isCollapsed = !!collapsedFolders[sub];
+      const head = document.createElement("div");
       head.className = "fold-head" + (isCollapsed ? " collapsed" : "");
-      var chev = document.createElement("span");
+      const chev = document.createElement("span");
       chev.className = "fold-chev"; chev.innerHTML = ico("chevronDown");
-      var nm = document.createElement("span");
+      const nm = document.createElement("span");
       nm.className = "fold-name"; nm.textContent = asPin ? sub : sub.slice(sub.lastIndexOf("/") + 1);   /* pinned: the full path */
       nm.title = sub;
-      var fpin = document.createElement("button");
+      const fpin = document.createElement("button");
       fpin.className = "fold-add fold-pin" + (isFolderPinned(sub) ? " on" : "");
       fpin.innerHTML = isFolderPinned(sub) ? ico("starFill") : ico("star");
       fpin.title = isFolderPinned(sub) ? "Unpin " + sub : "Pin " + sub + " to the top";
       fpin.setAttribute("aria-label", fpin.title);
       fpin.addEventListener("click", function (e) { e.stopPropagation(); toggleFolderPin(sub); });
-      var add = document.createElement("button");
+      const add = document.createElement("button");
       add.className = "fold-add"; add.innerHTML = "+"; add.title = "New note in " + sub;
       add.addEventListener("click", function (e) { e.stopPropagation(); collapsedFolders[sub] = false; createNote(sub); });
-      var ren = document.createElement("button");
+      const ren = document.createElement("button");
       ren.className = "fold-add"; ren.innerHTML = "\u270E"; ren.title = "Rename " + sub;
       ren.addEventListener("click", function (e) { e.stopPropagation(); renameFolder(sub); });
-      var rm = document.createElement("button");
+      const rm = document.createElement("button");
       rm.className = "fold-add"; rm.innerHTML = ico("x"); rm.title = "Delete " + sub;
       rm.addEventListener("click", function (e) { e.stopPropagation(); deleteFolder(sub); });
       head.appendChild(chev); head.appendChild(nm); head.appendChild(fpin); head.appendChild(add); head.appendChild(ren); head.appendChild(rm);
@@ -371,11 +372,11 @@ function renderList(listEl, q) {
       head.addEventListener("drop", function (e) {
         e.preventDefault(); e.stopPropagation();
         clearDropMarks();
-        var id = e.dataTransfer.getData("text/plain");
+        const id = e.dataTransfer.getData("text/plain");
         if (id) moveNote(id, sub);
       });
       container.appendChild(head);
-      var body = document.createElement("div");
+      const body = document.createElement("div");
       body.className = "fold-body";
       if (isCollapsed) body.style.display = "none";
       emit(sub, body, true);
@@ -383,7 +384,7 @@ function renderList(listEl, q) {
       container.appendChild(body);
     })();
   }
-  var pinHolderEl = listEl.querySelector(".pin-folders");
+  const pinHolderEl = listEl.querySelector(".pin-folders");
   if (pinHolderEl) pinnedDirs.forEach(function (d) { emitFolder(d, pinHolderEl, true); });
   emit("", listEl);
   (byDir[""] || []).forEach(function (row) { listEl.appendChild(buildItem(row)); });
@@ -401,7 +402,7 @@ function renderList(listEl, q) {
       listEl.classList.remove("drop-root");
       if (state.backend !== "folder") return;
       e.preventDefault();
-      var id = e.dataTransfer.getData("text/plain");
+      const id = e.dataTransfer.getData("text/plain");
       if (id) moveNote(id, "");
     });
   }
@@ -417,11 +418,11 @@ document.addEventListener("dragend", clearDropMarks, true);
 
 /* ---------------- activity bar / side views ---------------- */
 
-var currentView = "notes";
-var sortMode = "name";       /* "name" keeps the folder tree; "recent" is a flat list, newest first */
+let currentView = "notes";
+let sortMode = "name";       /* "name" keeps the folder tree; "recent" is a flat list, newest first */
 function setSort(m) {
   sortMode = m;
-  var b = document.getElementById("btnSort");
+  const b = document.getElementById("btnSort");
   b.innerHTML = ico("sort") + (m === "recent" ? "Recent" : "A\u2013Z");
   b.title = (m === "recent" ? "Sorted by most recently changed" : "Sorted by name") + ". Click to switch.";
   b.classList.toggle("on", m === "recent");
@@ -430,7 +431,7 @@ function setSort(m) {
 }
 
 function showView(name, toggle) {
-  var wasClosed = sideEl.classList.contains("side-closed");
+  const wasClosed = sideEl.classList.contains("side-closed");
   if (toggle && name === currentView && !wasClosed) {
     sideEl.classList.add("side-closed");
     Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), function (b) { b.classList.remove("on"); });
@@ -446,7 +447,7 @@ function showView(name, toggle) {
     b.classList.toggle("on", b.dataset.view === name);
   });
   if (name === "search") { renderList(searchListEl, (state.query || "").trim().toLowerCase()); searchEl.focus(); searchEl.select(); }
-  if (name === "tabs") { renderTabTree(); var tf = document.getElementById("tabFilter"); tf.focus(); tf.select(); }
+  if (name === "tabs") { renderTabTree(); const tf = document.getElementById("tabFilter"); tf.focus(); tf.select(); }
   scheduleSession();
 }
 
@@ -461,25 +462,27 @@ document.getElementById("actGraph").addEventListener("click", function () {
 
 /* ---------------- search input ---------------- */
 
-var searchEl = document.getElementById("search");
+const searchEl = document.getElementById("search");
 /* Replace all across notes: counts first and asks, then changes every note's text (saved to the
    vault when one is open) and refreshes open panes. Matching is as the search box: any case. */
 document.getElementById("searchRepAll").addEventListener("click", function () {
-  var q = searchEl.value, rtext = document.getElementById("searchRep").value;
+  const q = searchEl.value, rtext = document.getElementById("searchRep").value;
   if (!q.trim()) { pushToastLike("Type what to find in the search box first."); return; }
-  var re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), hits = 0, notes = [];
-  state.notes.forEach(function (n) { var m = (n.content || "").match(re); if (m) { hits += m.length; notes.push(n); } });
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"); let hits = 0; const notes = [];
+  state.notes.forEach(function (n) { const m = (n.content || "").match(re); if (m) { hits += m.length; notes.push(n); } });
   if (!hits) { pushToastLike("No matches for \u201c" + q + "\u201d."); return; }
-  if (!window.confirm("Replace " + hits + " match" + (hits === 1 ? "" : "es") + " of \u201c" + q + "\u201d with \u201c" + rtext + "\u201d in " + notes.length + " note" + (notes.length === 1 ? "" : "s") + "?\n\nThis can't be undone in one step.")) return;
-  panes.forEach(function (p) { if (p.sync) p.sync(); });
-  notes.forEach(function (n) { n.content = n.content.replace(re, function () { return rtext; }); markDirty(n); });
-  syncAllPanes();
-  /* panes showing a changed note reload its text */
-  panes.forEach(function (p) { if (p.type === "note" && notes.some(function (n) { return sameId(n.id, p.noteId); })) p.open(p.noteId); });
-  searchEl.dispatchEvent(new Event("input"));
-  pushToastLike("Replaced " + hits + " in " + notes.length + " note" + (notes.length === 1 ? "" : "s") + ".");
+  Dialogs.confirm("Replace " + hits + " match" + (hits === 1 ? "" : "es") + " of \u201c" + q + "\u201d with \u201c" + rtext + "\u201d in " + notes.length + " note" + (notes.length === 1 ? "" : "s") + "?\n\nThis can't be undone in one step.").then(function (ok) {
+    if (!ok) return;
+    panes.forEach(function (p) { if (p.sync) p.sync(); });
+    notes.forEach(function (n) { n.content = n.content.replace(re, function () { return rtext; }); markDirty(n); });
+    syncAllPanes();
+    /* panes showing a changed note reload its text */
+    panes.forEach(function (p) { if (p.type === "note" && notes.some(function (n) { return sameId(n.id, p.noteId); })) p.open(p.noteId); });
+    searchEl.dispatchEvent(new Event("input"));
+    pushToastLike("Replaced " + hits + " in " + notes.length + " note" + (notes.length === 1 ? "" : "s") + ".");
+  });
 });
-var searchClearEl = document.getElementById("searchClear");
+const searchClearEl = document.getElementById("searchClear");
 
 function applySearch() {
   state.query = searchEl.value;
@@ -494,7 +497,7 @@ searchEl.addEventListener("keydown", function (e) {
   if (e.key === "Escape") { e.preventDefault(); searchEl.value = ""; applySearch(); searchEl.blur(); }
   if (e.key === "Enter") {
     e.preventDefault();
-    var first = searchListEl.querySelector(".hit");
+    const first = searchListEl.querySelector(".hit");
     if (first) first.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
   }
 });

@@ -28,6 +28,7 @@ css/24-responsive.css
 css/25-cyberpunk.css
 html/02-body.html
 js/01-start.js
+js/01-host-bridge.js
 js/02-core.js
 js/03-table-filters.js
 js/04-find.js

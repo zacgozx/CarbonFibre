@@ -3,9 +3,9 @@ function timerChime() {
   if (!timePrefs.sound) return;
   try {
     if (!timerAudio) timerAudio = new (window.AudioContext || window.webkitAudioContext)();
-    var ctx = timerAudio, now = ctx.currentTime;
+    const ctx = timerAudio, now = ctx.currentTime;
     [[660, 0], [880, 0.22]].forEach(function (n) {
-      var o = ctx.createOscillator(), g = ctx.createGain();
+      const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = "sine"; o.frequency.value = n[0];
       g.gain.setValueAtTime(0.0001, now + n[1]);
       g.gain.exponentialRampToValueAtTime(0.18, now + n[1] + 0.02);
@@ -49,9 +49,9 @@ function timerExtend(minutes) {
 /* Done logs the block; discard throws it away. Either way the timer stops. */
 function timerFinish(keep) {
   if (!timer) return;
-  var actual = timerElapsed(), boardUid = timer.boardUid;
+  const actual = timerElapsed(), boardUid = timer.boardUid;
   if (keep && actual >= 30000) {                     /* under half a minute is a mis-click, not a block */
-    var entry = { task: timer.task, noteId: timer.noteId, start: timer.startedAt, end: Date.now(),
+    const entry = { task: timer.task, noteId: timer.noteId, start: timer.startedAt, end: Date.now(),
                   planned: timer.planned, actual: actual };
     timeLog.push(entry);
     timeLogSave();
@@ -66,13 +66,13 @@ function timerFinish(keep) {
 
 /* one line at the end of the task's note: when, how long, and how that compared to the plan */
 function timerLogToNote(e) {
-  var n = e.noteId == null ? null : findNote(e.noteId);
+  const n = e.noteId == null ? null : findNote(e.noteId);
   if (!n) return;
-  var over = e.actual - e.planned;
-  var line = "- Time block " + new Date(e.start).toISOString().slice(0, 10) + " " + hhmm(e.start) + "-" + hhmm(e.end) +
+  const over = e.actual - e.planned;
+  const line = "- Time block " + new Date(e.start).toISOString().slice(0, 10) + " " + hhmm(e.start) + "-" + hhmm(e.end) +
     ": " + fmtMins(e.actual) + " (planned " + fmtMins(e.planned) +
     (Math.abs(over) >= 60000 ? ", " + (over > 0 ? "+" : "-") + fmtMins(Math.abs(over)) + (over > 0 ? " over" : " under") : "") + ")";
-  var host = null;
+  let host = null;
   panes.forEach(function (q) { if (!host && q.type === "note" && sameId(q.noteId, n.id)) host = q; });
   if (host) {
     host.sync();
@@ -102,12 +102,12 @@ function timerRun() {
   }, 1000);
 }
 
-var BASE_TITLE = document.title;
+const BASE_TITLE = document.title;
 function timerRender() {
   if (typeof tbTickAll === "function") tbTickAll();
-  var pill = document.getElementById("btnTimer"), bar = document.getElementById("timerBar");
+  const pill = document.getElementById("btnTimer"), bar = document.getElementById("timerBar");
   if (!pill) return;
-  var label = pill.querySelector(".tm-label");
+  const label = pill.querySelector(".tm-label");
   pill.classList.remove("running", "warn", "over", "paused");
   if (!timer) {
     label.textContent = "Timer";
@@ -115,8 +115,8 @@ function timerRender() {
     bar.style.transform = "scaleX(0)"; bar.className = "timer-bar";
     document.title = BASE_TITLE;
   } else {
-    var el = timerElapsed(), left = timer.planned - el, over = left < 0;
-    var frac = Math.min(1, el / timer.planned);
+    const el = timerElapsed(), left = timer.planned - el, over = left < 0;
+    const frac = Math.min(1, el / timer.planned);
     pill.classList.add("running");
     if (timer.pausedAt) pill.classList.add("paused");
     else if (over) pill.classList.add("over");
@@ -133,7 +133,7 @@ function timerRender() {
 
 /* ---- the time's-up banner ---- */
 function timerShowAlert() {
-  var a = document.getElementById("timerAlert");
+  const a = document.getElementById("timerAlert");
   a.querySelector(".ta-text").textContent = "Time's up: " + timer.task + " (planned " + fmtMins(timer.planned) + ")";
   a.classList.add("show");
 }
@@ -141,17 +141,17 @@ function timerHideAlert() { document.getElementById("timerAlert").classList.remo
 
 /* ---- the panel ---- */
 function timerToday() {
-  var start = new Date(); start.setHours(0, 0, 0, 0);
+  const start = new Date(); start.setHours(0, 0, 0, 0);
   return timeLog.filter(function (e) { return e.start >= start.getTime(); });
 }
 function timerRenderPop() {
-  var idle = document.getElementById("tmIdle"), run = document.getElementById("tmRun");
+  const idle = document.getElementById("tmIdle"), run = document.getElementById("tmRun");
   idle.style.display = timer ? "none" : "";
   run.style.display = timer ? "" : "none";
   if (timer) {
-    var el = timerElapsed(), left = timer.planned - el;
+    const el = timerElapsed(), left = timer.planned - el;
     document.getElementById("tmTask").textContent = timer.task;
-    var big = document.getElementById("tmBig");
+    const big = document.getElementById("tmBig");
     big.textContent = (left < 0 ? "+" : "") + fmtClock(left);
     big.className = "tm-big" + (left < 0 ? " over" : "");
     document.getElementById("tmSub").textContent = timer.pausedAt ? "Paused"
@@ -159,29 +159,29 @@ function timerRenderPop() {
       : "of " + fmtMins(timer.planned) + " - started " + hhmm(timer.startedAt);
     document.getElementById("tmPause").textContent = timer.pausedAt ? "Resume" : "Pause";
   }
-  var list = document.getElementById("tmLog"), today = timerToday();
+  const list = document.getElementById("tmLog"), today = timerToday();
   if (!today.length) { list.innerHTML = '<div class="tm-empty">No blocks logged today.</div>'; }
   else {
     list.innerHTML = today.slice().reverse().map(function (e) {
-      var over = e.actual - e.planned;
-      var cls = over > 60000 ? "over" : over < -60000 ? "under" : "";
+      const over = e.actual - e.planned;
+      const cls = over > 60000 ? "over" : over < -60000 ? "under" : "";
       return '<div class="tm-row"><span class="tm-when">' + hhmm(e.start) + '</span><span class="tm-what">' + esc(e.task) +
         '</span><span class="tm-act ' + cls + '">' + fmtMins(e.actual) + '</span><span class="tm-plan">/ ' + fmtMins(e.planned) + "</span></div>";
     }).join("");
   }
-  var tp = today.reduce(function (n, e) { return n + e.planned; }, 0);
-  var ta = today.reduce(function (n, e) { return n + e.actual; }, 0);
-  var overs = today.filter(function (e) { return e.actual - e.planned > 60000; }).length;
+  const tp = today.reduce(function (n, e) { return n + e.planned; }, 0);
+  const ta = today.reduce(function (n, e) { return n + e.actual; }, 0);
+  const overs = today.filter(function (e) { return e.actual - e.planned > 60000; }).length;
   document.getElementById("tmTotals").textContent = today.length
     ? today.length + (today.length === 1 ? " block" : " blocks") + " - " + fmtMins(ta) + " spent against " + fmtMins(tp) + " planned" +
       (overs ? " - " + overs + " ran over" : "")
     : "";
 }
 function timerOpenPop() {
-  var pop = document.getElementById("timerPop");
-  var fp = focusedPane || panes[0], n = fp && fp.note ? fp.note() : null;
+  const pop = document.getElementById("timerPop");
+  const fp = focusedPane || panes[0], n = fp && fp.note ? fp.note() : null;
   if (!timer) {
-    var inp = document.getElementById("tmTaskIn");
+    const inp = document.getElementById("tmTaskIn");
     if (!inp.value || inp.dataset.auto === "1") { inp.value = n ? n.title : ""; inp.dataset.auto = "1"; }
     document.getElementById("tmMins").value = timePrefs.minutes;
     Array.prototype.forEach.call(document.querySelectorAll("[data-mins]"), function (b) {
@@ -201,7 +201,7 @@ function timerClosePop() {
 }
 
 function timerWire() {
-  var pop = document.getElementById("timerPop");
+  const pop = document.getElementById("timerPop");
   document.getElementById("btnTimer").addEventListener("click", function (e) {
     e.stopPropagation();
     if (pop.classList.contains("show")) timerClosePop(); else timerOpenPop();
@@ -216,12 +216,12 @@ function timerWire() {
     });
   });
   function go() {
-    var mins = Math.max(1, Math.min(480, parseInt(document.getElementById("tmMins").value, 10) || 25));
-    var fp = focusedPane || panes[0], n = fp && fp.note ? fp.note() : null;
+    const mins = Math.max(1, Math.min(480, parseInt(document.getElementById("tmMins").value, 10) || 25));
+    const fp = focusedPane || panes[0], n = fp && fp.note ? fp.note() : null;
     timePrefs.logToNote = document.getElementById("tmLogNote").checked;
     timePrefs.sound = document.getElementById("tmSound").checked;
     timePrefsSave();
-    var task = document.getElementById("tmTaskIn").value.trim() || (n ? n.title : "Focus");
+    const task = document.getElementById("tmTaskIn").value.trim() || (n ? n.title : "Focus");
     timerStart(task, mins, n ? n.id : null);
     document.getElementById("tmTaskIn").dataset.auto = "1";
     timerClosePop();
@@ -238,14 +238,17 @@ function timerWire() {
   document.getElementById("tmPlus15").addEventListener("click", function () { timerExtend(15); });
   document.getElementById("tmDone").addEventListener("click", function () { timerFinish(true); });
   document.getElementById("tmDiscard").addEventListener("click", function () {
-    if (window.confirm("Discard this block without logging it?")) timerFinish(false);
+    Dialogs.confirm("Discard this block without logging it?").then(function (ok) { if (ok) timerFinish(false); });
   });
   document.getElementById("tmClear").addEventListener("click", function () {
-    var today = timerToday();
-    if (!today.length || !window.confirm("Clear today's " + today.length + " logged block(s)?")) return;
-    var cut = new Date(); cut.setHours(0, 0, 0, 0);
-    timeLog = timeLog.filter(function (e) { return e.start < cut.getTime(); });
-    timeLogSave(); timerRenderPop();
+    const today = timerToday();
+    if (!today.length) return;
+    Dialogs.confirm("Clear today's " + today.length + " logged block(s)?").then(function (ok) {
+      if (!ok) return;
+      const cut = new Date(); cut.setHours(0, 0, 0, 0);
+      timeLog = timeLog.filter(function (e) { return e.start < cut.getTime(); });
+      timeLogSave(); timerRenderPop();
+    });
   });
   /* the banner */
   document.getElementById("taDone").addEventListener("click", function () { timerFinish(true); });

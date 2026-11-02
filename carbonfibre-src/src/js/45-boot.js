@@ -23,6 +23,17 @@
     NarrowLayout.settle();
   }
 
+  /* inside VS Code: the notes folder is the one the extension hands over (no browser folder handles) */
+  if (HostBridge.active) {
+    HostBridge.vault().then(function (h) {
+      if (!h) { bootLocal(); return; }
+      state.dirHandle = h;
+      state.backend = "folder";
+      return loadFolder().then(NarrowLayout.settle);
+    }).catch(function (e) { console.error(e); bootLocal(); });
+    return;
+  }
+
   idbGet("sketchHandle").then(function (h) {
     if (!h) return;
     return h.queryPermission({ mode: "readwrite" }).then(function (perm) {

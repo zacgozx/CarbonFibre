@@ -1,0 +1,35 @@
+{
+  "name": "carbonfibre",
+  "displayName": "CarbonFibre",
+  "description": "Notes, task board, sketches and sheets for a folder of Markdown files, inside VS Code.",
+  "version": "0.1.0",
+  "publisher": "zacgozx",
+  "repository": { "type": "git", "url": "https://github.com/zacgozx/CarbonFibre" },
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "keywords": ["notes", "markdown", "wikilinks", "kanban", "sketch"],
+  "icon": "media/icon.png",
+  "main": "./extension.js",
+  "activationEvents": ["onWebviewPanel:carbonfibre"],
+  "contributes": {
+    "commands": [
+      { "command": "carbonfibre.open", "title": "Open", "category": "CarbonFibre" },
+      { "command": "carbonfibre.openFolder", "title": "Open a Notes Folder...", "category": "CarbonFibre" }
+    ],
+    "configuration": {
+      "title": "CarbonFibre",
+      "properties": {
+        "carbonfibre.notesFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The notes folder: a path relative to the first workspace folder, or an absolute path. Leave blank to use the workspace folder itself."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "python ../carbonfibre-src/build.py media/carbonfibre.html",
+    "test": "node test/host_test.js",
+    "package": "npx --yes @vscode/vsce@2.32.0 package --skip-license"
+  }
+}

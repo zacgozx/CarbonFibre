@@ -8,6 +8,7 @@ publishes the app only.
 | `public/` | The app (`index.html`) and `robots.txt` | Yes |
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
+| `vscode-extension/` | The same app as a VS Code extension, working on a notes folder (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
 
 ## First time

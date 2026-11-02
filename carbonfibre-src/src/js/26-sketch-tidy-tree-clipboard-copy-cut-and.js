@@ -1,16 +1,16 @@
 /* ---- clipboard: copy, cut and paste shapes, including links between them ---- */
 
-var skClip = [];          /* falls back to this when the system clipboard is unavailable */
+let skClip = [];          /* falls back to this when the system clipboard is unavailable */
 
 function skSerialiseSel() {
   if (!sk.sels.length) return null;
-  var picked = sk.sels.slice();
-  var ids = {};
+  const picked = sk.sels.slice();
+  const ids = {};
   picked.forEach(function (el) { ids[el.id] = 1; });
   return {
     carbonfibre: "sketch-clip", v: 1,
     elements: picked.map(function (el) {
-      var c = JSON.parse(JSON.stringify(el));
+      const c = JSON.parse(JSON.stringify(el));
       /* a link is only worth keeping if both ends came along */
       if (c.fromId && !ids[c.fromId]) c.fromId = null;
       if (c.toId && !ids[c.toId]) c.toId = null;
@@ -19,7 +19,7 @@ function skSerialiseSel() {
   };
 }
 function skCopy() {
-  var payload = skSerialiseSel();
+  const payload = skSerialiseSel();
   if (!payload) return;
   skClip = payload.elements;
   try {
@@ -35,18 +35,18 @@ function skCut() {
 function skPasteElements(list, atCursor) {
   if (!list || !list.length) return;
   skSnapshot();
-  var map = {}, copies = list.map(function (el) {
-    var c = JSON.parse(JSON.stringify(el));
-    var old = c.id;
+  const map = {}, copies = list.map(function (el) {
+    const c = JSON.parse(JSON.stringify(el));
+    const old = c.id;
     c.id = skId();
     map[old] = c.id;
     return c;
   });
-  var dx = 20, dy = 20;
+  let dx = 20, dy = 20;
   if (atCursor && sk.lastPointer) {
-    var b = null;
+    let b = null;
     copies.forEach(function (c) {
-      var bb = skBox(c);
+      const bb = skBox(c);
       if (!b) b = { x: bb.x, y: bb.y }; else { b.x = Math.min(b.x, bb.x); b.y = Math.min(b.y, bb.y); }
     });
     dx = skSnapTo(sk.lastPointer[0]) - b.x;
@@ -63,17 +63,17 @@ function skPasteElements(list, atCursor) {
   skChanged(); skDraw();
 }
 function skPaste(atCursor) {
-  var done = false;
+  let done = false;
   try {
     if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText().then(function (txt) {
-        var parsed = null;
+        let parsed = null;
         try { parsed = JSON.parse(txt); } catch (e) {}
         if (parsed && parsed.carbonfibre === "sketch-clip" && parsed.elements) skPasteElements(parsed.elements, atCursor);
         else if (typeof txt === "string" && txt.trim()) {          /* plain text becomes a text element */
           skSnapshot();
-          var pt = sk.lastPointer || [0, 0];
-          var te = skBase("text", skSnapTo(pt[0]), skSnapTo(pt[1]), sk.color, sk.width);
+          const pt = sk.lastPointer || [0, 0];
+          const te = skBase("text", skSnapTo(pt[0]), skSnapTo(pt[1]), sk.color, sk.width);
           te.text = te.originalText = txt.trim().slice(0, 400);
           te.fontSize = sk.textSize;
           te.width = te.text.length * te.fontSize * 0.55; te.height = te.fontSize * 1.25;
@@ -92,35 +92,35 @@ function skLabelGet(el) { return el.type === "text" ? (el.text || "") : (el.labe
 function skLabelSet(el, v) {
   if (el.type === "text") {
     el.text = el.originalText = v;
-    var b = skBox(el);
+    const b = skBox(el);
     el.width = b.w; el.height = b.h;
   } else el.label = v;
 }
 function skRenameTargets() {
-  var list = sk.sels.length ? sk.sels : sk.elements;
+  const list = sk.sels.length ? sk.sels : sk.elements;
   return list.filter(function (el) {
     return el.type === "text" || el.type === "stencil" || skIsConnector(el);
   });
 }
 /* {n} counts up, $1 style backreferences work when the pattern is a regex */
 function skRenamePreview() {
-  var find = document.getElementById("skRnFind").value;
-  var repl = document.getElementById("skRnRepl").value;
-  var useRx = document.getElementById("skRnRegex").checked;
-  var ci = document.getElementById("skRnCase").checked;
-  var start = parseInt(document.getElementById("skRnStart").value, 10) || 1;
-  var err = document.getElementById("skRnErr");
-  var rows = document.getElementById("skRnRows");
-  var targets = skRenameTargets();
-  var rx = null;
+  const find = document.getElementById("skRnFind").value;
+  const repl = document.getElementById("skRnRepl").value;
+  const useRx = document.getElementById("skRnRegex").checked;
+  const ci = document.getElementById("skRnCase").checked;
+  const start = parseInt(document.getElementById("skRnStart").value, 10) || 1;
+  const err = document.getElementById("skRnErr");
+  const rows = document.getElementById("skRnRows");
+  const targets = skRenameTargets();
+  let rx = null;
   err.textContent = "";
   if (find) {
     try { rx = new RegExp(useRx ? find : find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), ci ? "gi" : "g"); }
     catch (e) { err.textContent = "Pattern: " + e.message; rows.innerHTML = ""; return null; }
   }
-  var out = targets.map(function (el, i) {
-    var before = skLabelGet(el);
-    var after = find ? before.replace(rx, repl) : repl;
+  const out = targets.map(function (el, i) {
+    const before = skLabelGet(el);
+    let after = find ? before.replace(rx, repl) : repl;
     after = after.replace(/\{n\}/g, String(start + i));
     return { el: el, before: before, after: after };
   });
@@ -139,11 +139,11 @@ function skRenameOpen() {
 }
 function skRenameClose() {
   /* text selected in the dialog's preview must not linger, or the board's Ctrl+C would copy it */
-  try { var gs = window.getSelection(); if (gs && document.getElementById("skRename").contains(gs.anchorNode)) gs.removeAllRanges(); } catch (e) {}
+  try { const gs = window.getSelection(); if (gs && document.getElementById("skRename").contains(gs.anchorNode)) gs.removeAllRanges(); } catch (e) {}
   document.getElementById("skRename").classList.remove("show");
 }
 function skRenameApply() {
-  var out = skRenamePreview();
+  const out = skRenamePreview();
   if (!out || !out.length) return;
   skSnapshot();
   out.forEach(function (r) { if (r.after !== r.before) skLabelSet(r.el, r.after); });
@@ -157,12 +157,14 @@ function skRename(hit) {
   if (sk.sels.length !== 1 || sk.sels[0] !== hit) skSelect([hit]);
   if (skFocusLabel()) return;
   if (hit.type === "text") {
-    var t = window.prompt("Text", hit.text);
-    if (t !== null) { skSnapshot(); hit.text = hit.originalText = t; var b = skBox(hit); hit.width = b.w; hit.height = b.h; skChanged(); skDraw(); }
+    Dialogs.prompt("Text", hit.text).then(function (t) {
+      if (t !== null) { skSnapshot(); hit.text = hit.originalText = t; const b = skBox(hit); hit.width = b.w; hit.height = b.h; skChanged(); skDraw(); }
+    });
     return;
   }
-  var lbl = window.prompt(hit.type === "stencil" ? "Label" : "Label (blank to clear)", hit.label || "");
-  if (lbl !== null) { skSnapshot(); hit.label = lbl; skChanged(); skDraw(); }
+  Dialogs.prompt(hit.type === "stencil" ? "Label" : "Label (blank to clear)", hit.label || "").then(function (lbl) {
+    if (lbl !== null) { skSnapshot(); hit.label = lbl; skChanged(); skDraw(); }
+  });
 }
 
 function skOnMove(e) {
@@ -170,26 +172,26 @@ function skOnMove(e) {
   sk.lastPointer = evWorld(skCanvas, e, skToWorld);
   /* hovering a shape highlights what it connects to */
   if (!sk.down && sk.tool === "select") {
-    var hit = skHit(sk.lastPointer[0], sk.lastPointer[1]);
-    var hid = hit && hit.type === "stencil" ? hit.id : null;
+    const hit = skHit(sk.lastPointer[0], sk.lastPointer[1]);
+    const hid = hit && hit.type === "stencil" ? hit.id : null;
     if (hid !== sk.hoverId) { sk.hoverId = hid; skDraw(); }
   }
 }
 function skOnDbl(e) {
   if (!sk) return;
-  var dp = evLocal(skCanvas, e), lh = skLinkHandleAt(dp[0], dp[1]);
+  const dp = evLocal(skCanvas, e), lh = skLinkHandleAt(dp[0], dp[1]);
   if (lh && lh.kind === "pt") {
-    var n = skLinkPoints(lh.el).length;
+    const n = skLinkPoints(lh.el).length;
     if (skIsConnector(lh.el) || n > 2) { skSnapshot(); skRemoveLinkPoint(lh.el, lh.i); skFitLinkBox(lh.el); skChanged(); skDraw(); }
     return;
   }
-  var wp = evWorld(skCanvas, e, skToWorld);
-  var sh = lh;
+  const wp = evWorld(skCanvas, e, skToWorld);
+  const sh = lh;
   if (sh && sh.kind === "seg" && sh.el.segs && sh.el.segs[sh.i]) {      /* back to its automatic place */
     skSnapshot(); delete sh.el.segs[sh.i]; if (!Object.keys(sh.el.segs).length) delete sh.el.segs;
     skChanged(); skDraw(); return;
   }
-  var hit = skHit(wp[0], wp[1]);
+  const hit = skHit(wp[0], wp[1]);
   if (!hit) return;
   skSelect([hit]);          /* double-click selects it too, so the next action lands on it */
   skSetTool("select");
@@ -221,29 +223,29 @@ function skOnDbl(e) {
 
 /* ---- stencil palette: each button previews its own shape ---- */
 function skBuildPalette() {
-  var wrap = document.getElementById("skPalette");
+  const wrap = document.getElementById("skPalette");
   if (wrap.dataset.built) return;
   wrap.dataset.built = "1";
-  var lastGroup = null;
+  let lastGroup = null;
   SK_STENCILS.forEach(function (st) {
     if (st.group !== lastGroup) {
-      var h = document.createElement("div");
+      const h = document.createElement("div");
       h.className = "sk-lib-h"; h.textContent = st.group;
       wrap.appendChild(h); lastGroup = st.group;
     }
-    var b = document.createElement("button");
+    const b = document.createElement("button");
     b.className = "sk-stencil";
     b.draggable = true;
     b.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-cf-stencil", st.id); e.dataTransfer.effectAllowed = "copy"; });
     b.dataset.stencil = st.id;
     b.title = st.label + " (" + st.group + ")";
-    var c = document.createElement("canvas");
+    const c = document.createElement("canvas");
     c.width = 44; c.height = 36;
-    var x = c.getContext("2d");
+    const x = c.getContext("2d");
     x.strokeStyle = skInk("#b9bcc4"); x.fillStyle = skInk("#b9bcc4");
     x.lineWidth = 1.2; x.lineCap = "round"; x.lineJoin = "round";
     skStencilPath(x, st.id, 44, 36, false);
-    var lbl = document.createElement("span");
+    const lbl = document.createElement("span");
     lbl.textContent = st.label;
     b.appendChild(c); b.appendChild(lbl);
     b.addEventListener("click", function () {
@@ -255,10 +257,10 @@ function skBuildPalette() {
   });
 }
 function skWidthUI() {
-  var wv = skShownWidth();
+  const wv = skShownWidth();
   document.getElementById("skWidthRange").value = wv;
   document.getElementById("skWidthNum").textContent = wv;
-  var d = document.getElementById("skWidthDot"), px = Math.max(2, Math.min(20, wv));
+  const d = document.getElementById("skWidthDot"), px = Math.max(2, Math.min(20, wv));
   d.style.width = px + "px"; d.style.height = px + "px"; d.style.background = skInk(skShownColor());
 }
 
@@ -309,34 +311,34 @@ skBuildColorUI();
    around it made things worse. This one is the page's own: a saturation and brightness
    square, a hue strip and a hex box. Dragging previews on the selection; letting go
    commits once (one undo step, one entry in Recent). */
-var skPicking = false, skHSV = { h: 220, s: 0.5, v: 0.8 };
-function skHexToRgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+let skPicking = false; const skHSV = { h: 220, s: 0.5, v: 0.8 };
+function skHexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 function skRgbToHex(r, g, b) { return "#" + [r, g, b].map(function (x) { return ("0" + Math.round(x).toString(16)).slice(-2); }).join(""); }
 function skRgbToHsv(r, g, b) {
   r /= 255; g /= 255; b /= 255;
-  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
   if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
   return { h: (h * 60 + 360) % 360, s: mx ? d / mx : 0, v: mx };
 }
 function skHsvToRgb(h, s, v) {
-  var c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c, r = 0, g = 0, b = 0;
+  const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c; let r = 0, g = 0, b = 0;
   if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
   else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
   return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
 }
-function skPickerHex() { var c = skHsvToRgb(skHSV.h, skHSV.s, skHSV.v); return skRgbToHex(c[0], c[1], c[2]); }
+function skPickerHex() { const c = skHsvToRgb(skHSV.h, skHSV.s, skHSV.v); return skRgbToHex(c[0], c[1], c[2]); }
 function skPickerRender() {
-  var sv = document.getElementById("skSV"); if (!sv) return;
+  const sv = document.getElementById("skSV"); if (!sv) return;
   sv.style.backgroundColor = "hsl(" + Math.round(skHSV.h) + ", 100%, 50%)";
-  var dot = document.getElementById("skSVDot");
+  const dot = document.getElementById("skSVDot");
   dot.style.left = (skHSV.s * 100) + "%"; dot.style.top = ((1 - skHSV.v) * 100) + "%";
   document.getElementById("skHueDot").style.left = (skHSV.h / 360 * 100) + "%";
-  var hx = document.getElementById("skHexIn");
+  const hx = document.getElementById("skHexIn");
   if (document.activeElement !== hx) hx.value = skPickerHex();
 }
 function skPickerFrom(hex) {
   if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return;
-  var c = skHexToRgb(hex), hsv = skRgbToHsv(c[0], c[1], c[2]);
+  const c = skHexToRgb(hex), hsv = skRgbToHsv(c[0], c[1], c[2]);
   if (hsv.s > 0.02 && hsv.v > 0.02) skHSV.h = hsv.h;    /* greys have no hue: keep the last one */
   skHSV.s = hsv.s; skHSV.v = hsv.v;
   skPickerRender();
@@ -354,13 +356,13 @@ function skPickerDrag(el, onMove) {
     if (!sk) return;
     e.preventDefault();
     try { el.setPointerCapture(e.pointerId); } catch (err) {}
-    var move = function (ev) {
-      var r = el.getBoundingClientRect();
+    const move = function (ev) {
+      const r = el.getBoundingClientRect();
       onMove(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
       skPickerRender();
       skPreviewColor(skPickerHex());
     };
-    var up = function () {
+    const up = function () {
       el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up);
       skCommitColor(skPickerHex());
     };
@@ -375,17 +377,17 @@ function skPreviewColor(c) {
     el.strokeColor = c;
     if (el.fill && el.fill !== "transparent") el.fill = c;
   });
-  var chip = document.getElementById("skColorChip"); if (chip) chip.style.background = skInk(c);
-  var hex = document.getElementById("skHex"); if (hex) hex.textContent = c;
+  const chip = document.getElementById("skColorChip"); if (chip) chip.style.background = skInk(c);
+  const hex = document.getElementById("skHex"); if (hex) hex.textContent = c;
   skDraw();
 }
 skPickerDrag(document.getElementById("skSV"), function (x, y) { skHSV.s = x; skHSV.v = 1 - y; });
 skPickerDrag(document.getElementById("skHue"), function (x) { skHSV.h = Math.min(359.9, x * 360); });
 (function () {
-  var hx = document.getElementById("skHexIn");
-  var norm = function (v) { v = v.trim(); if (v.charAt(0) !== "#") v = "#" + v; return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; };
-  hx.addEventListener("input", function () { var v = norm(hx.value); if (v && sk) { skPickerFrom(v); skPreviewColor(v); } });
-  hx.addEventListener("change", function () { var v = norm(hx.value); if (v && sk) skCommitColor(v); else skPickerRender(); });
+  const hx = document.getElementById("skHexIn");
+  const norm = function (v) { v = v.trim(); if (v.charAt(0) !== "#") v = "#" + v; return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; };
+  hx.addEventListener("input", function () { const v = norm(hx.value); if (v && sk) { skPickerFrom(v); skPreviewColor(v); } });
+  hx.addEventListener("change", function () { const v = norm(hx.value); if (v && sk) skCommitColor(v); else skPickerRender(); });
   hx.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); hx.blur(); } });
 })();
 document.getElementById("skDup").addEventListener("click", function () { if (sk) skDuplicate(); });

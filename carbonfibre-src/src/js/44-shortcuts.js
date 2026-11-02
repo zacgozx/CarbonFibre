@@ -9,6 +9,7 @@ document.getElementById("btnNewFolder").addEventListener("click", createFolder);
    palette and template strips are drawn once, so they are rebuilt next time they open. */
 /* Windows' light/dark setting, as Edge reports it */
 function systemTheme() {
+  if (HostBridge.active) return HostBridge.themeKind();   /* inside VS Code: its theme, not the system's */
   try { return window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
   catch (e) { return "dark"; }
 }
@@ -125,10 +126,11 @@ try {
 } catch (e) {}
 themeTitle();
 document.getElementById("btnNewSheet").addEventListener("click", function () {
-  const name = window.prompt("Sheet name", "Sheet");
-  if (!name) return;
-  const sh = createSheet(name);
-  openSheetInPane(focusedPane || panes[0], sh.id);
+  Dialogs.prompt("Sheet name", "Sheet").then(function (name) {
+    if (!name) return;
+    const sh = createSheet(name);
+    openSheetInPane(focusedPane || panes[0], sh.id);
+  });
 });
 const exportMenu = document.getElementById("exportMenu");
 document.getElementById("btnExport").addEventListener("click", function (e) {
@@ -137,7 +139,12 @@ document.getElementById("btnExport").addEventListener("click", function (e) {
 });
 document.addEventListener("click", function () { exportMenu.classList.remove("show"); });
 Array.prototype.forEach.call(exportMenu.querySelectorAll("[data-export]"), function (b) {
-  b.addEventListener("click", function () { exportMenu.classList.remove("show"); exportNote(b.dataset.export); });
+  b.addEventListener("click", function () {
+    exportMenu.classList.remove("show");
+    /* VS Code's webviews can't open the print dialog that PDF export uses */
+    if (HostBridge.active && b.dataset.export === "pdf") { pushToastLike("PDF export isn't available inside VS Code. Export to Word, or use the website."); return; }
+    exportNote(b.dataset.export);
+  });
 });
 document.getElementById("btnSort").addEventListener("click", function () { setSort(sortMode === "name" ? "recent" : "name"); });
 document.getElementById("btnSidebar").addEventListener("click", function () {
@@ -146,7 +153,7 @@ document.getElementById("btnSidebar").addEventListener("click", function () {
 });
 document.getElementById("btnFolder").addEventListener("click", NotesStorage.pick);
 document.getElementById("btnLocal").addEventListener("click", function () {
-  if (window.confirm("Switch to browser storage? Your folder files stay on disk untouched.")) switchToLocal();
+  Dialogs.confirm("Switch to browser storage? Your folder files stay on disk untouched.").then(function (ok) { if (ok) switchToLocal(); });
 });
 document.getElementById("btnReload").addEventListener("click", function () {
   if (state.backend === "folder") { flushPersist(); loadFolder(); }
