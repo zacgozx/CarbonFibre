@@ -31,10 +31,12 @@ function toggleTheme() {
    and redrawn whenever the theme changes. The wings are folded facets in light, mid and
    dark tones with crease lines; the sheet is tilted, ruled, with a folded corner. */
 const APP_ICON_PALETTE = {
-  dark:  { tile: "#1a1a1f", paper: "#ece4e1", paperEdge: "#3a1f26", fold: "#fbf6f4", foldShade: 0.30, rule: "#ddd0cc",
-           hi: "#e8b3a3", lite: "#d4917c", mid: "#b56a52", deep: "#9b3d4b", body: "#2a1418", shadow: 0.24, crease: "#fff2ee" },
-  light: { tile: "#eef6fb", paper: "#ffffff", paperEdge: "#a9cde1", fold: "#aed4e8", foldShade: 0.14, rule: "#e3eff6",
-           hi: "#aed4e8", lite: "#8ec3df", mid: "#2e86ab", deep: "#1a6585", body: "#0f2b3d", shadow: 0.16, crease: "#ffffff" }
+  /* neon night: a dark terminal sheet with cyan rules and a magenta edge, the wings in cyan, magenta and violet */
+  dark:  { tile: "#0b0b14", paper: "#141428", paperEdge: "#ff2a6d", fold: "#26264a", foldShade: 0.40, rule: "#1d3a5c",
+           hi: "#7df9ff", lite: "#05d9e8", mid: "#ff2a6d", deep: "#b026ff", body: "#fcee0a", shadow: 0.45, crease: "#ffffff" },
+  /* neon day: a white sheet, the same hues deepened */
+  light: { tile: "#f1eefb", paper: "#ffffff", paperEdge: "#c8105a", fold: "#e6e0f8", foldShade: 0.14, rule: "#ece6fa",
+           hi: "#7df9ff", lite: "#00a9c4", mid: "#c8105a", deep: "#7b2cbf", body: "#160f2e", shadow: 0.16, crease: "#ffffff" }
 };
 function appIconSvg(pal) {
   const P = function (pts, fill, extra) { return '<polygon points="' + pts + '" fill="' + fill + '"' + (extra || "") + '/>'; };
@@ -70,22 +72,24 @@ function appIconSvg(pal) {
     '</g>' +
     /* the butterfly, resting on the sheet, with its shadow on the paper */
     '<g transform="translate(250 276) rotate(-10) scale(1.38)">' +
-      P(silhouette, "#000", ' opacity="' + pal.shadow + '" transform="translate(7 11)"') +
-      half(1, [pal.hi, pal.lite, pal.mid, pal.deep, pal.crease]) +
-      half(-1, [pal.lite, pal.hi, pal.deep, pal.mid, pal.crease]) +
+      '<g transform="translate(7 11)"><g class="cf-shadow">' + P(silhouette, "#000", ' opacity="' + pal.shadow + '"') + "</g></g>" +
+      /* the wings and body in their own groups, so the logo's stylesheet can make them flutter */
+      '<g class="cf-bfly">' +
+      '<g class="cf-wing cf-wing-r">' + half(1, [pal.hi, pal.lite, pal.mid, pal.deep, pal.crease]) + "</g>" +
+      '<g class="cf-wing cf-wing-l">' + half(-1, [pal.lite, pal.hi, pal.deep, pal.mid, pal.crease]) + "</g>" +
       /* body and antennae */
       P("0,-56 9,-2 0,68 -9,-2", pal.body) +
       '<path d="M-2 -52 C-8 -72 -18 -84 -30 -90 M2 -52 C8 -72 18 -84 30 -90" fill="none" stroke="' + pal.body + '" stroke-width="5.5" stroke-linecap="round"/>' +
       '<circle cx="-30" cy="-90" r="6.5" fill="' + pal.body + '"/><circle cx="30" cy="-90" r="6.5" fill="' + pal.body + '"/>' +
-    '</g></svg>';
+    "</g></g></svg>";
 }
 function appIconApply() {
   const light = document.documentElement.getAttribute("data-theme") === "light";
-  const uri = "data:image/svg+xml," + encodeURIComponent(appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]));
+  const svg = appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]);
   const fav = document.getElementById("appFavicon");
-  if (fav) fav.href = uri;
+  if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(svg);
   const logo = document.getElementById("appLogo");
-  if (logo) logo.src = uri;
+  if (logo) logo.innerHTML = svg;                /* drawn in the page, not as an image, so its wings can move */
 }
 appIconApply();                                  /* drawn once at start, in the theme the page opened in */
 function themeTitle() {

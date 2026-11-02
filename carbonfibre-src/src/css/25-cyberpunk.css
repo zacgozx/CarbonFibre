@@ -1,0 +1,108 @@
+/* ============================================================
+   Neon: the cyberpunk look. Colours are re-pointed here, after every other sheet, so the whole app
+   follows: night (dark) is magenta, cyan and signal yellow on blue-black; day (light) keeps light
+   surfaces with the same hues deepened until text reads at 4.5:1 or better.
+   Behind the editor sits a faint page of code. Icons glow and twitch on hover, and the butterfly
+   in the logo flutters. Everything that moves stops for prefers-reduced-motion (13-agent-panel.css).
+   ============================================================ */
+:root {
+  --bg: #0b0b14; --panel: #10101c; --txt: #e8f0ff; --dim: #9aa3c7;
+  --acc: #ff2a6d; --acc-soft: rgba(255, 42, 109, 0.18); --acc-text: #ff6b9a; --acc-rgb: 255, 42, 109;
+  --ora: #fcee0a; --ora-soft: rgba(252, 238, 10, 0.12); --ora-rgb: 252, 238, 10;
+  --blu: #05d9e8; --blu-soft: rgba(5, 217, 232, 0.18); --blu-rgb: 5, 217, 232;
+  --vio: #b026ff;
+  --chrome: #07070f; --chrome-hi: #16162b; --line: #262a52;
+  --sel: rgba(5, 217, 232, 0.22); --sel-soft: rgba(5, 217, 232, 0.10);
+  --focus: #05d9e8; --sb-bg: #4a0e8f; --sb-fg: #ffffff; --sb-hover: rgba(255, 255, 255, 0.16);
+  --tab-edge: #ff2a6d; --mark: #05d9e8;
+  --scrim-rgb: 4, 4, 12;
+  --h1c: #ff4f8b; --h2c: #05d9e8; --h1rule: rgba(255, 42, 109, 0.6);
+  --bulletc: #fcee0a; --quote-edge: #b026ff; --quote-bg: rgba(176, 38, 255, 0.08); --thead-bg: rgba(5, 217, 232, 0.12);
+  /* the darkest greys, tinted toward indigo so surfaces read as night, not charcoal */
+  --c0a0a0a: #08080f; --c0f0f0f: #0c0c16; --c101010: #0d0d17; --c101114: #0e0e19; --c111111: #0e0e18;
+  --c131313: #10101b; --c141414: #11111d; --c141518: #12121f; --c171717: #141422; --c171819: #151523;
+  --c17181b: #161625; --c17181c: #161626; --c181818: #151524; --c1a1a1a: #181829; --c1b1c20: #1a1a2d;
+  --c1c1c1c: #19192b; --c1e1e1e: #1b1b2e; --c1f1f1f: #1c1c30; --c232323: #202036; --c262626: #23233a;
+  --c2a2a2a: #26263f; --c2f2f2f: #2a2a45; --c333333: #2e2e4b; --c35373b: #31314f; --c3a3a3a: #353556;
+  --glow-a: rgba(255, 42, 109, 0.75); --glow-b: rgba(5, 217, 232, 0.75);
+  --code-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='374'%3E%3Cg font-family='Consolas, Menlo, monospace' font-size='12.5'%3E%3Ctext x='14' y='22' fill='%2305d9e8' fill-opacity='0.055'%3Econst vault = await openFolder(dir, { mode: %26apos;readwrite%26apos; });%3C/text%3E%3Ctext x='51' y='52' fill='%2305d9e8' fill-opacity='0.055'%3Efor (const note of vault.notes) index.add(note.id, note.tags);%3C/text%3E%3Ctext x='88' y='82' fill='%2305d9e8' fill-opacity='0.055'%3E0x7F3A 0x00FF 0xC0DE 0xBEEF 0x1337 0xF1BE 0xCAFE 0x0B5E%3C/text%3E%3Ctext x='35' y='112' fill='%23ff2a6d' fill-opacity='0.07'%3Eif (!links.has(target)) graph.edge(note, target, %26apos;weak%26apos;);%3C/text%3E%3Ctext x='72' y='142' fill='%2305d9e8' fill-opacity='0.055'%3E// sync ok :: 0 conflicts :: 128 notes :: 4 folders%3C/text%3E%3Ctext x='19' y='172' fill='%2305d9e8' fill-opacity='0.055'%3Eexport function render(line) { return tokens(line).map(paint); }%3C/text%3E%3Ctext x='56' y='202' fill='%2305d9e8' fill-opacity='0.055'%3E01000011 01000110 00110001 00110000 01101110 01101111%3C/text%3E%3Ctext x='93' y='232' fill='%23ff2a6d' fill-opacity='0.07'%3Ewhile (queue.length) { const n = queue.shift(); visit(n); }%3C/text%3E%3Ctext x='40' y='262' fill='%2305d9e8' fill-opacity='0.055'%3E%26gt; fibre.boot --theme=neon --vault=local --net=none%3C/text%3E%3Ctext x='77' y='292' fill='%2305d9e8' fill-opacity='0.055'%3Elet hash = sha256(script); csp.allow(hash); // only ours%3C/text%3E%3Ctext x='24' y='322' fill='%2305d9e8' fill-opacity='0.055'%3Esketch.elements.filter(e =%26gt; !e.isDeleted).forEach(draw);%3C/text%3E%3Ctext x='61' y='352' fill='%23ff2a6d' fill-opacity='0.07'%3E[OK] wings: 2  [OK] body: 1  [OK] flutter: armed%3C/text%3E%3C/g%3E%3C/svg%3E");
+}
+:root[data-theme="light"] {
+  --bg: #fbfaff; --panel: #f4f2fc; --txt: #160f2e; --dim: #4b4470;
+  --acc: #c8105a; --acc-soft: #fbe3ee; --acc-text: #b00d50; --acc-rgb: 200, 16, 90;
+  --ora: #7b2cbf; --ora-soft: #f1e8fb; --ora-rgb: 123, 44, 191;
+  --blu: #00658f; --blu-soft: #dcf4fa; --blu-rgb: 0, 101, 143;
+  --vio: #7b2cbf;
+  --chrome: #f1eefb; --chrome-hi: #e6e0f8; --line: #ddd5f3;
+  --nav-bg: #f1eefb; --nav-rail: #e8e2f9; --nav-line: #d9d0f2;
+  --brand-pink: #ff8fb8; --brand-pink-hi: #ff5c95;
+  --sel: #d8f6fa; --sel-soft: #ecfbfd;
+  --focus: #c8105a; --sb-bg: #3b0b74; --sb-fg: #ffffff;
+  --tab-edge: #c8105a; --mark: #00658f;
+  --h1c: #c8105a; --h2c: #00658f; --h1rule: #ff8fb8;
+  --bulletc: #c8105a; --quote-edge: #7b2cbf; --quote-bg: #f6f0ff; --thead-bg: #efe9fd;
+  --glow-a: rgba(200, 16, 90, 0.45); --glow-b: rgba(0, 101, 143, 0.45);
+  --code-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='374'%3E%3Cg font-family='Consolas, Menlo, monospace' font-size='12.5'%3E%3Ctext x='14' y='22' fill='%233b0b74' fill-opacity='0.045'%3Econst vault = await openFolder(dir, { mode: %26apos;readwrite%26apos; });%3C/text%3E%3Ctext x='51' y='52' fill='%233b0b74' fill-opacity='0.045'%3Efor (const note of vault.notes) index.add(note.id, note.tags);%3C/text%3E%3Ctext x='88' y='82' fill='%233b0b74' fill-opacity='0.045'%3E0x7F3A 0x00FF 0xC0DE 0xBEEF 0x1337 0xF1BE 0xCAFE 0x0B5E%3C/text%3E%3Ctext x='35' y='112' fill='%23c8105a' fill-opacity='0.055'%3Eif (!links.has(target)) graph.edge(note, target, %26apos;weak%26apos;);%3C/text%3E%3Ctext x='72' y='142' fill='%233b0b74' fill-opacity='0.045'%3E// sync ok :: 0 conflicts :: 128 notes :: 4 folders%3C/text%3E%3Ctext x='19' y='172' fill='%233b0b74' fill-opacity='0.045'%3Eexport function render(line) { return tokens(line).map(paint); }%3C/text%3E%3Ctext x='56' y='202' fill='%233b0b74' fill-opacity='0.045'%3E01000011 01000110 00110001 00110000 01101110 01101111%3C/text%3E%3Ctext x='93' y='232' fill='%23c8105a' fill-opacity='0.055'%3Ewhile (queue.length) { const n = queue.shift(); visit(n); }%3C/text%3E%3Ctext x='40' y='262' fill='%233b0b74' fill-opacity='0.045'%3E%26gt; fibre.boot --theme=neon --vault=local --net=none%3C/text%3E%3Ctext x='77' y='292' fill='%233b0b74' fill-opacity='0.045'%3Elet hash = sha256(script); csp.allow(hash); // only ours%3C/text%3E%3Ctext x='24' y='322' fill='%233b0b74' fill-opacity='0.045'%3Esketch.elements.filter(e =%26gt; !e.isDeleted).forEach(draw);%3C/text%3E%3Ctext x='61' y='352' fill='%23c8105a' fill-opacity='0.055'%3E[OK] wings: 2  [OK] body: 1  [OK] flutter: armed%3C/text%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---- the page of code behind the editor (and the sheet), plus faint scan lines ---- */
+.editor, .sh-scroll {
+  background-image: repeating-linear-gradient(0deg, rgba(var(--blu-rgb), 0.025) 0 1px, transparent 1px 3px), var(--code-tile);
+  background-attachment: local, local;
+}
+.pane-empty { background-image: var(--code-tile); }
+
+/* ---- chrome: a neon edge under the title bar, a gradient status bar ---- */
+.mo-head { box-shadow: 0 1px 0 rgba(var(--acc-rgb), 0.55), 0 6px 18px -10px var(--glow-a); }
+.statusbar { background-color: var(--sb-bg); background-image: linear-gradient(90deg, var(--sb-bg), #7a0a5e 55%, var(--sb-bg)); }
+:root[data-theme="light"] .statusbar { background-image: linear-gradient(90deg, #3b0b74, #6a0b4e 55%, #3b0b74); }
+.tab.on { box-shadow: inset 0 2px 0 var(--tab-edge), 0 -6px 14px -10px var(--glow-a); }
+.logo-name { letter-spacing: .04em; text-shadow: 0 0 10px var(--glow-a); }
+:root[data-theme="light"] .logo-name { text-shadow: none; }
+
+/* ---- icons: glow and a short glitch on hover; the open view's icon breathes ---- */
+.act-btn svg, .icon-act .ico, .mo-head .pill .ico, .sb-btn svg, .icon-btn .ham {
+  transition: stroke var(--t), filter var(--t2), transform var(--t2);
+}
+.act-btn:hover svg, .icon-act:hover .ico, .mo-head .pill:hover .ico, .sb-btn:hover svg {
+  stroke: var(--blu); filter: drop-shadow(0 0 3px var(--glow-b)) drop-shadow(0 0 7px var(--glow-b));
+  animation: cf-glitch .42s steps(2, end) 1;
+}
+.act-btn.on svg { stroke: var(--acc-text); animation: cf-breathe 2.8s ease-in-out infinite; }
+.act-btn:active svg, .icon-act:active .ico, .mo-head .pill:active .ico { transform: scale(.86); }
+.icon-act:hover .ico { animation: cf-wiggle .5s ease-in-out 1; }
+.icon-btn:hover .ham, .icon-btn:hover .ham::before, .icon-btn:hover .ham::after { background: var(--blu); box-shadow: 0 0 6px var(--glow-b); }
+@keyframes cf-glitch {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-1.5px, 0.5px); filter: drop-shadow(-2px 0 0 var(--glow-a)) drop-shadow(2px 0 0 var(--glow-b)); }
+  40% { transform: translate(1.5px, -0.5px); }
+  60% { transform: translate(-0.5px, 0); filter: drop-shadow(2px 0 0 var(--glow-a)) drop-shadow(-2px 0 0 var(--glow-b)); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes cf-breathe {
+  0%, 100% { filter: drop-shadow(0 0 1px var(--glow-a)); }
+  50% { filter: drop-shadow(0 0 4px var(--glow-a)) drop-shadow(0 0 9px var(--glow-a)); }
+}
+@keyframes cf-wiggle {
+  0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 50% { transform: rotate(9deg); } 75% { transform: rotate(-5deg); }
+}
+
+/* ---- the logo: the butterfly flutters in bursts, faster while pointed at ---- */
+.logo-img svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 6px var(--glow-a)); }
+:root[data-theme="light"] .logo-img svg { filter: none; }
+.logo-img .cf-wing { transform-box: fill-box; animation: cf-flap 3.2s ease-in-out infinite; }
+.logo-img .cf-wing-r { transform-origin: left center; }
+.logo-img .cf-wing-l { transform-origin: right center; }
+.logo-img .cf-bfly { animation: cf-hover 3.2s ease-in-out infinite; }
+.logo-img .cf-shadow { transform-box: fill-box; transform-origin: center; animation: cf-flap 3.2s ease-in-out infinite; }   /* the shadow folds with the wings */
+.logo:hover .cf-wing, .logo:hover .cf-shadow { animation-duration: .36s; }
+.logo:hover .cf-bfly { animation-duration: 1.2s; }
+@keyframes cf-flap {
+  0%, 46%, 100% { transform: scaleX(1); }
+  52% { transform: scaleX(.28); } 58% { transform: scaleX(1); }
+  64% { transform: scaleX(.34); } 70% { transform: scaleX(1); }
+  76% { transform: scaleX(.45); } 82% { transform: scaleX(1); }
+}
+.logo:hover .cf-wing, .logo:hover .cf-shadow { animation-name: cf-flap-fast; }
+@keyframes cf-flap-fast { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.25); } }
+@keyframes cf-hover { 0%, 46%, 100% { transform: translateY(0); } 64% { transform: translateY(-7px); } 82% { transform: translateY(-3px); } }

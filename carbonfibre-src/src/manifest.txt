@@ -25,6 +25,7 @@ css/21-inspection-round-2-full-heig.css
 css/22-sketch-board-tools-on-top-st.css
 css/23-storage-welcome.css
 css/24-responsive.css
+css/25-cyberpunk.css
 html/02-body.html
 js/01-start.js
 js/02-core.js
