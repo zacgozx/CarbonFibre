@@ -106,3 +106,43 @@
 .logo:hover .cf-wing, .logo:hover .cf-shadow { animation-name: cf-flap-fast; }
 @keyframes cf-flap-fast { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.25); } }
 @keyframes cf-hover { 0%, 46%, 100% { transform: translateY(0); } 64% { transform: translateY(-7px); } 82% { transform: translateY(-3px); } }
+
+/* ---- the task board, dashboard and notes views (they keep their own --tb-* palette) ---- */
+.tb {
+  --tb-carbon: #0b0b14; --tb-panel: #0f0f1b; --tb-raised: #151526; --tb-line: #262a52; --tb-hover: #3d4180;
+  --tb-ink: #e8f0ff; --tb-mute: #9aa3c7; --tb-acc-text: #ff6b9a; --tb-acc-rgb: 255, 42, 109;
+  --tb-blu: #05d9e8; --tb-blu-rgb: 5, 217, 232; --tb-ora: #fcee0a; --tb-flare: #ff3b5c; --tb-flare-rgb: 255, 59, 92; --tb-ok: #39ff88;
+  --tb-run-tint: rgba(255, 42, 109, .18); --tb-run-line: rgba(255, 42, 109, .7); --tb-wash: #1e0b2e;
+  --tb-vio: #b026ff; --tb-vio-rgb: 176, 38, 255; --tb-primary-ink: #04120a;
+  --tbd-card: #10101d; --tbd-cardline: #262a52; --tbl-lane: #0a0a13;
+  background: repeating-linear-gradient(0deg, rgba(var(--tb-blu-rgb), .025) 0 1px, transparent 1px 3px),
+              var(--code-tile),
+              radial-gradient(1400px 700px at 15% -15%, var(--tb-wash) 0%, var(--tb-carbon) 60%);
+}
+:root[data-theme="light"] .tb {
+  --tb-carbon: #fbfaff; --tb-panel: #f4f2fc; --tb-raised: #ffffff; --tb-line: #ddd5f3; --tb-hover: #b9a9ee;
+  --tb-ink: #160f2e; --tb-mute: #4b4470; --tb-acc-text: #b00d50; --tb-acc-rgb: 200, 16, 90;
+  --tb-blu: #00658f; --tb-blu-rgb: 0, 101, 143; --tb-ora: #8a4c0c; --tb-flare: #b4323f; --tb-flare-rgb: 180, 50, 63; --tb-ok: #1f7a45;
+  --tb-run-tint: rgba(200, 16, 90, .12); --tb-run-line: #ff8fb8; --tb-wash: #f6ecff;
+  --tb-vio: #7b2cbf; --tb-vio-rgb: 123, 44, 191;
+  --tbd-card: #ffffff; --tbd-cardline: #e3dcf6; --tbl-lane: #f6f3fe;
+}
+.tb-top { box-shadow: 0 1px 0 rgba(var(--tb-acc-rgb), .45), 0 6px 18px -12px var(--glow-a); }
+.tb-titlerow h2 { text-shadow: 0 0 12px var(--glow-a); }
+:root[data-theme="light"] .tb-titlerow h2 { text-shadow: none; }
+.tb-qa[data-qa="task"], .tb .tb-qa--primary { box-shadow: 0 0 14px -2px var(--glow-a); }
+:root[data-theme="light"] .tb-qa[data-qa="task"], :root[data-theme="light"] .tb .tb-qa--primary { box-shadow: none; }
+.tb-lane--open { --lane: #05d9e8; --lane-ink: #8ff4fb; --lane-tint: rgba(5, 217, 232, .14); --lane-wash: rgba(5, 217, 232, .05); }
+.tb-lane--run  { --lane: #ff2a6d; --lane-ink: #ff8fb3; --lane-tint: rgba(255, 42, 109, .18); --lane-wash: rgba(255, 42, 109, .06); }
+.tb-lane--held { --lane: #fcee0a; --lane-ink: #fbf38a; --lane-tint: rgba(252, 238, 10, .12); --lane-wash: rgba(252, 238, 10, .04); }
+.tb-lane--done { --lane: #39ff88; --lane-ink: #9dffc3; --lane-tint: rgba(57, 255, 136, .12); --lane-wash: rgba(57, 255, 136, .04); }
+:root[data-theme="light"] .tb-lane--open { --lane: #00a9c4; --lane-ink: #00658f; --lane-tint: #dcf4fa; --lane-wash: rgba(0, 169, 196, .06); }
+:root[data-theme="light"] .tb-lane--run  { --lane: #c8105a; --lane-ink: #9c0b46; --lane-tint: #fbe3ee; --lane-wash: rgba(200, 16, 90, .06); }
+:root[data-theme="light"] .tb-lane--held { --lane: #c79a00; --lane-ink: #7a5300; --lane-tint: #fff6cc; --lane-wash: rgba(199, 154, 0, .06); }
+:root[data-theme="light"] .tb-lane--done { --lane: #1f9a55; --lane-ink: #1f6b3e; --lane-tint: #dff6e8; --lane-wash: rgba(31, 154, 85, .06); }
+:root:not([data-theme="light"]) .tbd-kpi.acc b { text-shadow: 0 0 18px var(--glow-a); }
+:root:not([data-theme="light"]) .tbd-kpi.ok b { text-shadow: 0 0 18px rgba(57, 255, 136, .45); }
+:root:not([data-theme="light"]) .tb-cardtop .t.over, .tbd-kpi.bad b, .tbd-delta.down, .tbd-time.over, .tb .tbn-bulk button.danger { color: #ff5c7a; }
+.tb .tbn-chip, .tb-chip, .tb-view, .tb .tbn-modes button { transition: box-shadow var(--t2), border-color var(--t2), color var(--t2); }
+.tb .tbn-chip:hover, .tb-chip:hover { border-color: var(--tb-blu); box-shadow: 0 0 10px -3px var(--glow-b); }
+.tb .tbn-chip.on, .tb-chip[aria-pressed="true"] { box-shadow: 0 0 12px -4px var(--glow-b); }
