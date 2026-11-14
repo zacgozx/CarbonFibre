@@ -1,0 +1,93 @@
+{
+  "name": "carbonfibre-desktop",
+  "productName": "CarbonFibre",
+  "version": "1.0.0",
+  "description": "CarbonFibre local notes, as a desktop app",
+  "author": "CarbonFibre",
+  "homepage": "https://github.com/zacgozx/CarbonFibre",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "page": "node build-page.js",
+    "start": "node build-page.js && electron .",
+    "dist": "node build-page.js && electron-builder --publish never",
+    "dist:mac": "node build-page.js && electron-builder --mac --publish never",
+    "dist:win": "node build-page.js && electron-builder --win --publish never",
+    "dist:linux": "node build-page.js && electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "io.github.carbonfibre.desktop",
+    "productName": "CarbonFibre",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "prompt-preload.js",
+      "prompt.html",
+      "prompt.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "page/index.html",
+        "to": "page/index.html"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "category": "Office",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "maintainer": "CarbonFibre"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  }
+}
