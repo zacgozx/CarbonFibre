@@ -50,11 +50,12 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - run: npm ci
-      - name: Desktop tests (plugins, internet permission, updates)
+      - name: Desktop tests (plugins, internet and Node.js permissions, updates)
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q xvfb
           node build-page.js
           xvfb-run -a npx electron --no-sandbox test/run.js
+          xvfb-run -a npx electron --no-sandbox test/node_test.js
           xvfb-run -a npx electron --no-sandbox test/update_test.js
 
   build:

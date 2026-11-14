@@ -96,6 +96,7 @@ function tokenHtml(t, raw) {
     if (raw) return t.bare ? '<span class="xl">' + x + "</span>"
       : mk("[") + '<span class="xl">' + x + "</span>" + mk("](") + '<span class="mk-url">' + esc(u) + "</span>" + mk(")");
     const href = normalizeUrl(u);
+    if (/^obsidian:\/\//i.test(u)) return '<span class="xl xl-obs" data-obslink="' + escAttr(u) + '" title="' + escAttr(u) + '">' + x + "</span>";   /* opened inside the app (linkClick) */
     if (!href) return '<span class="xl xl-off" title="' + escAttr(u) + ' (not opened: only web and email links are)">' + x + "</span>";
     return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(href) +
       '" title="' + escAttr(u) + '">' + x + "</a>";

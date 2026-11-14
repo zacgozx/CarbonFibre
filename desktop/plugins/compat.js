@@ -2,14 +2,16 @@
    Nothing is executed: the code is only read. The answer is one of
      "ok"       uses only what CarbonFibre provides
      "partial"  loads and runs, but some features are missing (listed in `notes`)
-     "no"       its main job needs something CarbonFibre doesn't have (listed in `reasons`); greyed out
+     "no"       it can't run at all (no code)
    and `net: true` when it uses the internet through what the page provides (request, requestUrl, a plain
-   fetch()): it then asks for internet access when switched on. That alone doesn't lower the level.
+   fetch(), XMLHttpRequest): it then asks for internet access when switched on; `node: true` when it uses
+   Node.js or Electron: it then asks for Node.js (as every plugin has in Obsidian). Neither lowers the level.
+   A static read can't be sure: desktop/test/live.js runs the most popular plugins for real.
    The lists below must match what the page provides (carbonfibre-src/src/js/plugins/);
    desktop/test/run.js (npm test) checks that every SUPPORTED name exists there. Bump VERSION whenever a rule changes, so cached answers are redone. */
 "use strict";
 
-const VERSION = 8;
+const VERSION = 9;
 
 /* names exported by the "obsidian" module that the page provides and that work */
 const SUPPORTED = [
@@ -31,7 +33,6 @@ const SUPPORTED = [
 ];
 /* provided so the plugin loads, but they do nothing useful here */
 const PARTIAL = {
-  FileSystemAdapter: "Paths on disk aren't available (no direct file system access)",
   CapacitorAdapter: "Mobile-only parts are switched off",
   loadMathJax: "Math (LaTeX) rendering isn't available",
   renderMath: "Math (LaTeX) rendering isn't available",
@@ -53,15 +54,11 @@ const BLOCKED = {};
 const KNOWN = new Set(SUPPORTED.concat(Object.keys(PARTIAL), NET, Object.keys(BLOCKED)));
 
 /* Node.js modules: the page has a small "path" and "events"; the rest don't exist */
-const NODE_SHIMMED = new Set(["path", "events", "util", "url", "assert", "querystring", "tty", "node:path", "node:events", "node:util", "node:url", "node:assert", "node:querystring", "node:tty"]);
+const NODE_SHIMMED = new Set(["path", "events", "util", "url", "assert", "querystring", "tty", "buffer", "node:path", "node:events", "node:util", "node:url", "node:assert", "node:querystring", "node:tty", "node:buffer"]);
 const NODE = new Set(["fs", "fs/promises", "os", "crypto", "child_process", "electron", "http", "https", "net", "tls", "dgram", "dns",
   "url", "stream", "util", "buffer", "zlib", "worker_threads", "cluster", "readline", "tty", "assert", "querystring", "string_decoder",
   "process", "v8", "vm", "module", "perf_hooks", "timers", "constants", "http2", "inspector", "async_hooks", "stream/promises",
   "original-fs", "@electron/remote"]);
-
-/* words in a plugin's name or description that say the internet is its main job (used where the
-   internet can't be offered: Node's http/https, XMLHttpRequest, sockets) */
-const NET_WORDS = /\b(sync\w*|ai|gpt|chatgpt|openai|llms?|claude|gemini|ollama|copilot|api ?keys?|apis?|cloud|publish\w*|upload\w*|download\w*|web ?clipp\w*|clipper|fetch\w*|import\w* (?:\w+ )?from|servers?|webhooks?|google|dropbox|onedrive|notion|readwise|zotero|todoist|github|gitlab|jira|slack|discord|telegram|translat\w*|youtube|spotify|weather|rss|feeds?|s3|webdav|remote|online|internet|the web|from the web|urls?|links? previews?|shar(?:e|ing)|transcri\w*|whisper|speech|dictation|embeddings?|chat\w*|providers?|powered by|languagetool|omnivore|unsplash|pexels|plantuml|kroki|maps?|calendars? (?:sync|feeds?)|ical|caldav|email|e-mail|send)\b/i;
 
 function uniq(a) { return Array.from(new Set(a)); }
 
@@ -111,12 +108,10 @@ function analyze(code, manifest, info) {
   info = info || {};
   const reasons = [], notes = [];
   if (!code.trim()) return { version: VERSION, level: "no", reasons: ["The plugin has no code (main.js is missing or empty)"], notes: [] };
-  const desktopOnly = manifest.isDesktopOnly === true;
   const text = [manifest.name, manifest.description, info.name, info.description].filter(Boolean).join(" ");
 
   /* Obsidian API names */
   const names = obsidianNames(code);
-  const netMain = NET_WORDS.test(text);
   let net = false;
   names.forEach(function (n) {
     if (NET.indexOf(n) !== -1) net = true;
@@ -124,7 +119,7 @@ function analyze(code, manifest, info) {
     else if (PARTIAL[n]) notes.push(PARTIAL[n]);
   });
 
-  /* Node.js and Electron */
+  /* Node.js and Electron: offered per plugin, when you allow it (the app asks) */
   const mods = requiredModules(code);
   const node = [];
   mods.forEach(function (mod) {
@@ -133,29 +128,14 @@ function analyze(code, manifest, info) {
     if (NODE.has(base) || NODE.has(mod)) node.push(base);
   });
   if (/\b(?:window|globalThis|self)\.require\s*\(/.test(code)) node.push("require");
-  const nodeFiles = node.filter(function (n) { return /^(fs|fs\/promises|original-fs|child_process|electron|@electron\/remote|os)$/.test(n); });
-  const nodeNet = node.filter(function (n) { return /^(http|https|net|tls|dgram|dns|http2)$/.test(n); });
-  if (nodeFiles.length) {
-    const what = "Uses Node.js/Electron (" + uniq(nodeFiles).join(", ") + "), which plugins can't use in CarbonFibre";
-    if (desktopOnly) reasons.push(what); else notes.push(what + "; its desktop-only features are off");
-  }
-  if (nodeNet.length) {
-    if (netMain) reasons.push("Needs the internet through Node.js (" + uniq(nodeNet).join(", ") + "), which plugins can't use in CarbonFibre");
-    else notes.push("Parts that use the internet through Node.js (" + uniq(nodeNet).join(", ") + ") won't work");
-  }
-  const otherNode = node.filter(function (n) { return nodeFiles.indexOf(n) === -1 && nodeNet.indexOf(n) === -1; });
-  if (otherNode.length) {
-    const what = "Uses Node.js modules (" + uniq(otherNode).join(", ") + ") that aren't available";
-    if (desktopOnly && !nodeFiles.length) reasons.push(what); else notes.push(what);
-  }
+  const usesNode = node.length > 0;
+  if (usesNode) notes.push("Uses Node.js (" + uniq(node).slice(0, 6).join(", ") + "): asks for it when you switch it on; without it, those parts are off");
+  if (names.has("FileSystemAdapter") && !usesNode) notes.push("Paths on disk need Node.js access, which this plugin doesn't ask for");
 
-  /* a plain fetch() is handed the app's own (each plugin gets one); window.fetch, XHR and sockets aren't */
-  if (count(code, /(?:^|[^\w$.])fetch\s*\(/g)) net = true;
-  const rawNet = count(code, /\b(?:window|globalThis|self)\.fetch\s*\(|new\s+XMLHttpRequest\b|new\s+WebSocket\b|new\s+EventSource\b|navigator\.sendBeacon\b/g);
-  if (rawNet && !reasons.some(function (r) { return /internet/.test(r); })) {
-    if (netMain && !net) reasons.push("Its main features reach the internet in a way CarbonFibre can't offer plugins (XMLHttpRequest, sockets)");
-    else notes.push("Some internet requests (XMLHttpRequest, sockets, window.fetch) won't work; requestUrl and fetch do, once allowed");
-  }
+  /* fetch(), XMLHttpRequest: each plugin's own, through its internet permission. Sockets aren't offered (Node.js has its own) */
+  if (count(code, /(?:^|[^\w$.])fetch\s*\(|new\s+XMLHttpRequest\b/g)) net = true;
+  if (count(code, /\b(?:window|globalThis|self)\.fetch\s*\(/g)) { net = true; notes.push("Calls window.fetch, which only works through its internet permission when called as fetch()"); }
+  if (count(code, /new\s+WebSocket\b|new\s+EventSource\b/g) && !usesNode) notes.push("Live connections (WebSocket, EventSource) aren't offered to plugins");
 
   /* CodeMirror: Obsidian's editor. CarbonFibre has its own editor, so editor extensions don't run */
   const cm = Array.from(mods).filter(function (m2) { return /^@codemirror\/|^@lezer\//.test(m2); });
@@ -163,7 +143,7 @@ function analyze(code, manifest, info) {
   if (cm.length || editorExt) {
     const hooks = count(code, /\.(addCommand|addRibbonIcon|registerView|registerMarkdownCodeBlockProcessor|registerMarkdownPostProcessor|addStatusBarItem|registerEditorSuggest)\s*\(/g);
     const big = count(code, /\.addCommand\s*\(/g) >= 3 || /\.registerView\s*\(|\.registerMarkdownCodeBlockProcessor\s*\(|\.registerMarkdownPostProcessor\s*\(/.test(code);
-    if (editorExt && !big && hooks < 2) reasons.push("Works by changing Obsidian's editor (CodeMirror), which CarbonFibre doesn't use");
+    if (editorExt && !big && hooks < 2) notes.push("Works by changing Obsidian's editor (CodeMirror), which CarbonFibre doesn't use yet: it loads but does little");
     else if (editorExt) notes.push("Its editor decorations (CodeMirror extensions) don't show; commands, views and rendering work");
     else notes.push("Some editor-specific parts (CodeMirror) are inactive");
   }
@@ -182,10 +162,9 @@ function analyze(code, manifest, info) {
   if (/\.registerObsidianProtocolHandler\s*\(/.test(code)) notes.push("obsidian:// links aren't handled");
   if (/\.registerExtensions\s*\(/.test(code)) notes.push("Opening non-Markdown file types isn't supported");
   if (/\.registerBasesView\s*\(|\.BasesView\b/.test(code)) notes.push("Obsidian Bases views aren't available");
-  if (/\.getResourcePath\s*\(/.test(code)) notes.push("Images and attachments from the vault may not display");
 
   const level = reasons.length ? "no" : notes.length ? "partial" : "ok";
-  return { version: VERSION, level: level, reasons: uniq(reasons), notes: uniq(notes), net: net && level !== "no" };
+  return { version: VERSION, level: level, reasons: uniq(reasons), notes: uniq(notes), net: (net || usesNode) && level !== "no", node: usesNode };
 }
 
 module.exports = { VERSION, SUPPORTED, PARTIAL, NET, BLOCKED, analyze };

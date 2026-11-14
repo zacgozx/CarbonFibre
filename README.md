@@ -75,7 +75,7 @@ disabled with the reason. Switch any time from the bottom-left of the window.
   same account, or give CarbonFibre its own custom domain.
 - **Plugins run only in the desktop app.** The website never runs plugin code; its Plugins window is greyed
   out. In the desktop app a plugin you switch on can read and change your notes (as in Obsidian). The page
-  keeps `connect-src 'none'`; a plugin reaches the internet only if you allowed it in the app's dialog. The desktop app widens the script
+  keeps `connect-src 'none'`; a plugin reaches the internet, or Node.js (as Obsidian gives every plugin), only if you allowed it in the app's dialog. The desktop app widens the script
   lock there only for installed plugin code and for code plugins build from strings; injected `<script>`
   tags and `onerror=` handlers stay blocked. While any plugin is on, links opened from the page ask before
   your browser opens them. The desktop app itself talks to GitHub only: the plugin catalog, the plugins

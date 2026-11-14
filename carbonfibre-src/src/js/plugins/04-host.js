@@ -4,10 +4,12 @@
    plugins register (commands, ribbon buttons, status bar items, code block renderers, post
    processors, editor suggestions, views) to CarbonFibre. Every hook into CarbonFibre's own code
    checks PluginHost.running first, so with no plugins nothing changes.
+   A plugin you allowed Node.js (desktop app, in a window opened for it) gets Node's own modules;
+   the others get the stand-ins below.
    ============================================================ */
 
-/* stands in for CodeMirror's modules: any property or call gives back itself, so plugins that
-   build editor extensions still load; the extensions themselves never run */
+/* stands in for CodeMirror's modules when the desktop app's real copy (vendor/codemirror.js) isn't
+   there: any property or call gives back itself, so plugins that build editor extensions still load */
 const PluginStub = (function () {
   const proto = Object.create(null);
   let proxy = null;
@@ -87,7 +89,7 @@ PluginNode.tty = { isatty: function () { return false; } };
 /* any other Node or Electron module: loads, but using it throws, so plugins that only need it for
    optional desktop features still start */
 PluginNode.missing = function (name) {
-  const fail = function () { throw new Error('"' + name + '" isn\'t available to plugins in CarbonFibre (no Node.js or Electron)'); };
+  const fail = function () { throw new Error('"' + name + '" isn\'t available to this plugin (it uses Node.js or Electron: allow it in Plugins, Installed)'); };
   let p = null;
   p = new Proxy(function () {}, {
     get: function (t, k) {
@@ -100,8 +102,80 @@ PluginNode.missing = function (name) {
   });
   return p;
 };
+/* Node's Buffer, the common part (bytes <-> text, base64, hex), for plugins that use it without
+   needing the rest of Node. Plugins allowed to use Node get the real one. */
+class PluginBuffer extends Uint8Array {
+  static from(v, enc, len) {
+    if (typeof v === "string") return PluginBuffer.fromString(v, enc);
+    if (v instanceof ArrayBuffer) return new PluginBuffer(v, enc || 0, len === undefined ? v.byteLength - (enc || 0) : len);
+    if (ArrayBuffer.isView(v)) { const b = new PluginBuffer(v.byteLength); b.set(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)); return b; }
+    if (v && v.type === "Buffer" && Array.isArray(v.data)) return PluginBuffer.from(v.data);
+    const b = new PluginBuffer(v.length || 0); b.set(Array.from(v || [], function (x) { return x & 255; })); return b;
+  }
+  static fromString(s, enc) {
+    enc = String(enc || "utf8").toLowerCase();
+    if (enc === "base64" || enc === "base64url") { const t = atob(s.replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/]/g, "")); return PluginBuffer.from(Array.from(t, function (c) { return c.charCodeAt(0); })); }
+    if (enc === "hex") { const out = []; for (let i = 0; i + 1 < s.length; i += 2) out.push(parseInt(s.substr(i, 2), 16)); return PluginBuffer.from(out); }
+    if (enc === "latin1" || enc === "binary" || enc === "ascii") return PluginBuffer.from(Array.from(s, function (c) { return c.charCodeAt(0); }));
+    return PluginBuffer.from(new TextEncoder().encode(s));
+  }
+  static alloc(n, fill) { const b = new PluginBuffer(n); if (fill) b.fill(typeof fill === "string" ? fill.charCodeAt(0) : fill); return b; }
+  static allocUnsafe(n) { return new PluginBuffer(n); }
+  static isBuffer(b) { return b instanceof PluginBuffer; }
+  static isEncoding(e) { return /^(utf-?8|base64(url)?|hex|latin1|binary|ascii)$/i.test(String(e)); }
+  static byteLength(s, enc) { return typeof s === "string" ? PluginBuffer.fromString(s, enc).length : s.byteLength; }
+  static concat(list, total) {
+    const n = total === undefined ? list.reduce(function (a, b) { return a + b.length; }, 0) : total, out = new PluginBuffer(n);
+    let at = 0;
+    list.forEach(function (b) { if (at < n) { out.set(b.subarray(0, n - at), at); at += b.length; } });
+    return out;
+  }
+  toString(enc, start, end) {
+    const b = this.subarray(start || 0, end === undefined ? this.length : end);
+    enc = String(enc || "utf8").toLowerCase();
+    if (enc === "base64" || enc === "base64url") {
+      let t = ""; for (let i = 0; i < b.length; i += 0x8000) t += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      const out = btoa(t);
+      return enc === "base64url" ? out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : out;
+    }
+    if (enc === "hex") return Array.from(b, function (x) { return (x < 16 ? "0" : "") + x.toString(16); }).join("");
+    if (enc === "latin1" || enc === "binary" || enc === "ascii") return Array.from(b, function (x) { return String.fromCharCode(x); }).join("");
+    return new TextDecoder().decode(b);
+  }
+  toJSON() { return { type: "Buffer", data: Array.from(this) }; }
+  equals(o) { if (!o || o.length !== this.length) return false; for (let i = 0; i < this.length; i++) if (this[i] !== o[i]) return false; return true; }
+  slice(a, b) { return this.subarray(a, b); }
+  write(s, off, len, enc) { const src = PluginBuffer.fromString(String(s), typeof off === "string" ? off : enc), at = typeof off === "number" ? off : 0, n = Math.min(src.length, this.length - at, typeof len === "number" ? len : Infinity); this.set(src.subarray(0, n), at); return n; }
+  copy(target, tStart, sStart, sEnd) { const part = this.subarray(sStart || 0, sEnd === undefined ? this.length : sEnd); target.set(part, tStart || 0); return part.length; }
+  readUInt8(o) { return this[o || 0]; }
+  readUInt32BE(o) { return new DataView(this.buffer, this.byteOffset).getUint32(o || 0); }
+  readUInt32LE(o) { return new DataView(this.buffer, this.byteOffset).getUint32(o || 0, true); }
+}
+PluginNode.buffer = { Buffer: PluginBuffer, kMaxLength: 0x7fffffff };
 PluginEmitter.EventEmitter = PluginEmitter;
 PluginEmitter.default = PluginEmitter;
+
+/* Plugins compiled to old JavaScript (ES5) call their base class as a function,
+   `_super.call(this, app, manifest) || this`. Obsidian's classes allow that; JavaScript classes throw
+   "cannot be invoked without 'new'". Each exported class answers such a call by building the object
+   properly (with the subclass's prototype) and returning it, which is what that compiled code uses. */
+const PluginCallable = {
+  made: new WeakMap(),
+  wrap(C) {
+    if (typeof C !== "function" || !/^class\b/.test(Function.prototype.toString.call(C))) return C;
+    if (PluginCallable.made.has(C)) return PluginCallable.made.get(C);
+    const P = new Proxy(C, {
+      apply: function (target, self, args) {
+        const Sub = self && typeof self === "object" && typeof self.constructor === "function" && self.constructor.prototype instanceof target ? self.constructor : target;
+        const obj = Reflect.construct(target, args, Sub);
+        if (self && typeof self === "object" && self !== window) Object.getOwnPropertyNames(obj).forEach(function (k) { try { Object.defineProperty(self, k, Object.getOwnPropertyDescriptor(obj, k)); } catch (e) { /* fixed property */ } });
+        return obj;
+      }
+    });
+    PluginCallable.made.set(C, P);
+    return P;
+  }
+};
 
 /* ---- the Plugin base class ---- */
 class PluginPlugin extends PluginComponent {
@@ -146,11 +220,18 @@ class PluginPlugin extends PluginComponent {
       delete PluginHost.views[type];
     });
   }
-  registerExtensions() {}
+  registerExtensions(exts, type) { PluginApp.app.viewRegistry.registerExtensions(exts, type); this.register(function () { PluginApp.app.viewRegistry.unregisterExtensions(exts); }); }
   registerBasesView() { return false; }
-  registerHoverLinkSource() {}
+  registerHoverLinkSource(id, info) { PluginApp.app.workspace.registerHoverLinkSource(id, info); this.register(function () { PluginApp.app.workspace.unregisterHoverLinkSource(id); }); }
+  registerCodeMirror() {}                              /* Obsidian's old editor (CodeMirror 5): gone in Obsidian too */
+  registerCliHandler() {}
+  registerDomEvent(el, type, cb, opts) { if (el && el.addEventListener) super.registerDomEvent(el, type, cb, opts); }
   registerEditorExtension() {}
-  registerObsidianProtocolHandler() {}
+  registerObsidianProtocolHandler(action, fn) {
+    const hs = PluginApp.app.workspace.protocolHandlers;
+    hs.set(String(action), fn);
+    this.register(function () { if (hs.get(String(action)) === fn) hs.delete(String(action)); });
+  }
   registerMarkdownPostProcessor(fn, sortOrder) {
     const e = { fn: fn, sortOrder: sortOrder || 0, plugin: this };
     PluginHost.post.push(e);
@@ -281,7 +362,7 @@ const PluginApi = {
       setIcon: function (el, id) { PluginIcons.set(el, id); }, addIcon: function (id, svg) { PluginIcons.custom[id] = String(svg); },
       removeIcon: function (id) { delete PluginIcons.custom[id]; }, getIcon: PluginIcons.get, getIconIds: PluginIcons.ids,
       setTooltip: pluginTooltip, displayTooltip: pluginTooltip,
-      normalizePath: PluginText.normalizePath, debounce: PluginText.debounce, moment: PluginTime.moment,
+      normalizePath: PluginText.normalizePath, debounce: PluginText.debounce, moment: window.moment && window.moment.version ? window.moment : PluginTime.moment,
       parseYaml: function (s) { return PluginYaml.parse(s); }, stringifyYaml: function (o) { return PluginYaml.stringify(o); },
       getAllTags: PluginApi.getAllTags, parseFrontMatterTags: PluginText.tagsFrom, parseFrontMatterAliases: PluginText.aliasesFrom,
       parseFrontMatterEntry: PluginText.entry, parseFrontMatterStringArray: PluginText.stringArray, getFrontMatterInfo: PluginText.frontMatterInfo,
@@ -296,8 +377,8 @@ const PluginApi = {
       renderResults: function (el, text, result, offset) { PluginSearch.renderMatches(el, text, result && result.matches, offset); },
       sortSearchResults: function (list) { list.sort(function (a, b) { return ((b.match || b).score || 0) - ((a.match || a).score || 0); }); },
       Keymap: PluginKeymap, Scope: PluginScope, Platform: {
-        isDesktop: true, isMobile: false, isDesktopApp: false, isMobileApp: false, isIosApp: false, isAndroidApp: false, isPhone: false, isTablet: false,
-        isMacOS: mac || platform === "darwin", isWin: platform === "win32", isLinux: platform === "linux", isSafari: false, resourcePathPrefix: "app://local/" },
+        isDesktop: true, isMobile: false, isDesktopApp: PluginNodeAccess.have(), isMobileApp: false, isIosApp: false, isAndroidApp: false, isPhone: false, isTablet: false,
+        isMacOS: mac || platform === "darwin", isWin: platform === "win32", isLinux: platform === "linux", isSafari: false, resourcePathPrefix: "app://carbonfibre/vault/" },
       TAbstractFile: PluginTAbstractFile, TFile: PluginTFile, TFolder: PluginTFolder, Vault: PluginVault, MetadataCache: PluginMetadataCache,
       Workspace: PluginWorkspace, WorkspaceLeaf: PluginWorkspaceLeaf, WorkspaceItem: PluginWorkspaceItem, WorkspaceParent: PluginWorkspaceParent,
       WorkspaceSplit: PluginWorkspaceSplit, WorkspaceTabs: PluginWorkspaceTabs, WorkspaceRoot: PluginWorkspaceRoot, WorkspaceSidedock: PluginWorkspaceSidedock,
@@ -305,8 +386,9 @@ const PluginApi = {
       WorkspaceRibbon: PluginWorkspaceRibbon, WorkspaceMobileDrawer: PluginWorkspaceMobileDrawer,
       View: PluginView, ItemView: PluginItemView, FileView: PluginFileView, EditableFileView: PluginEditableFileView, TextFileView: PluginTextFileView,
       MarkdownView: PluginMarkdownView, MarkdownRenderer: PluginMarkdownRenderer, MarkdownRenderChild: PluginMarkdownRenderChild,
-      MarkdownPreviewRenderer: PluginMarkdownPreviewRenderer, MarkdownPreviewView: class {}, MarkdownEditView: class {}, MarkdownSourceView: class {},
+      MarkdownPreviewRenderer: PluginMarkdownPreviewRenderer, MarkdownPreviewView: class { static render(app, md, el, sourcePath, comp) { return PluginHost.renderMarkdown(md, el, sourcePath, comp); } }, MarkdownEditView: class {}, MarkdownSourceView: class {},
       HoverPopover: PluginHoverPopover, Editor: PluginEditor, App: Object, FileManager: PluginFileManager, Tasks: class {},
+      SecretComponent: PluginSecretComponent, BasesView: class extends PluginComponent { constructor(controller) { super(); this.controller = controller; this.app = PluginApp.app; } onDataUpdated() {} },
       apiVersion: PluginApi.apiVersion,
       requireApiVersion: function (v) {
         const a = String(v).split(".").map(Number), b = PluginApi.apiVersion.split(".").map(Number);
@@ -315,7 +397,7 @@ const PluginApi = {
       },
       resolveSubpath: PluginApi.resolveSubpath, iterateCacheRefs: PluginApi.iterateCacheRefs, iterateRefs: PluginApi.iterateRefs,
       getLanguage: function () { return "en"; },
-      FileSystemAdapter: PluginNoAdapter, CapacitorAdapter: class {},
+      FileSystemAdapter: PluginNodeAccess.have() ? PluginAdapter : PluginNoAdapter, CapacitorAdapter: class {},
       loadMathJax: function () { return Promise.resolve(); }, finishRenderMath: function () { return Promise.resolve(); },
       renderMath: function (src, display) { const el = document.createElement(display ? "div" : "span"); el.className = "math"; el.textContent = src; return el; },
       loadMermaid: function () { return Promise.reject(new Error("Mermaid isn't available to plugins in CarbonFibre")); },
@@ -324,12 +406,14 @@ const PluginApi = {
       request: offline, requestUrl: function () { const p = offline(); p.json = p; p.text = p; p.arrayBuffer = p; return p; },
       editorInfoField: PluginStub, editorEditorField: PluginStub, editorViewField: PluginStub, editorLivePreviewField: PluginStub, livePreviewState: PluginStub
     };
+    Object.keys(m).forEach(function (k) { m[k] = PluginCallable.wrap(m[k]); });
+    PluginApi.exports = m;
     PluginApi.module = new Proxy(m, {
       get: function (t, k) {
         if (k in t || typeof k !== "string") return t[k];
         PluginUnknown.seen.add(k);
         if (!/^[A-Z]/.test(k)) return undefined;
-        if (!PluginUnknown.classes[k]) PluginUnknown.classes[k] = class extends PluginComponent { constructor(app) { super(); this.app = app; } };
+        if (!PluginUnknown.classes[k]) PluginUnknown.classes[k] = PluginCallable.wrap(class extends PluginComponent { constructor(app) { super(); this.app = app; } });
         return PluginUnknown.classes[k];
       }
     });
@@ -416,12 +500,199 @@ const PluginNet = {
     PluginNet.modules.set(id, m);
     return m;
   },
-  requireFor(id) { return function (name) { return String(name) === "obsidian" ? PluginNet.moduleFor(id) : PluginHost.require(name); }; },
-  /* switching a plugin on: one that uses the internet asks once (the app's dialog) */
+  /* nodeOn: a plugin you allowed Node.js gets Node's own modules first, the page's stand-ins after */
+  requireFor(id, nodeOn) {
+    return function (name) {
+      const n = String(name);
+      if (n === "obsidian") return PluginNet.moduleFor(id);
+      if (nodeOn && !/^(moment|@codemirror\/|@lezer\/)/.test(n)) { try { return window.cfDesktop.node.require(n); } catch (e) { /* not a Node module: the page's own */ } }
+      return PluginHost.require(n);
+    };
+  },
+  /* switching a plugin on: one that uses Node.js asks for it once, one that uses the internet asks
+     for that once (the app's dialogs). Allowing Node.js may reopen the window ("reopen"). */
   askIfNeeded(entry) {
+    const d = cfDesktopPlugins();
+    if (entry && entry.compat && entry.compat.node && entry.node === null && d.askNode) {
+      return d.askNode(entry.id).catch(function () { return false; }).then(function (r) {
+        if (r === "reopen") return new Promise(function () {});          /* the window is closing; it opens again with the plugin on */
+        return r === true ? undefined : PluginNet.askNetOnly(entry);
+      });
+    }
+    return PluginNet.askNetOnly(entry);
+  },
+  askNetOnly(entry) {
     const d = cfDesktopPlugins();
     if (!entry || !entry.compat || !entry.compat.net || entry.network !== null || !d.askNetwork) return Promise.resolve();
     return d.askNetwork(entry.id).catch(function () { return false; });
+  },
+  /* XMLHttpRequest for one plugin: the old browser API over the same per-plugin requests */
+  xhrFor(id) {
+    class PluginXHR {
+      constructor() { this.readyState = 0; this.status = 0; this.statusText = ""; this.response = null; this.responseText = ""; this.responseType = ""; this.responseURL = ""; this.timeout = 0; this.withCredentials = false; this._h = {}; this._l = {}; this._res = null; this.upload = { addEventListener: function () {}, removeEventListener: function () {} }; }
+      open(method, url) { this._m = String(method || "GET").toUpperCase(); this._u = String(url); this._aborted = false; this._set(1); }
+      setRequestHeader(k, v) { this._h[String(k).toLowerCase()] = String(v); }
+      getResponseHeader(k) { const h = this._res && this._res.headers; const v = h && h[String(k).toLowerCase()]; return v == null ? null : String(v); }
+      getAllResponseHeaders() { const h = (this._res && this._res.headers) || {}; return Object.keys(h).map(function (k) { return k + ": " + h[k]; }).join("\r\n"); }
+      overrideMimeType() {}
+      abort() { this._aborted = true; this._fire("abort"); this._fire("loadend"); }
+      addEventListener(t, f) { (this._l[t] = this._l[t] || []).push(f); }
+      removeEventListener(t, f) { this._l[t] = (this._l[t] || []).filter(function (x) { return x !== f; }); }
+      _fire(t) { const ev = { type: t, target: this, currentTarget: this, loaded: 0, total: 0, lengthComputable: false }; if (typeof this["on" + t] === "function") { try { this["on" + t](ev); } catch (e) { console.error(e); } } (this._l[t] || []).slice().forEach(function (f) { try { f.call(this, ev); } catch (e) { console.error(e); } }, this); }
+      _set(n) { this.readyState = n; this._fire("readystatechange"); }
+      send(body) {
+        const self = this;
+        let b = body;
+        if (b instanceof Blob) b = b.arrayBuffer(); else if (b instanceof URLSearchParams) { if (!self._h["content-type"]) self._h["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8"; b = String(b); }
+        else if (typeof FormData !== "undefined" && b instanceof FormData) b = new Response(b).arrayBuffer();
+        Promise.resolve(b).then(function (data) {
+          return PluginNet.send(id, { url: self._u, method: self._m, headers: self._h, body: data == null || /^(GET|HEAD)$/.test(self._m) ? undefined : data });
+        }).then(function (res) {
+          if (self._aborted) return;
+          self._res = res; self.status = res.status; self.statusText = String(res.status); self.responseURL = res.url || self._u;
+          self._set(2); self._set(3);
+          const buf = res.body.buffer.slice(res.body.byteOffset, res.body.byteOffset + res.body.byteLength);
+          const text = function () { return new TextDecoder().decode(res.body); };
+          if (self.responseType === "arraybuffer") self.response = buf;
+          else if (self.responseType === "blob") self.response = new Blob([buf], { type: self.getResponseHeader("content-type") || "" });
+          else if (self.responseType === "json") { try { self.response = JSON.parse(text()); } catch (e) { self.response = null; } }
+          else { self.responseText = text(); self.response = self.responseText; }
+          self._set(4); self._fire("load"); self._fire("loadend");
+        }).catch(function (e) {
+          if (self._aborted) return;
+          console.error("CarbonFibre: request failed", e);
+          self.status = 0; self._set(4); self._fire("error"); self._fire("loadend");
+        });
+      }
+    }
+    PluginXHR.UNSENT = 0; PluginXHR.OPENED = 1; PluginXHR.HEADERS_RECEIVED = 2; PluginXHR.LOADING = 3; PluginXHR.DONE = 4;
+    return PluginXHR;
+  }
+};
+
+/* Obsidian's core plugins, as plugins look them up (app.internalPlugins). CarbonFibre has its own
+   versions of some; those answer through CarbonFibre (search, the command palette). The rest are
+   there, switched off, with Obsidian's default options, so plugins that read them still start. */
+const PluginCore = {
+  make() {
+    const opts = {
+      "daily-notes": { format: "YYYY-MM-DD", folder: "", template: "", autorun: false },
+      "templates": { folder: "", dateFormat: "YYYY-MM-DD", timeFormat: "HH:mm" },
+      "zk-prefixer": { format: "YYYYMMDDHHmm", folder: "" },
+      "page-preview": {}, "note-composer": {}, "command-palette": { pinned: [] }, "bookmarks": {}, "file-recovery": {}
+    };
+    const on = { "global-search": true, "switcher": true, "command-palette": true, "file-explorer": true, "page-preview": true, "outline": true, "backlink": true, "outgoing-link": true, "tag-pane": true };
+    const ids = ["file-explorer", "global-search", "switcher", "graph", "backlink", "outgoing-link", "tag-pane", "page-preview", "daily-notes", "templates",
+      "note-composer", "command-palette", "slash-command", "editor-status", "bookmarks", "markdown-importer", "zk-prefixer", "random-note", "outline", "word-count",
+      "slides", "audio-recorder", "workspaces", "file-recovery", "publish", "sync", "canvas", "properties", "bases", "footnotes", "webviewer"];
+    const plugins = {};
+    ids.forEach(function (id) {
+      const inst = Object.assign(new PluginEvents(), { id: id, name: id, options: Object.assign({}, opts[id] || {}), app: null, plugin: null,
+        getDailyNote: function () { return null; }, getNoteFolder: function () { return ""; }, saveData: function () {}, onEnable: function () {}, onDisable: function () {} });
+      const p = { id: id, instance: inst, enabled: !!on[id], _loaded: !!on[id], views: {}, commands: [],
+        enable: function () { p.enabled = true; return Promise.resolve(); }, disable: function () { p.enabled = false; return Promise.resolve(); } };
+      inst.plugin = p;
+      plugins[id] = p;
+    });
+    plugins["global-search"].instance.openGlobalSearch = function (q) { showView("search"); searchEl.value = String(q || ""); searchEl.dispatchEvent(new Event("input", { bubbles: true })); };
+    plugins["global-search"].instance.getGlobalSearchQuery = function () { return searchEl.value || ""; };
+    plugins["switcher"].instance.onOpen = plugins["command-palette"].instance.onOpen = function () { palOpen(""); };
+    plugins["file-explorer"].instance.revealInFolder = function (file) { PluginExplorer.leaf().view.revealInFolder(file); };
+    return Object.assign(new PluginEvents(), {
+      plugins: plugins, config: {}, app: null,
+      getPluginById: function (id) { return plugins[id] || null; },
+      getEnabledPluginById: function (id) { return plugins[id] && plugins[id].enabled ? plugins[id].instance : null; },
+      getEnabledPlugins: function () { return Object.keys(plugins).filter(function (k) { return plugins[k].enabled; }).map(function (k) { return plugins[k].instance; }); },
+      requestSaveConfig: function () {}, saveConfig: function () { return Promise.resolve(); }
+    });
+  }
+};
+
+/* Obsidian's registries of views and embeds by file extension. Plugins register their own types
+   here; CarbonFibre itself only opens notes, so these are kept for plugins to read back. */
+const PluginRegistry = {
+  views() {
+    const r = new PluginEvents();
+    return Object.assign(r, {
+      viewByType: PluginHost.views, typeByExtension: { md: "markdown" },
+      getTypeByExtension: function (e) { return r.typeByExtension[String(e).toLowerCase()]; },
+      isExtensionRegistered: function (e) { return Object.prototype.hasOwnProperty.call(r.typeByExtension, String(e).toLowerCase()); },
+      getViewCreatorByType: function (t) { const v = PluginHost.views[t]; return v ? v.creator : undefined; },
+      registerView: function (t, creator) { PluginHost.views[t] = { plugin: null, creator: creator }; r.trigger("view-registered", t); },
+      unregisterView: function (t) { delete PluginHost.views[t]; r.trigger("view-unregistered", t); },
+      registerExtensions: function (exts, type) { (exts || []).forEach(function (e) { r.typeByExtension[String(e).toLowerCase()] = type; }); r.trigger("extensions-updated"); },
+      unregisterExtensions: function (exts) { (exts || []).forEach(function (e) { delete r.typeByExtension[String(e).toLowerCase()]; }); r.trigger("extensions-updated"); }
+    });
+  },
+  embeds() {
+    const r = new PluginEvents();
+    return Object.assign(r, {
+      embedByExtension: { md: PluginHost.markdownEmbed },
+      isExtensionRegistered: function (e) { return Object.prototype.hasOwnProperty.call(r.embedByExtension, String(e).toLowerCase()); },
+      registerExtension: function (e, fn) { r.embedByExtension[String(e).toLowerCase()] = fn; },
+      registerExtensions: function (exts, fn) { (exts || []).forEach(function (e) { r.registerExtension(e, fn); }); },
+      unregisterExtension: function (e) { delete r.embedByExtension[String(e).toLowerCase()]; },
+      unregisterExtensions: function (exts) { (exts || []).forEach(function (e) { r.unregisterExtension(e); }); },
+      getEmbedCreator: function (file) { return r.embedByExtension[file && file.extension] || null; }
+    });
+  }
+};
+
+/* Obsidian 1.11's secret storage: API keys and tokens, kept by the desktop app encrypted with the
+   system's keychain (Electron safeStorage), outside the plugin's settings file. Plugins read them
+   synchronously, so the page keeps the ones it has loaded; writes go straight to the app. */
+const PluginSecrets = {
+  cache: new Map(),
+  ready: null,
+  load() {
+    const d = cfDesktopPlugins();
+    if (!d || !d.secrets) return Promise.resolve();
+    PluginSecrets.ready = PluginSecrets.ready || d.secrets("all").then(function (all) { Object.keys(all || {}).forEach(function (k) { PluginSecrets.cache.set(k, String(all[k])); }); }).catch(function () {});
+    return PluginSecrets.ready;
+  },
+  getSecret(id) { return PluginSecrets.cache.has(String(id)) ? PluginSecrets.cache.get(String(id)) : null; },
+  setSecret(id, value) {
+    id = String(id);
+    if (value === null || value === undefined || value === "") PluginSecrets.cache.delete(id); else PluginSecrets.cache.set(id, String(value));
+    const d = cfDesktopPlugins();
+    if (d && d.secrets) d.secrets("set", id, value == null ? "" : String(value)).catch(function (e) { console.error("CarbonFibre: couldn't save a secret", e); });
+  },
+  listSecrets() { return Array.from(PluginSecrets.cache.keys()); }
+};
+
+/* ---- Node.js, per plugin (desktop app) ----
+   Only in a window the app opened with Node.js (main.js createWindow), and only for plugins you
+   allowed it. Those plugins also get the notes folder's real path (FileSystemAdapter.getBasePath). */
+const PluginNodeAccess = {
+  vault: null,
+  have() { return !!(window.cfDesktop && window.cfDesktop.node); },
+  granted(entry) { return PluginNodeAccess.have() && !!entry && entry.node === true; },
+  /* the notes folder's path: asked for once, when a plugin with Node.js is on and the app doesn't know it */
+  loadVault() {
+    const d = cfDesktopPlugins();
+    if (!PluginNodeAccess.have() || !d || !d.vaultPath || !state.dirHandle) return Promise.resolve();
+    const name = state.dirHandle.name;
+    return d.vaultPath(name).then(function (p) {
+      if (p) return p;
+      return d.list().then(function (list) {
+        return list.some(function (e) { return e.enabled && e.node === true; }) ? d.askVaultPath(name) : null;
+      });
+    }).then(function (p) { PluginNodeAccess.vault = p || null; }).catch(function () {});
+  }
+};
+/* the notes folder's files as addresses the page can show (images, audio, video in plugins):
+   app://carbonfibre/vault/<path>; the app asks the page for the bytes (main.js) */
+const PluginVaultFiles = {
+  url(path) {
+    const p = PluginText.normalizePath(String(path || ""));
+    if (!p || p === "/" || !cfDesktopPlugins()) return "";
+    const f = PluginApp.app && PluginApp.app.vault.getFileByPath(p);
+    return "app://carbonfibre/vault/" + p.split("/").map(encodeURIComponent).join("/") + "?" + ((f && f.stat && f.stat.mtime) || 0);
+  },
+  read(rel) {
+    const p = PluginText.normalizePath(String(rel || ""));
+    if (!p || p.split("/").some(function (seg) { return seg === ".." || seg === "."; }) || !PluginApp.app) return null;
+    return PluginApp.app.vault.adapter.readBinary(p).catch(function () { return null; });
   }
 };
 
@@ -448,17 +719,51 @@ const PluginHost = {
   require(name) {
     const n = String(name);
     if (n === "obsidian") return PluginApi.build();
-    if (/^@codemirror\//.test(n) || /^@lezer\//.test(n)) return PluginStub;
+    if (/^@codemirror\//.test(n) || /^@lezer\//.test(n)) return (window.__cfCodeMirror && window.__cfCodeMirror[n]) || PluginStub;
     if (n === "path" || n === "node:path" || n === "path-browserify") return PluginNode.path;
     if (n === "events" || n === "node:events") return PluginNode.events;
-    if (n === "moment") return PluginTime.moment;
+    if (n === "moment") return window.moment && window.moment.version ? window.moment : PluginTime.moment;
     const base = n.replace(/^node:/, "");
-    if (["util", "url", "assert", "querystring", "os", "tty"].indexOf(base) !== -1) return PluginNode[base];
+    if (["util", "url", "assert", "querystring", "os", "tty", "buffer"].indexOf(base) !== -1) return PluginNode[base];
     return PluginNode.missing(n);
   },
-  process: { platform: (window.cfDesktop && window.cfDesktop.platform) || "browser", env: {}, versions: {}, argv: [], browser: true,
+  process: { platform: (window.cfDesktop && window.cfDesktop.platform) || "browser", env: {}, versions: { node: "" }, version: "", argv: [], browser: true, release: {},
     nextTick: function (cb) { const a = Array.prototype.slice.call(arguments, 1); queueMicrotask(function () { cb.apply(null, a); }); }, cwd: function () { return "/"; }, on: function () {} },
 
+  ready: null,
+  /* before the first plugin: the real moment.js (served by the desktop app), the globals, saved
+     secrets, and for plugins with Node.js the notes folder's path; also answering image requests */
+  prepare() {
+    const d = cfDesktopPlugins();
+    if (d && d.onVaultRead) d.onVaultRead(PluginVaultFiles.read);
+    const script = function (name, have) {
+      return new Promise(function (resolve) {
+        if (have()) { resolve(); return; }
+        const s = document.createElement("script");
+        s.src = "app://carbonfibre/vendor/" + name;
+        s.onload = s.onerror = function () { s.remove(); resolve(); };
+        document.head.appendChild(s);
+      });
+    };
+    const vendor = Promise.all([script("moment.js", function () { return window.moment && window.moment.version; }),
+      script("codemirror.js", function () { return !!window.__cfCodeMirror; })]);
+    return vendor.then(function () {
+      PluginHost.globals();
+      return Promise.all([PluginSecrets.load(), PluginNodeAccess.loadVault()]);
+    }).catch(function (e) { console.error("CarbonFibre plugins:", e); });
+  },
+  /* the global names Obsidian has, which plugins use without importing: moment, i18next, Buffer */
+  globals() {
+    const set = function (k, v) { if (!(k in window)) Object.defineProperty(window, k, { value: v, writable: true, configurable: true }); };
+    if (window.moment && window.moment.version && PluginApi.exports) PluginApi.exports.moment = window.moment;
+    set("moment", PluginTime.moment);
+    set("Buffer", PluginBuffer);
+    const t = function (key, o) { return o && typeof o === "object" && o.defaultValue !== undefined ? o.defaultValue : String(key); };
+    set("i18next", { language: "en", languages: ["en"], resolvedLanguage: "en", isInitialized: true, t: t, exists: function () { return false; },
+      getFixedT: function () { return t; }, on: function () {}, off: function () {}, use: function () { return window.i18next; }, init: function () { return Promise.resolve(t); },
+      changeLanguage: function () { return Promise.resolve(t); }, addResourceBundle: function () { return window.i18next; }, addResources: function () { return window.i18next; },
+      hasResourceBundle: function () { return false; }, getResourceBundle: function () { return {}; }, loadNamespaces: function () { return Promise.resolve(); }, createInstance: function () { return window.i18next; } });
+  },
   define(id, factory) { PluginHost.defined.set(String(id), factory); },
   /* Obsidian's private factory for an embedded note editor; some plugins (Kanban) take its editor
      class at start. They get a stand-in, so they load; inline editing through it won't work. */
@@ -473,6 +778,7 @@ const PluginHost = {
     if (PluginHost.running || !PluginHost.available()) return;
     PluginHost.running = true;
     window.__cfPluginDefine = PluginHost.define;
+    PluginHost.ready = PluginHost.prepare();
     const app = {
       appId: "carbonfibre", title: "CarbonFibre", isMobile: false, lastEvent: null,
       vault: new PluginVault(), metadataCache: new PluginMetadataCache(), fileManager: new PluginFileManager(),
@@ -495,17 +801,22 @@ const PluginHost = {
         isEnabled: function (id) { return app.plugins.enabledPlugins.has(id); },
         enablePlugin: function (id) { return PluginHost.enable(id); }, disablePlugin: function (id) { return PluginHost.disable(id); },
         enablePluginAndSave: function (id) { return PluginHost.enable(id); }, disablePluginAndSave: function (id) { return PluginHost.disable(id); },
-        loadManifests: function () { return Promise.resolve(); }
+        loadManifests: function () { return Promise.resolve(); },
+        getPluginFolder: function () { return ".obsidian/plugins"; },
+        get updates() { return {}; }, requestSaveConfig: function () {}, saveConfig: function () { return Promise.resolve(); }
       },
-      internalPlugins: { plugins: {}, config: {}, getPluginById: function () { return null; }, getEnabledPluginById: function () { return null; } },
+      internalPlugins: PluginCore.make(),
       setting: {
         open: function () { PluginManager.open("installed"); }, close: function () { PluginManager.close(); },
         openTabById: function (id) { PluginManager.openSettings(id); }, activeTab: null, pluginTabs: []
       },
-      customCss: { theme: "", snippets: [], enabledSnippets: new Set(), setTheme: function () {}, getSnippetPath: function () { return ""; }, readSnippets: function () {} },
+      customCss: Object.assign(new PluginEvents(), { theme: "", themes: {}, oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
+        setTheme: function () {}, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
+        readSnippets: function () {}, readThemes: function () {}, requestLoadSnippets: function () {}, requestLoadTheme: function () {}, setCssEnabledStatus: function () {},
+        isThemeInstalled: function () { return false; }, onConfigChange: function () {} }),
       hotkeyManager: { getHotkeys: function () { return []; }, getDefaultHotkeys: function () { return []; }, printHotkeyForCommand: function () { return ""; } },
-      viewRegistry: { viewByType: PluginHost.views, typeByExtension: { md: "markdown" }, getTypeByExtension: function (e) { return e === "md" ? "markdown" : undefined; }, isExtensionRegistered: function (e) { return e === "md"; } },
-      embedRegistry: { embedByExtension: { md: PluginHost.markdownEmbed } },
+      viewRegistry: PluginRegistry.views(), embedRegistry: PluginRegistry.embeds(),
+      secretStorage: PluginSecrets,
       metadataTypeManager: { properties: {}, types: {}, getPropertyInfo: function () { return null; }, getAllProperties: function () { return {}; }, setType: function () {}, getTypeInfo: function () { return { expected: { type: "text" } }; } },
       dom: { appContainerEl: document.body, workspaceEl: document.getElementById("workarea") },
       getTheme: function () { return document.documentElement.getAttribute("data-theme") === "light" ? "moonstone" : "obsidian"; },
@@ -547,7 +858,7 @@ const PluginHost = {
     PluginDom.install();                               /* Obsidian's element helpers, from the first plugin on */
     if (!window.CodeMirror) window.CodeMirror = PluginStub;   /* Obsidian's old editor global; plugins define modes on it */
     const app = PluginApp.app;
-    return cfDesktopPlugins().styles(id).then(function (css) {
+    return (PluginHost.ready || Promise.resolve()).then(function () { return cfDesktopPlugins().styles(id); }).then(function (css) {
       if (css) {
         const st = document.createElement("style");
         st.setAttribute("data-cf-plugin", id);
@@ -557,7 +868,10 @@ const PluginHost = {
       return PluginHost.loadScript(id);
     }).then(function (factory) {
       const module = { exports: {} };
-      factory.call(window, PluginNet.requireFor(id), module, module.exports, PluginHost.process, window, PluginNet.fetchFor(id));
+      const nodeOn = PluginNodeAccess.granted(entry), node = window.cfDesktop && window.cfDesktop.node;
+      const dir = nodeOn && entry.dir ? entry.dir : "/.obsidian/plugins/" + id;
+      factory.call(window, PluginNet.requireFor(id, nodeOn), module, module.exports, nodeOn ? node.process : PluginHost.process, window, PluginNet.fetchFor(id),
+        PluginNet.xhrFor(id), nodeOn ? node.Buffer : window.Buffer, dir, dir + "/main.js");
       const Cls = module.exports && (module.exports.default || module.exports);
       if (typeof Cls !== "function") throw new Error("main.js doesn't export a plugin");
       const manifest = Object.assign({}, entry.manifest, { id: id, dir: ".obsidian/plugins/" + id });

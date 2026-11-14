@@ -30,6 +30,29 @@ function linkClick(e, pane) {
   }
   const xl = e.target.closest("[data-extlink]");
   if (xl) { e.preventDefault(); followLink(xl.dataset.extlink); return true; }
+  const ol = e.target.closest("[data-obslink]");
+  if (ol) { e.preventDefault(); openObsidianUrl(ol.dataset.obslink, pane); return true; }
+  return false;
+}
+/* obsidian:// links, inside the app: open (a note), search, new; any other action goes to the plugin
+   that registered it (registerObsidianProtocolHandler, desktop app) */
+function openObsidianUrl(u, pane) {
+  let url;
+  try { url = new URL(String(u)); } catch (e) { return false; }
+  const action = (url.hostname || url.pathname.replace(/^\/+/, "")).toLowerCase(), params = { action: action };
+  url.searchParams.forEach(function (v, k) { params[k] = v; });
+  const file = String(params.file || params.path || "").replace(/\.md$/i, "");
+  if (action === "open" && file) {
+    const n = state.notes.find(function (x) { return (x.path || x.title).replace(/\.md$/i, "") === file; }) || noteByTitle(file.split("/").pop());
+    if (n) openInPane(n.id, pane || focusedPane || panes[0]); else pushToastLike("No note \u201c" + file + "\u201d here");
+    return true;
+  }
+  if (action === "search" && params.query !== undefined) { showView("search"); searchEl.value = params.query; searchEl.dispatchEvent(new Event("input", { bubbles: true })); return true; }
+  if (action === "new" && (params.name || params.file)) { openOrCreateByTitle(String(params.name || params.file).replace(/\.md$/i, ""), pane || focusedPane || panes[0]); return true; }
+  const hs = typeof PluginApp !== "undefined" && PluginApp.app && PluginApp.app.workspace.protocolHandlers;
+  const fn = hs && hs.get(action);
+  if (fn) { try { const r = fn(params); if (r && r.catch) r.catch(function (er) { console.error(er); }); } catch (er) { console.error(er); } return true; }
+  pushToastLike("Nothing here opens \u201cobsidian://" + action + "\u201d links");
   return false;
 }
 

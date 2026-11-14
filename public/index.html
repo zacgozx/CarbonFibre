@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-CmQigFWkVlAvvUOASfuWo9IPwPHrZLI3icBYGa2O3rA='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-PSTjbF+sOmJpEALcCr+qx85km++IgcUO1o5jvJfohlU='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -748,6 +748,7 @@ a.xl:hover { border-bottom-color: var(--blu); }
 .find-r1, .find-rall { height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--txt); font: 600 12px var(--sans); cursor: pointer; }
 .find-r1:hover, .find-rall:hover { border-color: var(--acc); color: var(--acc-text); }
 .xl.xl-off { border-bottom-style: dotted; color: var(--dim); cursor: not-allowed; }   /* a link to something other than the web or email: shown, not opened */
+.xl.xl-obs { cursor: pointer; text-decoration: underline dotted; }
 /* ---- the sketch library: window, folder tree and thumbnails (also the board's Files tab) ---- */
 .skl-win { position: fixed; inset: 0; z-index: 180; background: rgba(10, 12, 16, .45); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .skl-win[hidden] { display: none; }
@@ -2509,6 +2510,7 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
 
 /* internet, per plugin: the badge, and the line with its button in the Installed list */
 .cfp-netb { color: var(--txt); background: var(--chrome-hi); }
+.cfp-nodeb { color: var(--ora); background: var(--chrome-hi); }
 .cfp-net { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; font-size: 12.5px; }
 .cfp-net svg { flex-shrink: 0; }
 .cfp-btn.cfp-small { min-height: 24px; padding: 0 8px; font-size: 12px; }
@@ -2731,7 +2733,7 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
     </div>
   </div>
 </div>
-<footer class="statusbar" id="statusbar">
+<footer class="statusbar status-bar" id="statusbar">
   <div class="timer-bar" id="timerBar"></div>
   <div class="sb-left">
       <div class="storage-row">
@@ -2956,7 +2958,7 @@ const PluginDom = {
     getter(E, "innerWidth", function () { return this.clientWidth; });
     getter(E, "innerHeight", function () { return this.clientHeight; });
     def(E, "onClickEvent", function (fn, opts) { this.addEventListener("click", fn, opts); this.addEventListener("auxclick", fn, opts); });
-    def(E, "on", function (type, sel, fn, opts) {
+    def(N, "on", function (type, sel, fn, opts) {
       if (!this._cfDelegates) Object.defineProperty(this, "_cfDelegates", { value: [], enumerable: false });
       const wrapped = function (e) {
         const t = e.target && e.target.closest ? e.target.closest(sel) : null;
@@ -2965,13 +2967,13 @@ const PluginDom = {
       this._cfDelegates.push({ type: type, sel: sel, fn: fn, wrapped: wrapped });
       this.addEventListener(type, wrapped, opts);
     });
-    def(E, "off", function (type, sel, fn, opts) {
+    def(N, "off", function (type, sel, fn, opts) {
       (this._cfDelegates || []).filter(function (d) { return d.type === type && d.sel === sel && d.fn === fn; }).forEach(function (d) {
         this.removeEventListener(type, d.wrapped, opts);
         this._cfDelegates.splice(this._cfDelegates.indexOf(d), 1);
       }, this);
     });
-    def(E, "trigger", function (type) { this.dispatchEvent(new Event(type, { bubbles: true })); });
+    def(N, "trigger", function (type) { this.dispatchEvent(new Event(type, { bubbles: true })); });
     def(E, "onNodeInserted", function (fn, once) {
       const el = this;
       let done = false;
@@ -3619,6 +3621,13 @@ class PluginAbstractTextComponent extends PluginValueComponent {
 class PluginTextComponent extends PluginAbstractTextComponent {
   constructor(containerEl) { const i = document.createElement("input"); i.type = "text"; i.spellcheck = false; containerEl.appendChild(i); super(i); }
 }
+/* Obsidian 1.11: a field for a key or token, kept in app.secretStorage; the setting stores the secret's name */
+class PluginSecretComponent extends PluginAbstractTextComponent {
+  constructor(app, containerEl) {
+    const el = containerEl || app;
+    const i = document.createElement("input"); i.type = "password"; i.autocomplete = "off"; i.spellcheck = false; el.appendChild(i); super(i);
+  }
+}
 class PluginTextAreaComponent extends PluginAbstractTextComponent {
   constructor(containerEl) { const t = document.createElement("textarea"); containerEl.appendChild(t); super(t); }
 }
@@ -3711,6 +3720,7 @@ class PluginButtonComponent extends PluginBaseComponent {
   setCta() { this.buttonEl.classList.add("mod-cta"); return this; }
   removeCta() { this.buttonEl.classList.remove("mod-cta"); return this; }
   setWarning() { this.buttonEl.classList.add("mod-warning"); return this; }
+  setDestructive() { this.buttonEl.classList.add("mod-destructive", "mod-warning"); return this; }
   setClass(c) { this.buttonEl.classList.add(c); return this; }
   setTooltip(t) { pluginTooltip(this.buttonEl, t); return this; }
   onClick(cb) { this.cb = cb; return this; }
@@ -4852,6 +4862,10 @@ class PluginMarkdownView extends PluginTextFileView {
     this.currentMode = this.editor;
     this.sourceMode = { cmEditor: null };
     this.hoverPopover = null;
+    /* the Properties block above a note in Obsidian; CarbonFibre shows front matter as text */
+    const mel = document.createElement("div");
+    this.metadataEditor = { containerEl: mel, contentEl: mel, propertyListEl: mel, rendered: [], properties: [], owner: this, synchronize: function () {}, load: function () {}, unload: function () {}, focusKey: function () {}, insertProperties: function () {} };
+    this.inlineTitleEl = document.createElement("div");
   }
   get file() { const n = this.pane.type === "note" && this.pane.note(); return n ? PluginApp.fileFor(n) : null; }
   set file(v) { /* the pane decides */ }
@@ -4867,22 +4881,37 @@ class PluginMarkdownView extends PluginTextFileView {
   showSearch() { palOpen("@"); }
 }
 
-class PluginWorkspaceItem extends PluginEvents {}
-class PluginWorkspaceParent extends PluginWorkspaceItem {}
+class PluginWorkspaceItem extends PluginEvents {
+  getRoot() { return PluginApp.app.workspace.rootSplit; }
+  getContainer() { return PluginApp.app.workspace.rootSplit; }
+}
+class PluginWorkspaceParent extends PluginWorkspaceItem {
+  constructor() { super(); this.children = []; this.containerEl = document.createElement("div"); }
+}
 class PluginWorkspaceSplit extends PluginWorkspaceParent {
   constructor(side) { super(); this.side = side; this.collapsed = side !== "root"; this.children = []; this.containerEl = document.createElement("div"); }
+  get doc() { return document; }
+  get win() { return window; }
   collapse() { this.collapsed = true; if (this.side === "right") PluginDock.hide(); }
   expand() { this.collapsed = false; if (this.side === "right") PluginDock.show(); }
   toggle() { if (this.collapsed) this.expand(); else this.collapse(); }
   getRoot() { return this; }
 }
 class PluginWorkspaceTabs extends PluginWorkspaceParent {}
-class PluginWorkspaceRoot extends PluginWorkspaceSplit {}
+/* the main area: its children are the note panes' leaves (Obsidian nests them in tab groups) */
+class PluginWorkspaceRoot extends PluginWorkspaceSplit {
+  get children() { return PluginApp.app ? panes.map(PluginApp.app.workspace.leafFor, PluginApp.app.workspace) : []; }
+  set children(v) { /* fixed: follows CarbonFibre's panes */ }
+}
 class PluginWorkspaceSidedock extends PluginWorkspaceSplit {}
 class PluginWorkspaceContainer extends PluginWorkspaceSplit {}
 class PluginWorkspaceWindow extends PluginWorkspaceContainer {}
 class PluginWorkspaceFloating extends PluginWorkspaceParent {}
-class PluginWorkspaceRibbon {}
+class PluginWorkspaceRibbon {
+  constructor() { this.items = []; this.containerEl = document.getElementById("activity") || document.createElement("div"); }
+  addRibbonItemButton() { return document.createElement("div"); }
+  removeRibbonAction() {}
+}
 class PluginWorkspaceMobileDrawer extends PluginWorkspaceParent {}
 
 class PluginWorkspaceLeaf extends PluginWorkspaceItem {}
@@ -5152,7 +5181,21 @@ class PluginAdapter {
   trashLocal(path) { return this.remove(path); }
   rename(from, to) { return this.read(from).then(function (t) { return this.write(to, t); }.bind(this)).then(function () { return this.remove(from); }.bind(this)); }
   copy(from, to) { return this.read(from).then(function (t) { return this.write(to, t); }.bind(this)); }
-  getResourcePath() { return ""; }
+  getResourcePath(path) { return PluginVaultFiles.url(path); }
+  /* FileSystemAdapter's paths on disk: known only to plugins with Node.js (the app asks for the folder) */
+  getBasePath() { return PluginNodeAccess.vault || ""; }
+  get basePath() { return this.getBasePath(); }
+  getFullPath(path) {
+    const s = this.split(path), base = this.getBasePath();
+    if (s.plugin) { const e = (PluginHost.installed || []).find(function (x) { return x.id === s.plugin; }); if (e && e.dir) return e.dir + (s.rel ? "/" + s.rel : ""); }
+    return base ? base + (s.path ? "/" + s.path : "") : s.path;
+  }
+  getFilePath(path) { return "file://" + this.getFullPath(path); }
+  getRealPath(path) { return path; }
+  get fs() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("fs") : undefined; }
+  get fsPromises() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("fs/promises") : undefined; }
+  get path() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("path") : PluginNode.path; }
+  get url() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("url") : PluginNode.url; }
 }
 function cfDesktopPlugins() { return (window.cfDesktop && window.cfDesktop.plugins) || null; }
 
@@ -5162,7 +5205,9 @@ class PluginVault extends PluginEvents {
     this.adapter = new PluginAdapter(this);
     this.configDir = ".obsidian";
     this.config = { useMarkdownLinks: false, newLinkFormat: "shortest", attachmentFolderPath: "/", newFileLocation: "root", tabSize: 4, useTab: false,
-      showLineNumber: false, readableLineLength: true, defaultViewMode: "source", livePreview: true, foldHeading: false, alwaysUpdateLinks: false, userIgnoreFilters: [] };
+      showLineNumber: false, readableLineLength: true, defaultViewMode: "source", livePreview: true, foldHeading: false, alwaysUpdateLinks: false, userIgnoreFilters: [],
+      cssTheme: "", theme: "obsidian", baseFontSize: 16, accentColor: "", enabledCssSnippets: [], spellcheck: true, strictLineBreaks: false, showFrontmatter: true, propertiesInDocument: "visible",
+      promptDelete: true, trashOption: "system", showInlineTitle: true, foldIndent: true, autoPairBrackets: true, autoPairMarkdown: true, vimMode: false };
   }
   getName() { return state.dirHandle ? state.dirHandle.name : "CarbonFibre"; }
   getConfig(k) { return this.config[k]; }
@@ -5199,7 +5244,8 @@ class PluginVault extends PluginEvents {
   trash(file) { return PluginApp.deleteFile(file); }
   rename(file, newPath) { return PluginApp.renameFile(file, PluginText.normalizePath(newPath)); }
   copy(file, newPath) { return this.read(file).then(function (t) { return this.create(newPath, t); }.bind(this)); }
-  getResourcePath() { return ""; }
+  getResourcePath(file) { return this.adapter.getResourcePath(file && file.path); }
+  exists(path) { const p = PluginText.normalizePath(path); return this.getAbstractFileByPath(p) ? Promise.resolve(true) : this.adapter.exists(p); }
   getAvailablePath(base, ext) { let p = base + "." + ext, k = 1; while (this.getAbstractFileByPath(p)) { p = base + " " + k + "." + ext; k++; } return p; }
   static recurseChildren(folder, cb) { cb(folder); (folder.children || []).forEach(function (c) { if (c instanceof PluginTFolder) PluginVault.recurseChildren(c, cb); else cb(c); }); }
 }
@@ -5324,6 +5370,7 @@ class PluginMetadataCache extends PluginEvents {
     this.resolvedCache = { resolved: resolved, unresolved: unresolved };
     return this.resolvedCache;
   }
+  resolveLinks() { this.resolvedCache = null; }
   get resolvedLinks() { return this.computeLinks().resolved; }
   get unresolvedLinks() { return this.computeLinks().unresolved; }
   getBacklinksForFile(file) {
@@ -5347,10 +5394,63 @@ class PluginMetadataCache extends PluginEvents {
   }
   getLinkSuggestions() { return PluginApp.files().map(function (f) { return { file: f, path: f.path }; }); }
   isUserIgnored() { return false; }
+  getCachedFiles() { return PluginApp.files().map(function (f) { return f.path; }); }
+  /* Obsidian's private parser hooks: some plugins patch these to add their own fields */
+  computeFileMetadataAsync(file) { return Promise.resolve(this.getFileCache(file)); }
+  computeMetadataAsync(buf) { return Promise.resolve(this.parse(typeof buf === "string" ? buf : new TextDecoder().decode(buf))); }
   get initialized() { return true; }
 }
 
 /* ---- the workspace ---- */
+/* Obsidian's file explorer, as plugins find it (getLeavesOfType("file-explorer")): CarbonFibre's own
+   note list, with fileItems built from its rows each time they're asked for. The list redraws as
+   notes change, so what a plugin adds to a row lasts until the next redraw. */
+const PluginExplorer = {
+  leafObj: null,
+  items() {
+    const out = {}, app = PluginApp.app, list = document.getElementById("notesList");
+    if (!list || !app) return out;
+    list.querySelectorAll(".side-item[data-nid]").forEach(function (el) {
+      const n = state.notes.find(function (x) { return String(x.id) === el.dataset.nid; });
+      const f = n && PluginApp.fileFor(n);
+      if (!f) return;
+      const row = el.querySelector(".side-item-row") || el, title = el.querySelector(".side-item-title") || row;
+      out[f.path] = { el: el, selfEl: row, titleEl: row, titleInnerEl: title, innerEl: title, coverEl: row, file: f, view: PluginExplorer.leafObj && PluginExplorer.leafObj.view,
+        setCollapsed: function () { return Promise.resolve(); }, updateTitle: function () {} };
+    });
+    list.querySelectorAll(".fold-head").forEach(function (head) {
+      const nm = head.querySelector(".fold-name"), dir = nm && nm.title;
+      const f = dir && app.vault.getFolderByPath(dir);
+      if (!f) return;
+      const body = head.nextElementSibling;
+      out[f.path] = { el: head, selfEl: head, titleEl: head, titleInnerEl: nm, innerEl: nm, coverEl: head, childrenEl: body, file: f, collapsed: head.classList.contains("collapsed"),
+        setCollapsed: function (on) { collapsedFolders[f.path] = !!on; renderSidebar(); return Promise.resolve(); }, updateTitle: function () {} };
+    });
+    return out;
+  },
+  leaf() {
+    if (PluginExplorer.leafObj) return PluginExplorer.leafObj;
+    const leaf = new PluginWorkspaceLeaf();
+    const view = new PluginView(leaf);
+    Object.defineProperty(view, "fileItems", { get: PluginExplorer.items });
+    Object.assign(view, {
+      containerEl: document.getElementById("side") || document.body, tree: { infinityScroll: { compute: function () {} } },
+      getViewType: function () { return "file-explorer"; }, getDisplayText: function () { return "Files"; },
+      requestSort: function () { renderSidebar(); }, sort: function () { renderSidebar(); }, onRename: function () {}, onCreate: function () {}, onDelete: function () {},
+      revealInFolder: function (file) {
+        const it = PluginExplorer.items()[file && file.path];
+        if (it) it.el.scrollIntoView({ block: "nearest" });
+      },
+      getSortedFolderItems: function (folder) { return (folder.children || []).map(function (c) { return PluginExplorer.items()[c.path]; }).filter(Boolean); }
+    });
+    view.navFileContainerEl = view.containerEl;
+    leaf.view = view;
+    leaf.getViewState = function () { return { type: "file-explorer", state: {} }; };
+    PluginExplorer.leafObj = leaf;
+    return leaf;
+  }
+};
+
 class PluginWorkspace extends PluginEvents {
   constructor() {
     super();
@@ -5365,6 +5465,8 @@ class PluginWorkspace extends PluginEvents {
     this.leftSplit.collapsed = sideEl ? sideEl.classList.contains("side-closed") : false;
     this.containerEl = document.getElementById("workarea") || document.body;
     this.requestSaveLayout = PluginText.debounce(function () {}, 1000);
+    this.protocolHandlers = new Map();
+    this.editorSuggest = { suggests: PluginHost.suggests, currentSuggest: null, addSuggest: function (s) { PluginHost.suggests.push(s); }, removeSuggest: function (s) { const i = PluginHost.suggests.indexOf(s); if (i !== -1) PluginHost.suggests.splice(i, 1); }, close: function () {} };
     this.requestActiveLeafEvents = function () {};
     this.requestResize = function () {};
   }
@@ -5413,6 +5515,7 @@ class PluginWorkspace extends PluginEvents {
   moveLeafToPopout(leaf) { return leaf; }
   getLeavesOfType(type) {
     if (type === "markdown") return panes.filter(function (p) { return p.type === "note" && p.note(); }).map(this.leafFor, this);
+    if (type === "file-explorer") return [PluginExplorer.leaf()];
     return PluginDock.leaves.filter(function (l) { return l.view && l.view.getViewType() === type; });
   }
   getLeafById(id) { let found = null; this.iterateAllLeaves(function (l) { if (l.id === id) found = l; }); return found; }
@@ -5427,6 +5530,9 @@ class PluginWorkspace extends PluginEvents {
   iterateAllLeaves(cb) { panes.forEach(function (p) { cb(this.leafFor(p)); }, this); PluginDock.leaves.slice().forEach(function (l) { if (l.view) cb(l); }); }
   iterateRootLeaves(cb) { panes.forEach(function (p) { cb(this.leafFor(p)); }, this); }
   iterateCodeMirrors() {}
+  /* the sources of hover previews (Page preview settings) */
+  registerHoverLinkSource(id, info) { this.hoverLinkSources = this.hoverLinkSources || {}; this.hoverLinkSources[id] = info; }
+  unregisterHoverLinkSource(id) { if (this.hoverLinkSources) delete this.hoverLinkSources[id]; }
   onLayoutReady(cb) { if (this.layoutReady) setTimeout(function () { try { cb(); } catch (e) { console.error(e); } }, 0); else this.readyCbs.push(cb); }
   markReady() {
     if (this.layoutReady) return;
@@ -5618,10 +5724,12 @@ const PluginApp = {
    plugins register (commands, ribbon buttons, status bar items, code block renderers, post
    processors, editor suggestions, views) to CarbonFibre. Every hook into CarbonFibre's own code
    checks PluginHost.running first, so with no plugins nothing changes.
+   A plugin you allowed Node.js (desktop app, in a window opened for it) gets Node's own modules;
+   the others get the stand-ins below.
    ============================================================ */
 
-/* stands in for CodeMirror's modules: any property or call gives back itself, so plugins that
-   build editor extensions still load; the extensions themselves never run */
+/* stands in for CodeMirror's modules when the desktop app's real copy (vendor/codemirror.js) isn't
+   there: any property or call gives back itself, so plugins that build editor extensions still load */
 const PluginStub = (function () {
   const proto = Object.create(null);
   let proxy = null;
@@ -5701,7 +5809,7 @@ PluginNode.tty = { isatty: function () { return false; } };
 /* any other Node or Electron module: loads, but using it throws, so plugins that only need it for
    optional desktop features still start */
 PluginNode.missing = function (name) {
-  const fail = function () { throw new Error('"' + name + '" isn\'t available to plugins in CarbonFibre (no Node.js or Electron)'); };
+  const fail = function () { throw new Error('"' + name + '" isn\'t available to this plugin (it uses Node.js or Electron: allow it in Plugins, Installed)'); };
   let p = null;
   p = new Proxy(function () {}, {
     get: function (t, k) {
@@ -5714,8 +5822,80 @@ PluginNode.missing = function (name) {
   });
   return p;
 };
+/* Node's Buffer, the common part (bytes <-> text, base64, hex), for plugins that use it without
+   needing the rest of Node. Plugins allowed to use Node get the real one. */
+class PluginBuffer extends Uint8Array {
+  static from(v, enc, len) {
+    if (typeof v === "string") return PluginBuffer.fromString(v, enc);
+    if (v instanceof ArrayBuffer) return new PluginBuffer(v, enc || 0, len === undefined ? v.byteLength - (enc || 0) : len);
+    if (ArrayBuffer.isView(v)) { const b = new PluginBuffer(v.byteLength); b.set(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)); return b; }
+    if (v && v.type === "Buffer" && Array.isArray(v.data)) return PluginBuffer.from(v.data);
+    const b = new PluginBuffer(v.length || 0); b.set(Array.from(v || [], function (x) { return x & 255; })); return b;
+  }
+  static fromString(s, enc) {
+    enc = String(enc || "utf8").toLowerCase();
+    if (enc === "base64" || enc === "base64url") { const t = atob(s.replace(/-/g, "+").replace(/_/g, "/").replace(/[^A-Za-z0-9+/]/g, "")); return PluginBuffer.from(Array.from(t, function (c) { return c.charCodeAt(0); })); }
+    if (enc === "hex") { const out = []; for (let i = 0; i + 1 < s.length; i += 2) out.push(parseInt(s.substr(i, 2), 16)); return PluginBuffer.from(out); }
+    if (enc === "latin1" || enc === "binary" || enc === "ascii") return PluginBuffer.from(Array.from(s, function (c) { return c.charCodeAt(0); }));
+    return PluginBuffer.from(new TextEncoder().encode(s));
+  }
+  static alloc(n, fill) { const b = new PluginBuffer(n); if (fill) b.fill(typeof fill === "string" ? fill.charCodeAt(0) : fill); return b; }
+  static allocUnsafe(n) { return new PluginBuffer(n); }
+  static isBuffer(b) { return b instanceof PluginBuffer; }
+  static isEncoding(e) { return /^(utf-?8|base64(url)?|hex|latin1|binary|ascii)$/i.test(String(e)); }
+  static byteLength(s, enc) { return typeof s === "string" ? PluginBuffer.fromString(s, enc).length : s.byteLength; }
+  static concat(list, total) {
+    const n = total === undefined ? list.reduce(function (a, b) { return a + b.length; }, 0) : total, out = new PluginBuffer(n);
+    let at = 0;
+    list.forEach(function (b) { if (at < n) { out.set(b.subarray(0, n - at), at); at += b.length; } });
+    return out;
+  }
+  toString(enc, start, end) {
+    const b = this.subarray(start || 0, end === undefined ? this.length : end);
+    enc = String(enc || "utf8").toLowerCase();
+    if (enc === "base64" || enc === "base64url") {
+      let t = ""; for (let i = 0; i < b.length; i += 0x8000) t += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      const out = btoa(t);
+      return enc === "base64url" ? out.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : out;
+    }
+    if (enc === "hex") return Array.from(b, function (x) { return (x < 16 ? "0" : "") + x.toString(16); }).join("");
+    if (enc === "latin1" || enc === "binary" || enc === "ascii") return Array.from(b, function (x) { return String.fromCharCode(x); }).join("");
+    return new TextDecoder().decode(b);
+  }
+  toJSON() { return { type: "Buffer", data: Array.from(this) }; }
+  equals(o) { if (!o || o.length !== this.length) return false; for (let i = 0; i < this.length; i++) if (this[i] !== o[i]) return false; return true; }
+  slice(a, b) { return this.subarray(a, b); }
+  write(s, off, len, enc) { const src = PluginBuffer.fromString(String(s), typeof off === "string" ? off : enc), at = typeof off === "number" ? off : 0, n = Math.min(src.length, this.length - at, typeof len === "number" ? len : Infinity); this.set(src.subarray(0, n), at); return n; }
+  copy(target, tStart, sStart, sEnd) { const part = this.subarray(sStart || 0, sEnd === undefined ? this.length : sEnd); target.set(part, tStart || 0); return part.length; }
+  readUInt8(o) { return this[o || 0]; }
+  readUInt32BE(o) { return new DataView(this.buffer, this.byteOffset).getUint32(o || 0); }
+  readUInt32LE(o) { return new DataView(this.buffer, this.byteOffset).getUint32(o || 0, true); }
+}
+PluginNode.buffer = { Buffer: PluginBuffer, kMaxLength: 0x7fffffff };
 PluginEmitter.EventEmitter = PluginEmitter;
 PluginEmitter.default = PluginEmitter;
+
+/* Plugins compiled to old JavaScript (ES5) call their base class as a function,
+   `_super.call(this, app, manifest) || this`. Obsidian's classes allow that; JavaScript classes throw
+   "cannot be invoked without 'new'". Each exported class answers such a call by building the object
+   properly (with the subclass's prototype) and returning it, which is what that compiled code uses. */
+const PluginCallable = {
+  made: new WeakMap(),
+  wrap(C) {
+    if (typeof C !== "function" || !/^class\b/.test(Function.prototype.toString.call(C))) return C;
+    if (PluginCallable.made.has(C)) return PluginCallable.made.get(C);
+    const P = new Proxy(C, {
+      apply: function (target, self, args) {
+        const Sub = self && typeof self === "object" && typeof self.constructor === "function" && self.constructor.prototype instanceof target ? self.constructor : target;
+        const obj = Reflect.construct(target, args, Sub);
+        if (self && typeof self === "object" && self !== window) Object.getOwnPropertyNames(obj).forEach(function (k) { try { Object.defineProperty(self, k, Object.getOwnPropertyDescriptor(obj, k)); } catch (e) { /* fixed property */ } });
+        return obj;
+      }
+    });
+    PluginCallable.made.set(C, P);
+    return P;
+  }
+};
 
 /* ---- the Plugin base class ---- */
 class PluginPlugin extends PluginComponent {
@@ -5760,11 +5940,18 @@ class PluginPlugin extends PluginComponent {
       delete PluginHost.views[type];
     });
   }
-  registerExtensions() {}
+  registerExtensions(exts, type) { PluginApp.app.viewRegistry.registerExtensions(exts, type); this.register(function () { PluginApp.app.viewRegistry.unregisterExtensions(exts); }); }
   registerBasesView() { return false; }
-  registerHoverLinkSource() {}
+  registerHoverLinkSource(id, info) { PluginApp.app.workspace.registerHoverLinkSource(id, info); this.register(function () { PluginApp.app.workspace.unregisterHoverLinkSource(id); }); }
+  registerCodeMirror() {}                              /* Obsidian's old editor (CodeMirror 5): gone in Obsidian too */
+  registerCliHandler() {}
+  registerDomEvent(el, type, cb, opts) { if (el && el.addEventListener) super.registerDomEvent(el, type, cb, opts); }
   registerEditorExtension() {}
-  registerObsidianProtocolHandler() {}
+  registerObsidianProtocolHandler(action, fn) {
+    const hs = PluginApp.app.workspace.protocolHandlers;
+    hs.set(String(action), fn);
+    this.register(function () { if (hs.get(String(action)) === fn) hs.delete(String(action)); });
+  }
   registerMarkdownPostProcessor(fn, sortOrder) {
     const e = { fn: fn, sortOrder: sortOrder || 0, plugin: this };
     PluginHost.post.push(e);
@@ -5895,7 +6082,7 @@ const PluginApi = {
       setIcon: function (el, id) { PluginIcons.set(el, id); }, addIcon: function (id, svg) { PluginIcons.custom[id] = String(svg); },
       removeIcon: function (id) { delete PluginIcons.custom[id]; }, getIcon: PluginIcons.get, getIconIds: PluginIcons.ids,
       setTooltip: pluginTooltip, displayTooltip: pluginTooltip,
-      normalizePath: PluginText.normalizePath, debounce: PluginText.debounce, moment: PluginTime.moment,
+      normalizePath: PluginText.normalizePath, debounce: PluginText.debounce, moment: window.moment && window.moment.version ? window.moment : PluginTime.moment,
       parseYaml: function (s) { return PluginYaml.parse(s); }, stringifyYaml: function (o) { return PluginYaml.stringify(o); },
       getAllTags: PluginApi.getAllTags, parseFrontMatterTags: PluginText.tagsFrom, parseFrontMatterAliases: PluginText.aliasesFrom,
       parseFrontMatterEntry: PluginText.entry, parseFrontMatterStringArray: PluginText.stringArray, getFrontMatterInfo: PluginText.frontMatterInfo,
@@ -5910,8 +6097,8 @@ const PluginApi = {
       renderResults: function (el, text, result, offset) { PluginSearch.renderMatches(el, text, result && result.matches, offset); },
       sortSearchResults: function (list) { list.sort(function (a, b) { return ((b.match || b).score || 0) - ((a.match || a).score || 0); }); },
       Keymap: PluginKeymap, Scope: PluginScope, Platform: {
-        isDesktop: true, isMobile: false, isDesktopApp: false, isMobileApp: false, isIosApp: false, isAndroidApp: false, isPhone: false, isTablet: false,
-        isMacOS: mac || platform === "darwin", isWin: platform === "win32", isLinux: platform === "linux", isSafari: false, resourcePathPrefix: "app://local/" },
+        isDesktop: true, isMobile: false, isDesktopApp: PluginNodeAccess.have(), isMobileApp: false, isIosApp: false, isAndroidApp: false, isPhone: false, isTablet: false,
+        isMacOS: mac || platform === "darwin", isWin: platform === "win32", isLinux: platform === "linux", isSafari: false, resourcePathPrefix: "app://carbonfibre/vault/" },
       TAbstractFile: PluginTAbstractFile, TFile: PluginTFile, TFolder: PluginTFolder, Vault: PluginVault, MetadataCache: PluginMetadataCache,
       Workspace: PluginWorkspace, WorkspaceLeaf: PluginWorkspaceLeaf, WorkspaceItem: PluginWorkspaceItem, WorkspaceParent: PluginWorkspaceParent,
       WorkspaceSplit: PluginWorkspaceSplit, WorkspaceTabs: PluginWorkspaceTabs, WorkspaceRoot: PluginWorkspaceRoot, WorkspaceSidedock: PluginWorkspaceSidedock,
@@ -5919,8 +6106,9 @@ const PluginApi = {
       WorkspaceRibbon: PluginWorkspaceRibbon, WorkspaceMobileDrawer: PluginWorkspaceMobileDrawer,
       View: PluginView, ItemView: PluginItemView, FileView: PluginFileView, EditableFileView: PluginEditableFileView, TextFileView: PluginTextFileView,
       MarkdownView: PluginMarkdownView, MarkdownRenderer: PluginMarkdownRenderer, MarkdownRenderChild: PluginMarkdownRenderChild,
-      MarkdownPreviewRenderer: PluginMarkdownPreviewRenderer, MarkdownPreviewView: class {}, MarkdownEditView: class {}, MarkdownSourceView: class {},
+      MarkdownPreviewRenderer: PluginMarkdownPreviewRenderer, MarkdownPreviewView: class { static render(app, md, el, sourcePath, comp) { return PluginHost.renderMarkdown(md, el, sourcePath, comp); } }, MarkdownEditView: class {}, MarkdownSourceView: class {},
       HoverPopover: PluginHoverPopover, Editor: PluginEditor, App: Object, FileManager: PluginFileManager, Tasks: class {},
+      SecretComponent: PluginSecretComponent, BasesView: class extends PluginComponent { constructor(controller) { super(); this.controller = controller; this.app = PluginApp.app; } onDataUpdated() {} },
       apiVersion: PluginApi.apiVersion,
       requireApiVersion: function (v) {
         const a = String(v).split(".").map(Number), b = PluginApi.apiVersion.split(".").map(Number);
@@ -5929,7 +6117,7 @@ const PluginApi = {
       },
       resolveSubpath: PluginApi.resolveSubpath, iterateCacheRefs: PluginApi.iterateCacheRefs, iterateRefs: PluginApi.iterateRefs,
       getLanguage: function () { return "en"; },
-      FileSystemAdapter: PluginNoAdapter, CapacitorAdapter: class {},
+      FileSystemAdapter: PluginNodeAccess.have() ? PluginAdapter : PluginNoAdapter, CapacitorAdapter: class {},
       loadMathJax: function () { return Promise.resolve(); }, finishRenderMath: function () { return Promise.resolve(); },
       renderMath: function (src, display) { const el = document.createElement(display ? "div" : "span"); el.className = "math"; el.textContent = src; return el; },
       loadMermaid: function () { return Promise.reject(new Error("Mermaid isn't available to plugins in CarbonFibre")); },
@@ -5938,12 +6126,14 @@ const PluginApi = {
       request: offline, requestUrl: function () { const p = offline(); p.json = p; p.text = p; p.arrayBuffer = p; return p; },
       editorInfoField: PluginStub, editorEditorField: PluginStub, editorViewField: PluginStub, editorLivePreviewField: PluginStub, livePreviewState: PluginStub
     };
+    Object.keys(m).forEach(function (k) { m[k] = PluginCallable.wrap(m[k]); });
+    PluginApi.exports = m;
     PluginApi.module = new Proxy(m, {
       get: function (t, k) {
         if (k in t || typeof k !== "string") return t[k];
         PluginUnknown.seen.add(k);
         if (!/^[A-Z]/.test(k)) return undefined;
-        if (!PluginUnknown.classes[k]) PluginUnknown.classes[k] = class extends PluginComponent { constructor(app) { super(); this.app = app; } };
+        if (!PluginUnknown.classes[k]) PluginUnknown.classes[k] = PluginCallable.wrap(class extends PluginComponent { constructor(app) { super(); this.app = app; } });
         return PluginUnknown.classes[k];
       }
     });
@@ -6030,12 +6220,199 @@ const PluginNet = {
     PluginNet.modules.set(id, m);
     return m;
   },
-  requireFor(id) { return function (name) { return String(name) === "obsidian" ? PluginNet.moduleFor(id) : PluginHost.require(name); }; },
-  /* switching a plugin on: one that uses the internet asks once (the app's dialog) */
+  /* nodeOn: a plugin you allowed Node.js gets Node's own modules first, the page's stand-ins after */
+  requireFor(id, nodeOn) {
+    return function (name) {
+      const n = String(name);
+      if (n === "obsidian") return PluginNet.moduleFor(id);
+      if (nodeOn && !/^(moment|@codemirror\/|@lezer\/)/.test(n)) { try { return window.cfDesktop.node.require(n); } catch (e) { /* not a Node module: the page's own */ } }
+      return PluginHost.require(n);
+    };
+  },
+  /* switching a plugin on: one that uses Node.js asks for it once, one that uses the internet asks
+     for that once (the app's dialogs). Allowing Node.js may reopen the window ("reopen"). */
   askIfNeeded(entry) {
+    const d = cfDesktopPlugins();
+    if (entry && entry.compat && entry.compat.node && entry.node === null && d.askNode) {
+      return d.askNode(entry.id).catch(function () { return false; }).then(function (r) {
+        if (r === "reopen") return new Promise(function () {});          /* the window is closing; it opens again with the plugin on */
+        return r === true ? undefined : PluginNet.askNetOnly(entry);
+      });
+    }
+    return PluginNet.askNetOnly(entry);
+  },
+  askNetOnly(entry) {
     const d = cfDesktopPlugins();
     if (!entry || !entry.compat || !entry.compat.net || entry.network !== null || !d.askNetwork) return Promise.resolve();
     return d.askNetwork(entry.id).catch(function () { return false; });
+  },
+  /* XMLHttpRequest for one plugin: the old browser API over the same per-plugin requests */
+  xhrFor(id) {
+    class PluginXHR {
+      constructor() { this.readyState = 0; this.status = 0; this.statusText = ""; this.response = null; this.responseText = ""; this.responseType = ""; this.responseURL = ""; this.timeout = 0; this.withCredentials = false; this._h = {}; this._l = {}; this._res = null; this.upload = { addEventListener: function () {}, removeEventListener: function () {} }; }
+      open(method, url) { this._m = String(method || "GET").toUpperCase(); this._u = String(url); this._aborted = false; this._set(1); }
+      setRequestHeader(k, v) { this._h[String(k).toLowerCase()] = String(v); }
+      getResponseHeader(k) { const h = this._res && this._res.headers; const v = h && h[String(k).toLowerCase()]; return v == null ? null : String(v); }
+      getAllResponseHeaders() { const h = (this._res && this._res.headers) || {}; return Object.keys(h).map(function (k) { return k + ": " + h[k]; }).join("\r\n"); }
+      overrideMimeType() {}
+      abort() { this._aborted = true; this._fire("abort"); this._fire("loadend"); }
+      addEventListener(t, f) { (this._l[t] = this._l[t] || []).push(f); }
+      removeEventListener(t, f) { this._l[t] = (this._l[t] || []).filter(function (x) { return x !== f; }); }
+      _fire(t) { const ev = { type: t, target: this, currentTarget: this, loaded: 0, total: 0, lengthComputable: false }; if (typeof this["on" + t] === "function") { try { this["on" + t](ev); } catch (e) { console.error(e); } } (this._l[t] || []).slice().forEach(function (f) { try { f.call(this, ev); } catch (e) { console.error(e); } }, this); }
+      _set(n) { this.readyState = n; this._fire("readystatechange"); }
+      send(body) {
+        const self = this;
+        let b = body;
+        if (b instanceof Blob) b = b.arrayBuffer(); else if (b instanceof URLSearchParams) { if (!self._h["content-type"]) self._h["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8"; b = String(b); }
+        else if (typeof FormData !== "undefined" && b instanceof FormData) b = new Response(b).arrayBuffer();
+        Promise.resolve(b).then(function (data) {
+          return PluginNet.send(id, { url: self._u, method: self._m, headers: self._h, body: data == null || /^(GET|HEAD)$/.test(self._m) ? undefined : data });
+        }).then(function (res) {
+          if (self._aborted) return;
+          self._res = res; self.status = res.status; self.statusText = String(res.status); self.responseURL = res.url || self._u;
+          self._set(2); self._set(3);
+          const buf = res.body.buffer.slice(res.body.byteOffset, res.body.byteOffset + res.body.byteLength);
+          const text = function () { return new TextDecoder().decode(res.body); };
+          if (self.responseType === "arraybuffer") self.response = buf;
+          else if (self.responseType === "blob") self.response = new Blob([buf], { type: self.getResponseHeader("content-type") || "" });
+          else if (self.responseType === "json") { try { self.response = JSON.parse(text()); } catch (e) { self.response = null; } }
+          else { self.responseText = text(); self.response = self.responseText; }
+          self._set(4); self._fire("load"); self._fire("loadend");
+        }).catch(function (e) {
+          if (self._aborted) return;
+          console.error("CarbonFibre: request failed", e);
+          self.status = 0; self._set(4); self._fire("error"); self._fire("loadend");
+        });
+      }
+    }
+    PluginXHR.UNSENT = 0; PluginXHR.OPENED = 1; PluginXHR.HEADERS_RECEIVED = 2; PluginXHR.LOADING = 3; PluginXHR.DONE = 4;
+    return PluginXHR;
+  }
+};
+
+/* Obsidian's core plugins, as plugins look them up (app.internalPlugins). CarbonFibre has its own
+   versions of some; those answer through CarbonFibre (search, the command palette). The rest are
+   there, switched off, with Obsidian's default options, so plugins that read them still start. */
+const PluginCore = {
+  make() {
+    const opts = {
+      "daily-notes": { format: "YYYY-MM-DD", folder: "", template: "", autorun: false },
+      "templates": { folder: "", dateFormat: "YYYY-MM-DD", timeFormat: "HH:mm" },
+      "zk-prefixer": { format: "YYYYMMDDHHmm", folder: "" },
+      "page-preview": {}, "note-composer": {}, "command-palette": { pinned: [] }, "bookmarks": {}, "file-recovery": {}
+    };
+    const on = { "global-search": true, "switcher": true, "command-palette": true, "file-explorer": true, "page-preview": true, "outline": true, "backlink": true, "outgoing-link": true, "tag-pane": true };
+    const ids = ["file-explorer", "global-search", "switcher", "graph", "backlink", "outgoing-link", "tag-pane", "page-preview", "daily-notes", "templates",
+      "note-composer", "command-palette", "slash-command", "editor-status", "bookmarks", "markdown-importer", "zk-prefixer", "random-note", "outline", "word-count",
+      "slides", "audio-recorder", "workspaces", "file-recovery", "publish", "sync", "canvas", "properties", "bases", "footnotes", "webviewer"];
+    const plugins = {};
+    ids.forEach(function (id) {
+      const inst = Object.assign(new PluginEvents(), { id: id, name: id, options: Object.assign({}, opts[id] || {}), app: null, plugin: null,
+        getDailyNote: function () { return null; }, getNoteFolder: function () { return ""; }, saveData: function () {}, onEnable: function () {}, onDisable: function () {} });
+      const p = { id: id, instance: inst, enabled: !!on[id], _loaded: !!on[id], views: {}, commands: [],
+        enable: function () { p.enabled = true; return Promise.resolve(); }, disable: function () { p.enabled = false; return Promise.resolve(); } };
+      inst.plugin = p;
+      plugins[id] = p;
+    });
+    plugins["global-search"].instance.openGlobalSearch = function (q) { showView("search"); searchEl.value = String(q || ""); searchEl.dispatchEvent(new Event("input", { bubbles: true })); };
+    plugins["global-search"].instance.getGlobalSearchQuery = function () { return searchEl.value || ""; };
+    plugins["switcher"].instance.onOpen = plugins["command-palette"].instance.onOpen = function () { palOpen(""); };
+    plugins["file-explorer"].instance.revealInFolder = function (file) { PluginExplorer.leaf().view.revealInFolder(file); };
+    return Object.assign(new PluginEvents(), {
+      plugins: plugins, config: {}, app: null,
+      getPluginById: function (id) { return plugins[id] || null; },
+      getEnabledPluginById: function (id) { return plugins[id] && plugins[id].enabled ? plugins[id].instance : null; },
+      getEnabledPlugins: function () { return Object.keys(plugins).filter(function (k) { return plugins[k].enabled; }).map(function (k) { return plugins[k].instance; }); },
+      requestSaveConfig: function () {}, saveConfig: function () { return Promise.resolve(); }
+    });
+  }
+};
+
+/* Obsidian's registries of views and embeds by file extension. Plugins register their own types
+   here; CarbonFibre itself only opens notes, so these are kept for plugins to read back. */
+const PluginRegistry = {
+  views() {
+    const r = new PluginEvents();
+    return Object.assign(r, {
+      viewByType: PluginHost.views, typeByExtension: { md: "markdown" },
+      getTypeByExtension: function (e) { return r.typeByExtension[String(e).toLowerCase()]; },
+      isExtensionRegistered: function (e) { return Object.prototype.hasOwnProperty.call(r.typeByExtension, String(e).toLowerCase()); },
+      getViewCreatorByType: function (t) { const v = PluginHost.views[t]; return v ? v.creator : undefined; },
+      registerView: function (t, creator) { PluginHost.views[t] = { plugin: null, creator: creator }; r.trigger("view-registered", t); },
+      unregisterView: function (t) { delete PluginHost.views[t]; r.trigger("view-unregistered", t); },
+      registerExtensions: function (exts, type) { (exts || []).forEach(function (e) { r.typeByExtension[String(e).toLowerCase()] = type; }); r.trigger("extensions-updated"); },
+      unregisterExtensions: function (exts) { (exts || []).forEach(function (e) { delete r.typeByExtension[String(e).toLowerCase()]; }); r.trigger("extensions-updated"); }
+    });
+  },
+  embeds() {
+    const r = new PluginEvents();
+    return Object.assign(r, {
+      embedByExtension: { md: PluginHost.markdownEmbed },
+      isExtensionRegistered: function (e) { return Object.prototype.hasOwnProperty.call(r.embedByExtension, String(e).toLowerCase()); },
+      registerExtension: function (e, fn) { r.embedByExtension[String(e).toLowerCase()] = fn; },
+      registerExtensions: function (exts, fn) { (exts || []).forEach(function (e) { r.registerExtension(e, fn); }); },
+      unregisterExtension: function (e) { delete r.embedByExtension[String(e).toLowerCase()]; },
+      unregisterExtensions: function (exts) { (exts || []).forEach(function (e) { r.unregisterExtension(e); }); },
+      getEmbedCreator: function (file) { return r.embedByExtension[file && file.extension] || null; }
+    });
+  }
+};
+
+/* Obsidian 1.11's secret storage: API keys and tokens, kept by the desktop app encrypted with the
+   system's keychain (Electron safeStorage), outside the plugin's settings file. Plugins read them
+   synchronously, so the page keeps the ones it has loaded; writes go straight to the app. */
+const PluginSecrets = {
+  cache: new Map(),
+  ready: null,
+  load() {
+    const d = cfDesktopPlugins();
+    if (!d || !d.secrets) return Promise.resolve();
+    PluginSecrets.ready = PluginSecrets.ready || d.secrets("all").then(function (all) { Object.keys(all || {}).forEach(function (k) { PluginSecrets.cache.set(k, String(all[k])); }); }).catch(function () {});
+    return PluginSecrets.ready;
+  },
+  getSecret(id) { return PluginSecrets.cache.has(String(id)) ? PluginSecrets.cache.get(String(id)) : null; },
+  setSecret(id, value) {
+    id = String(id);
+    if (value === null || value === undefined || value === "") PluginSecrets.cache.delete(id); else PluginSecrets.cache.set(id, String(value));
+    const d = cfDesktopPlugins();
+    if (d && d.secrets) d.secrets("set", id, value == null ? "" : String(value)).catch(function (e) { console.error("CarbonFibre: couldn't save a secret", e); });
+  },
+  listSecrets() { return Array.from(PluginSecrets.cache.keys()); }
+};
+
+/* ---- Node.js, per plugin (desktop app) ----
+   Only in a window the app opened with Node.js (main.js createWindow), and only for plugins you
+   allowed it. Those plugins also get the notes folder's real path (FileSystemAdapter.getBasePath). */
+const PluginNodeAccess = {
+  vault: null,
+  have() { return !!(window.cfDesktop && window.cfDesktop.node); },
+  granted(entry) { return PluginNodeAccess.have() && !!entry && entry.node === true; },
+  /* the notes folder's path: asked for once, when a plugin with Node.js is on and the app doesn't know it */
+  loadVault() {
+    const d = cfDesktopPlugins();
+    if (!PluginNodeAccess.have() || !d || !d.vaultPath || !state.dirHandle) return Promise.resolve();
+    const name = state.dirHandle.name;
+    return d.vaultPath(name).then(function (p) {
+      if (p) return p;
+      return d.list().then(function (list) {
+        return list.some(function (e) { return e.enabled && e.node === true; }) ? d.askVaultPath(name) : null;
+      });
+    }).then(function (p) { PluginNodeAccess.vault = p || null; }).catch(function () {});
+  }
+};
+/* the notes folder's files as addresses the page can show (images, audio, video in plugins):
+   app://carbonfibre/vault/<path>; the app asks the page for the bytes (main.js) */
+const PluginVaultFiles = {
+  url(path) {
+    const p = PluginText.normalizePath(String(path || ""));
+    if (!p || p === "/" || !cfDesktopPlugins()) return "";
+    const f = PluginApp.app && PluginApp.app.vault.getFileByPath(p);
+    return "app://carbonfibre/vault/" + p.split("/").map(encodeURIComponent).join("/") + "?" + ((f && f.stat && f.stat.mtime) || 0);
+  },
+  read(rel) {
+    const p = PluginText.normalizePath(String(rel || ""));
+    if (!p || p.split("/").some(function (seg) { return seg === ".." || seg === "."; }) || !PluginApp.app) return null;
+    return PluginApp.app.vault.adapter.readBinary(p).catch(function () { return null; });
   }
 };
 
@@ -6062,17 +6439,51 @@ const PluginHost = {
   require(name) {
     const n = String(name);
     if (n === "obsidian") return PluginApi.build();
-    if (/^@codemirror\//.test(n) || /^@lezer\//.test(n)) return PluginStub;
+    if (/^@codemirror\//.test(n) || /^@lezer\//.test(n)) return (window.__cfCodeMirror && window.__cfCodeMirror[n]) || PluginStub;
     if (n === "path" || n === "node:path" || n === "path-browserify") return PluginNode.path;
     if (n === "events" || n === "node:events") return PluginNode.events;
-    if (n === "moment") return PluginTime.moment;
+    if (n === "moment") return window.moment && window.moment.version ? window.moment : PluginTime.moment;
     const base = n.replace(/^node:/, "");
-    if (["util", "url", "assert", "querystring", "os", "tty"].indexOf(base) !== -1) return PluginNode[base];
+    if (["util", "url", "assert", "querystring", "os", "tty", "buffer"].indexOf(base) !== -1) return PluginNode[base];
     return PluginNode.missing(n);
   },
-  process: { platform: (window.cfDesktop && window.cfDesktop.platform) || "browser", env: {}, versions: {}, argv: [], browser: true,
+  process: { platform: (window.cfDesktop && window.cfDesktop.platform) || "browser", env: {}, versions: { node: "" }, version: "", argv: [], browser: true, release: {},
     nextTick: function (cb) { const a = Array.prototype.slice.call(arguments, 1); queueMicrotask(function () { cb.apply(null, a); }); }, cwd: function () { return "/"; }, on: function () {} },
 
+  ready: null,
+  /* before the first plugin: the real moment.js (served by the desktop app), the globals, saved
+     secrets, and for plugins with Node.js the notes folder's path; also answering image requests */
+  prepare() {
+    const d = cfDesktopPlugins();
+    if (d && d.onVaultRead) d.onVaultRead(PluginVaultFiles.read);
+    const script = function (name, have) {
+      return new Promise(function (resolve) {
+        if (have()) { resolve(); return; }
+        const s = document.createElement("script");
+        s.src = "app://carbonfibre/vendor/" + name;
+        s.onload = s.onerror = function () { s.remove(); resolve(); };
+        document.head.appendChild(s);
+      });
+    };
+    const vendor = Promise.all([script("moment.js", function () { return window.moment && window.moment.version; }),
+      script("codemirror.js", function () { return !!window.__cfCodeMirror; })]);
+    return vendor.then(function () {
+      PluginHost.globals();
+      return Promise.all([PluginSecrets.load(), PluginNodeAccess.loadVault()]);
+    }).catch(function (e) { console.error("CarbonFibre plugins:", e); });
+  },
+  /* the global names Obsidian has, which plugins use without importing: moment, i18next, Buffer */
+  globals() {
+    const set = function (k, v) { if (!(k in window)) Object.defineProperty(window, k, { value: v, writable: true, configurable: true }); };
+    if (window.moment && window.moment.version && PluginApi.exports) PluginApi.exports.moment = window.moment;
+    set("moment", PluginTime.moment);
+    set("Buffer", PluginBuffer);
+    const t = function (key, o) { return o && typeof o === "object" && o.defaultValue !== undefined ? o.defaultValue : String(key); };
+    set("i18next", { language: "en", languages: ["en"], resolvedLanguage: "en", isInitialized: true, t: t, exists: function () { return false; },
+      getFixedT: function () { return t; }, on: function () {}, off: function () {}, use: function () { return window.i18next; }, init: function () { return Promise.resolve(t); },
+      changeLanguage: function () { return Promise.resolve(t); }, addResourceBundle: function () { return window.i18next; }, addResources: function () { return window.i18next; },
+      hasResourceBundle: function () { return false; }, getResourceBundle: function () { return {}; }, loadNamespaces: function () { return Promise.resolve(); }, createInstance: function () { return window.i18next; } });
+  },
   define(id, factory) { PluginHost.defined.set(String(id), factory); },
   /* Obsidian's private factory for an embedded note editor; some plugins (Kanban) take its editor
      class at start. They get a stand-in, so they load; inline editing through it won't work. */
@@ -6087,6 +6498,7 @@ const PluginHost = {
     if (PluginHost.running || !PluginHost.available()) return;
     PluginHost.running = true;
     window.__cfPluginDefine = PluginHost.define;
+    PluginHost.ready = PluginHost.prepare();
     const app = {
       appId: "carbonfibre", title: "CarbonFibre", isMobile: false, lastEvent: null,
       vault: new PluginVault(), metadataCache: new PluginMetadataCache(), fileManager: new PluginFileManager(),
@@ -6109,17 +6521,22 @@ const PluginHost = {
         isEnabled: function (id) { return app.plugins.enabledPlugins.has(id); },
         enablePlugin: function (id) { return PluginHost.enable(id); }, disablePlugin: function (id) { return PluginHost.disable(id); },
         enablePluginAndSave: function (id) { return PluginHost.enable(id); }, disablePluginAndSave: function (id) { return PluginHost.disable(id); },
-        loadManifests: function () { return Promise.resolve(); }
+        loadManifests: function () { return Promise.resolve(); },
+        getPluginFolder: function () { return ".obsidian/plugins"; },
+        get updates() { return {}; }, requestSaveConfig: function () {}, saveConfig: function () { return Promise.resolve(); }
       },
-      internalPlugins: { plugins: {}, config: {}, getPluginById: function () { return null; }, getEnabledPluginById: function () { return null; } },
+      internalPlugins: PluginCore.make(),
       setting: {
         open: function () { PluginManager.open("installed"); }, close: function () { PluginManager.close(); },
         openTabById: function (id) { PluginManager.openSettings(id); }, activeTab: null, pluginTabs: []
       },
-      customCss: { theme: "", snippets: [], enabledSnippets: new Set(), setTheme: function () {}, getSnippetPath: function () { return ""; }, readSnippets: function () {} },
+      customCss: Object.assign(new PluginEvents(), { theme: "", themes: {}, oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
+        setTheme: function () {}, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
+        readSnippets: function () {}, readThemes: function () {}, requestLoadSnippets: function () {}, requestLoadTheme: function () {}, setCssEnabledStatus: function () {},
+        isThemeInstalled: function () { return false; }, onConfigChange: function () {} }),
       hotkeyManager: { getHotkeys: function () { return []; }, getDefaultHotkeys: function () { return []; }, printHotkeyForCommand: function () { return ""; } },
-      viewRegistry: { viewByType: PluginHost.views, typeByExtension: { md: "markdown" }, getTypeByExtension: function (e) { return e === "md" ? "markdown" : undefined; }, isExtensionRegistered: function (e) { return e === "md"; } },
-      embedRegistry: { embedByExtension: { md: PluginHost.markdownEmbed } },
+      viewRegistry: PluginRegistry.views(), embedRegistry: PluginRegistry.embeds(),
+      secretStorage: PluginSecrets,
       metadataTypeManager: { properties: {}, types: {}, getPropertyInfo: function () { return null; }, getAllProperties: function () { return {}; }, setType: function () {}, getTypeInfo: function () { return { expected: { type: "text" } }; } },
       dom: { appContainerEl: document.body, workspaceEl: document.getElementById("workarea") },
       getTheme: function () { return document.documentElement.getAttribute("data-theme") === "light" ? "moonstone" : "obsidian"; },
@@ -6161,7 +6578,7 @@ const PluginHost = {
     PluginDom.install();                               /* Obsidian's element helpers, from the first plugin on */
     if (!window.CodeMirror) window.CodeMirror = PluginStub;   /* Obsidian's old editor global; plugins define modes on it */
     const app = PluginApp.app;
-    return cfDesktopPlugins().styles(id).then(function (css) {
+    return (PluginHost.ready || Promise.resolve()).then(function () { return cfDesktopPlugins().styles(id); }).then(function (css) {
       if (css) {
         const st = document.createElement("style");
         st.setAttribute("data-cf-plugin", id);
@@ -6171,7 +6588,10 @@ const PluginHost = {
       return PluginHost.loadScript(id);
     }).then(function (factory) {
       const module = { exports: {} };
-      factory.call(window, PluginNet.requireFor(id), module, module.exports, PluginHost.process, window, PluginNet.fetchFor(id));
+      const nodeOn = PluginNodeAccess.granted(entry), node = window.cfDesktop && window.cfDesktop.node;
+      const dir = nodeOn && entry.dir ? entry.dir : "/.obsidian/plugins/" + id;
+      factory.call(window, PluginNet.requireFor(id, nodeOn), module, module.exports, nodeOn ? node.process : PluginHost.process, window, PluginNet.fetchFor(id),
+        PluginNet.xhrFor(id), nodeOn ? node.Buffer : window.Buffer, dir, dir + "/main.js");
       const Cls = module.exports && (module.exports.default || module.exports);
       if (typeof Cls !== "function") throw new Error("main.js doesn't export a plugin");
       const manifest = Object.assign({}, entry.manifest, { id: id, dir: ".obsidian/plugins/" + id });
@@ -6635,7 +7055,8 @@ const PluginManager = {
   badge(c) {
     if (!c) return '<span class="cfp-badge cfp-wait">Checking…</span>';
     if (c.error) return '<span class="cfp-badge cfp-wait" title="' + escAttr(c.error) + '">Couldn’t check</span>';
-    return (c.net && c.level !== "no" ? '<span class="cfp-badge cfp-netb" title="Asks to use the internet when you switch it on">Internet</span> ' : "") + (c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
+    return (c.node && c.level !== "no" ? '<span class="cfp-badge cfp-nodeb" title="Asks to use Node.js (files, programs, the internet) when you switch it on, as it has in Obsidian">Node.js</span> '
+      : c.net && c.level !== "no" ? '<span class="cfp-badge cfp-netb" title="Asks to use the internet when you switch it on">Internet</span> ' : "") + (c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
       : c.level === "partial" ? '<span class="cfp-badge cfp-part">Partly works</span>'
       : '<span class="cfp-badge cfp-no">Can’t run here</span>');
   },
@@ -6659,7 +7080,7 @@ const PluginManager = {
     const n = PluginHost.installed.length;
     w.querySelector('.cfp-tab[data-cfptab="installed"]').textContent = "Installed" + (n ? " (" + n + ")" : "");
     w.querySelector(".cfp-lede").innerHTML = desk
-      ? "Obsidian community plugins, running inside CarbonFibre. A plugin that uses the internet asks first, and you can take that back below. Ones that need something CarbonFibre doesn’t have are greyed out. A plugin can read and change your notes, so install ones you trust."
+      ? "Obsidian community plugins, running inside CarbonFibre. A plugin that uses the internet, or Node.js (files and programs on this computer, as in Obsidian), asks first, and you can take that back below. A plugin can read and change your notes, so install ones you trust."
       : "<strong>Plugins run in the CarbonFibre desktop app</strong> (macOS, Windows and Linux). This web version only runs its own code, which keeps your notes safe from injected scripts, so plugins are switched off here.";
     w.classList.toggle("cfp-web", !desk);
     const body = w.querySelector(".cfp-body");
@@ -6685,7 +7106,7 @@ const PluginManager = {
         '<div class="cfp-main"><div class="cfp-name">' + esc(String(m.name || p.id)) + ' <span class="cfp-ver">' + esc(String(m.version || "")) + "</span> " + PluginManager.badge(c) + "</div>" +
           '<div class="cfp-by">' + (m.author ? "by " + esc(String(m.author)) : "") + "</div>" +
           '<div class="cfp-desc">' + esc(String(m.description || "")) + "</div>" +
-          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + PluginManager.netLine(p) + "</div>" +
+          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + PluginManager.nodeLine(p) + PluginManager.netLine(p) + "</div>" +
         '<div class="cfp-side">' +
           (tab ? '<button class="cfp-icon" data-cfpact="settings" title="Settings" aria-label="Settings for ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("settings", 16) + "</button>" : "") +
           '<button class="cfp-icon" data-cfpact="remove" title="Uninstall" aria-label="Uninstall ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("trash", 16) + "</button>" +
@@ -6696,9 +7117,18 @@ const PluginManager = {
     body.innerHTML = h;
   },
 
+  /* a plugin that uses Node.js: whether it may, and the button to change that */
+  nodeLine(p) {
+    if (!p.compat || !p.compat.node) return "";
+    const live = PluginNodeAccess.have();
+    return p.node
+      ? '<p class="cfp-net cfp-node">' + PluginIcons.svg("terminal", 14) + " Can use Node.js" + (live ? "" : " (once its window reopens)") + ' <button class="cfp-btn cfp-small" data-cfpact="nodeoff">Take away</button></p>'
+      : '<p class="cfp-net cfp-dim">' + PluginIcons.svg("terminal", 14) + " " + (p.node === false ? "Not allowed to use Node.js: those parts are off" : "Uses Node.js: asks when switched on") +
+        ' <button class="cfp-btn cfp-small" data-cfpact="nodeon">Allow…</button></p>';
+  },
   /* a plugin that uses the internet: whether it may, and the button to change that */
   netLine(p) {
-    if (!p.compat || !p.compat.net) return "";
+    if (!p.compat || !p.compat.net || p.node) return "";
     return p.network
       ? '<p class="cfp-net">' + PluginIcons.svg("globe", 14) + ' Can use the internet <button class="cfp-btn cfp-small" data-cfpact="netoff">Take away</button></p>'
       : '<p class="cfp-net cfp-dim">' + PluginIcons.svg("globe", 14) + ' ' + (p.network === false ? "Not allowed to use the internet" : "Uses the internet: asks when switched on") +
@@ -6814,9 +7244,11 @@ const PluginManager = {
     if (!a || a.disabled) return;
     const act = a.dataset.cfpact, row = a.closest(".cfp-row"), id = row && row.dataset.id;
     if (act === "toggle") return;
-    if (act === "neton" || act === "netoff") {
+    if (act === "neton" || act === "netoff" || act === "nodeon" || act === "nodeoff") {
       const d = cfDesktopPlugins();
-      (act === "neton" ? d.askNetwork(id) : d.revokeNetwork(id)).catch(function () {})
+      const run = { neton: d.askNetwork, netoff: d.revokeNetwork, nodeon: d.askNode, nodeoff: d.revokeNode }[act];
+      /* Node.js is taken away at once for that plugin's next start; switching it off and on again applies it */
+      Promise.resolve(run(id)).catch(function () {})
         .then(function () { return d.list(); }).then(function (l) { PluginHost.installed = l; PluginManager.refresh(); });
       return;
     }
@@ -6835,7 +7267,7 @@ const PluginManager = {
     return cfDesktopPlugins().list().then(function (list) {
       PluginHost.installed = list;
       const name = (r.manifest && r.manifest.name) || r.id;
-      if (r.compat && r.compat.level === "no") { pushToastLike(name + " is installed but can’t run here."); PluginManager.refresh(); return null; }
+      if (r.compat && r.compat.level === "no") { pushToastLike(name + " is installed but has no code to run."); PluginManager.refresh(); return null; }
       return Dialogs.confirm("Turn on " + name + " now?\n\nA plugin can read and change your notes.").then(function (ok) {
         if (!ok) { PluginManager.refresh(); return null; }
         return PluginHost.enable(r.id).catch(function (e) { pushToastLike(name + " didn’t start: " + e.message); }).then(function () { return cfDesktopPlugins().list(); }).then(function (l2) { PluginHost.installed = l2; PluginManager.refresh(); });
@@ -7016,6 +7448,7 @@ function tokenHtml(t, raw) {
     if (raw) return t.bare ? '<span class="xl">' + x + "</span>"
       : mk("[") + '<span class="xl">' + x + "</span>" + mk("](") + '<span class="mk-url">' + esc(u) + "</span>" + mk(")");
     const href = normalizeUrl(u);
+    if (/^obsidian:\/\//i.test(u)) return '<span class="xl xl-obs" data-obslink="' + escAttr(u) + '" title="' + escAttr(u) + '">' + x + "</span>";   /* opened inside the app (linkClick) */
     if (!href) return '<span class="xl xl-off" title="' + escAttr(u) + ' (not opened: only web and email links are)">' + x + "</span>";
     return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(href) +
       '" title="' + escAttr(u) + '">' + x + "</a>";
@@ -11358,6 +11791,29 @@ function linkClick(e, pane) {
   }
   const xl = e.target.closest("[data-extlink]");
   if (xl) { e.preventDefault(); followLink(xl.dataset.extlink); return true; }
+  const ol = e.target.closest("[data-obslink]");
+  if (ol) { e.preventDefault(); openObsidianUrl(ol.dataset.obslink, pane); return true; }
+  return false;
+}
+/* obsidian:// links, inside the app: open (a note), search, new; any other action goes to the plugin
+   that registered it (registerObsidianProtocolHandler, desktop app) */
+function openObsidianUrl(u, pane) {
+  let url;
+  try { url = new URL(String(u)); } catch (e) { return false; }
+  const action = (url.hostname || url.pathname.replace(/^\/+/, "")).toLowerCase(), params = { action: action };
+  url.searchParams.forEach(function (v, k) { params[k] = v; });
+  const file = String(params.file || params.path || "").replace(/\.md$/i, "");
+  if (action === "open" && file) {
+    const n = state.notes.find(function (x) { return (x.path || x.title).replace(/\.md$/i, "") === file; }) || noteByTitle(file.split("/").pop());
+    if (n) openInPane(n.id, pane || focusedPane || panes[0]); else pushToastLike("No note \u201c" + file + "\u201d here");
+    return true;
+  }
+  if (action === "search" && params.query !== undefined) { showView("search"); searchEl.value = params.query; searchEl.dispatchEvent(new Event("input", { bubbles: true })); return true; }
+  if (action === "new" && (params.name || params.file)) { openOrCreateByTitle(String(params.name || params.file).replace(/\.md$/i, ""), pane || focusedPane || panes[0]); return true; }
+  const hs = typeof PluginApp !== "undefined" && PluginApp.app && PluginApp.app.workspace.protocolHandlers;
+  const fn = hs && hs.get(action);
+  if (fn) { try { const r = fn(params); if (r && r.catch) r.catch(function (er) { console.error(er); }); } catch (er) { console.error(er); } return true; }
+  pushToastLike("Nothing here opens \u201cobsidian://" + action + "\u201d links");
   return false;
 }
 

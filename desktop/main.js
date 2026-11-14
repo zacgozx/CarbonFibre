@@ -4,7 +4,9 @@
    plugin calls in preload.js. Obsidian plugins (plugins/store.js) run inside the page; the page's
    Content-Security-Policy is widened for their code only here in the desktop app, never on the web,
    and still blocks every network request. A plugin you allow to use the internet sends its requests
-   through this process instead (plugins/store.js request), and only after you said yes in a dialog here. */
+   through this process instead (plugins/store.js request), and only after you said yes in a dialog here.
+   A plugin you allow to use Node.js (as every plugin can in Obsidian) needs the window opened without
+   the sandbox; the window is only opened that way while such a plugin is switched on. */
 "use strict";
 const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, session, shell } = require("electron");
 const path = require("node:path");
@@ -20,6 +22,8 @@ const PAGE = app.isPackaged
 const FILES = {
   "/": PAGE,
   "/index.html": PAGE,
+  "/vendor/moment.js": path.join(path.dirname(PAGE), "vendor", "moment.js"),
+  "/vendor/codemirror.js": path.join(path.dirname(PAGE), "vendor", "codemirror.js"),
   "/prompt.html": path.join(__dirname, "prompt.html"),
   "/prompt.js": path.join(__dirname, "prompt.js")
 };
@@ -29,7 +33,10 @@ const FILES = {
    many plugins need it). Injected <script> tags and inline handlers stay blocked; the network too. */
 async function pageResponse() {
   const html = await fsp.readFile(PAGE, "utf8");
-  const out = html.replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*?script-src )/, "$1" + ORIGIN + "/plugin-code/ 'unsafe-eval' ");
+  /* images and media: also the notes folder's own files, as plugins show them (app://carbonfibre/vault/...) */
+  const out = html.replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*?script-src )/, "$1" + ORIGIN + "/plugin-code/ " + ORIGIN + "/vendor/ 'unsafe-eval' ")
+    .replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*?img-src )/, "$1" + ORIGIN + "/vault/ ")
+    .replace(/(<meta http-equiv="Content-Security-Policy" content="[^"]*?media-src )/, "$1" + ORIGIN + "/vault/ ");
   return new Response(out, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
@@ -41,6 +48,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;
 let pluginsOn = false;   /* any plugin enabled: links opened from the page are confirmed first */
+let nodeMode = false;    /* this window runs plugins with Node.js (a plugin you allowed it is on) */
+let reopening = false;   /* closing the window only to open it again with Node.js */
 
 /* With plugins running, a link opened from the page could carry note text out in its address,
    so the system browser only opens after the person says yes. */
@@ -58,7 +67,10 @@ function fromApp(e) {
   return !!(win && !win.isDestroyed() && e.sender === win.webContents && f && f === e.sender.mainFrame && String(f.url).startsWith(ORIGIN + "/index.html"));
 }
 
-function createWindow() {
+/* nodeOn: no sandbox and no context isolation, so preload.js can hand Node.js to the plugins you
+   allowed it, in the page itself (as Obsidian does for every plugin). Otherwise the page has none. */
+function createWindow(nodeOn) {
+  nodeMode = !!nodeOn;
   win = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -71,15 +83,18 @@ function createWindow() {
     autoHideMenuBar: process.platform !== "darwin",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      sandbox: true,
+      contextIsolation: !nodeMode,
+      sandbox: !nodeMode,
       nodeIntegration: false,
       webviewTag: false,
       spellcheck: true
     }
   });
-  win.once("ready-to-show", () => win.show());
-  win.on("closed", () => { win = null; });
+  win.once("ready-to-show", () => { reopening = false; win.show(); });
+  win.on("closed", () => {
+    win = null;
+    if (reopening) createWindow(true);
+  });
 
   const wc = win.webContents;
   /* links: web and mail links open in the system browser; the window itself never navigates away */
@@ -202,6 +217,44 @@ plugHandle("askNetwork", async (e, id) => {
   return plugins.setNetwork(id, r.response === 0);
 });
 plugHandle("revokeNetwork", (_e, id) => plugins.setNetwork(String(id), false));
+/* Node.js, per plugin: the same, with a stronger warning. Allowing it includes the internet. If this
+   window has no Node.js yet, it closes (the page saves first) and opens again with it. */
+plugHandle("askNode", async (e, id) => {
+  id = String(id);
+  plugins.checkId(id);
+  const entry = (await plugins.list()).find((p) => p.id === id);
+  if (!entry) throw new Error("Not installed: " + id);
+  const name = String(entry.manifest.name || id).slice(0, 80);
+  const r = await dialog.showMessageBox(BrowserWindow.fromWebContents(e.sender), {
+    type: "warning", buttons: ["Allow", "Don't allow"], defaultId: 1, cancelId: 1, noLink: true,
+    message: "Let \u201c" + name + "\u201d use Node.js?",
+    detail: "It needs Node.js, as it has in Obsidian: it can then read, change and delete any file you can, run programs, and use the internet. Plugins share one page, so while it's on, another plugin could reach Node.js too. Only allow plugins you trust, from people you trust.\n\n" +
+      (nodeMode ? "" : "CarbonFibre reopens its window to turn this on. ") + "You can take this back any time in Plugins, Installed." });
+  const on = r.response === 0;
+  await plugins.setNode(id, on);
+  if (on) await plugins.setNetwork(id, true);
+  if (on && !nodeMode) { await plugins.setEnabled(id, true); reopenWithNode(); return "reopen"; }
+  return on;
+});
+plugHandle("revokeNode", (_e, id) => plugins.setNode(String(id), false));
+/* the notes folder's real path, for plugins with Node.js; the page only knows the folder's name */
+plugHandle("vaultPath", async (_e, name) => {
+  const p = await plugins.vaultPath();
+  return nodeMode && p && path.basename(p) === String(name) ? p : null;
+});
+plugHandle("askVaultPath", async (e, name) => {
+  if (!nodeMode) return null;
+  const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(e.sender), {
+    title: "Which folder are your notes in? (\u201c" + String(name).slice(0, 80) + "\u201d)", buttonLabel: "Use this folder",
+    message: "Plugins that use Node.js need to know where your notes folder is.", defaultPath: app.getPath("documents"), properties: ["openDirectory"] });
+  if (r.canceled || !r.filePaths.length) return null;
+  if (path.basename(r.filePaths[0]) !== String(name)) {
+    dialog.showMessageBox(win, { type: "warning", message: "That isn't your notes folder.", detail: "CarbonFibre has \u201c" + name + "\u201d open; choose that folder." });
+    return null;
+  }
+  return plugins.setVaultPath(r.filePaths[0]);
+});
+plugHandle("secrets", (_e, op, name, value) => op === "all" ? plugins.secretsAll() : op === "set" ? plugins.secretSet(String(name), value == null ? "" : String(value)) : null);
 plugHandle("request", (_e, id, opts) => plugins.request(String(id), opts));
 plugHandle("styles", (_e, id) => plugins.styles(String(id)));
 plugHandle("loadData", (_e, id) => plugins.loadData(String(id)));
@@ -213,6 +266,34 @@ plugHandle("fs", (_e, op, id, rel, text) => {
 });
 plugHandle("openRepo", (_e, repo) => {
   if (/^[\w.-]+\/[\w.-]+$/.test(String(repo))) shell.openExternal("https://github.com/" + repo);
+});
+
+function reopenWithNode() {
+  if (!win || win.isDestroyed()) return;
+  reopening = true;
+  win.close();                                           /* the page's save-on-close runs; "closed" opens the new one */
+  const old = win;
+  setTimeout(() => { if (win === old && !old.isDestroyed()) reopening = false; }, 30000);   /* closing was cancelled */
+}
+
+/* ---- the notes folder's files, for plugins' images (app://carbonfibre/vault/<path>) ----
+   The page holds the folder (the browser's folder access), so each request is answered by the page. */
+const vaultWaits = new Map();
+let vaultSeq = 0;
+const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", bmp: "image/bmp", ico: "image/x-icon",
+  avif: "image/avif", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", flac: "audio/flac", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", pdf: "application/pdf" };
+function vaultFile(rel) {
+  if (!win || win.isDestroyed()) return Promise.resolve(null);
+  const id = ++vaultSeq;
+  return new Promise((resolve) => {
+    const t = setTimeout(() => { vaultWaits.delete(id); resolve(null); }, 15000);
+    vaultWaits.set(id, (bytes) => { clearTimeout(t); vaultWaits.delete(id); resolve(bytes); });
+    win.webContents.send("cf:vault:read", id, rel);
+  });
+}
+ipcMain.on("cf:vault:data", (e, id, bytes) => {
+  const done = vaultWaits.get(id);
+  if (done && fromApp(e)) done(bytes instanceof Uint8Array ? bytes : null);
 });
 
 /* ---- updates from GitHub Releases (updater.js) ----
@@ -287,6 +368,16 @@ app.whenReady().then(() => {
       return code == null ? new Response("Not found", { status: 404 })
         : new Response(code, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" } });
     }
+    const vf = u.host === "carbonfibre" && /^\/vault\/(.+)$/.exec(u.pathname);
+    if (vf) {
+      let rel;
+      try { rel = decodeURIComponent(vf[1]); } catch (err) { return new Response("Bad address", { status: 400 }); }
+      const ext = (/\.([a-z0-9]+)$/i.exec(rel) || [])[1];
+      const type = ext && MIME[ext.toLowerCase()];
+      if (!type) return new Response("Not a media file", { status: 415 });
+      const bytes = await vaultFile(rel);
+      return bytes ? new Response(bytes, { headers: { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff" } }) : new Response("Not found", { status: 404 });
+    }
     const file = u.host === "carbonfibre" ? FILES[u.pathname] : null;
     if (!file) return new Response("Not found", { status: 404 });
     return net.fetch(pathToFileURL(file).toString());
@@ -307,12 +398,12 @@ app.whenReady().then(() => {
 
   plugins.anyEnabled().then((on) => { pluginsOn = on; }).catch(() => {});
   buildMenu();
-  createWindow();
+  plugins.nodeWanted().catch(() => false).then((on) => createWindow(on));
   updater.start();
-  app.on("activate", () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
+  app.on("activate", () => { if (!BrowserWindow.getAllWindows().length) plugins.nodeWanted().catch(() => false).then((on) => createWindow(on)); });
 });
 
-app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
+app.on("window-all-closed", () => { if (process.platform !== "darwin" && !reopening) app.quit(); });
 app.on("web-contents-created", (_e, wc) => {
   wc.on("will-attach-webview", (e) => e.preventDefault());
   /* no window (the prompt included) opens other windows; the main window's handler replaces this one */

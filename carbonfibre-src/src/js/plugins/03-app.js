@@ -902,6 +902,10 @@ class PluginMarkdownView extends PluginTextFileView {
     this.currentMode = this.editor;
     this.sourceMode = { cmEditor: null };
     this.hoverPopover = null;
+    /* the Properties block above a note in Obsidian; CarbonFibre shows front matter as text */
+    const mel = document.createElement("div");
+    this.metadataEditor = { containerEl: mel, contentEl: mel, propertyListEl: mel, rendered: [], properties: [], owner: this, synchronize: function () {}, load: function () {}, unload: function () {}, focusKey: function () {}, insertProperties: function () {} };
+    this.inlineTitleEl = document.createElement("div");
   }
   get file() { const n = this.pane.type === "note" && this.pane.note(); return n ? PluginApp.fileFor(n) : null; }
   set file(v) { /* the pane decides */ }
@@ -917,22 +921,37 @@ class PluginMarkdownView extends PluginTextFileView {
   showSearch() { palOpen("@"); }
 }
 
-class PluginWorkspaceItem extends PluginEvents {}
-class PluginWorkspaceParent extends PluginWorkspaceItem {}
+class PluginWorkspaceItem extends PluginEvents {
+  getRoot() { return PluginApp.app.workspace.rootSplit; }
+  getContainer() { return PluginApp.app.workspace.rootSplit; }
+}
+class PluginWorkspaceParent extends PluginWorkspaceItem {
+  constructor() { super(); this.children = []; this.containerEl = document.createElement("div"); }
+}
 class PluginWorkspaceSplit extends PluginWorkspaceParent {
   constructor(side) { super(); this.side = side; this.collapsed = side !== "root"; this.children = []; this.containerEl = document.createElement("div"); }
+  get doc() { return document; }
+  get win() { return window; }
   collapse() { this.collapsed = true; if (this.side === "right") PluginDock.hide(); }
   expand() { this.collapsed = false; if (this.side === "right") PluginDock.show(); }
   toggle() { if (this.collapsed) this.expand(); else this.collapse(); }
   getRoot() { return this; }
 }
 class PluginWorkspaceTabs extends PluginWorkspaceParent {}
-class PluginWorkspaceRoot extends PluginWorkspaceSplit {}
+/* the main area: its children are the note panes' leaves (Obsidian nests them in tab groups) */
+class PluginWorkspaceRoot extends PluginWorkspaceSplit {
+  get children() { return PluginApp.app ? panes.map(PluginApp.app.workspace.leafFor, PluginApp.app.workspace) : []; }
+  set children(v) { /* fixed: follows CarbonFibre's panes */ }
+}
 class PluginWorkspaceSidedock extends PluginWorkspaceSplit {}
 class PluginWorkspaceContainer extends PluginWorkspaceSplit {}
 class PluginWorkspaceWindow extends PluginWorkspaceContainer {}
 class PluginWorkspaceFloating extends PluginWorkspaceParent {}
-class PluginWorkspaceRibbon {}
+class PluginWorkspaceRibbon {
+  constructor() { this.items = []; this.containerEl = document.getElementById("activity") || document.createElement("div"); }
+  addRibbonItemButton() { return document.createElement("div"); }
+  removeRibbonAction() {}
+}
 class PluginWorkspaceMobileDrawer extends PluginWorkspaceParent {}
 
 class PluginWorkspaceLeaf extends PluginWorkspaceItem {}
@@ -1202,7 +1221,21 @@ class PluginAdapter {
   trashLocal(path) { return this.remove(path); }
   rename(from, to) { return this.read(from).then(function (t) { return this.write(to, t); }.bind(this)).then(function () { return this.remove(from); }.bind(this)); }
   copy(from, to) { return this.read(from).then(function (t) { return this.write(to, t); }.bind(this)); }
-  getResourcePath() { return ""; }
+  getResourcePath(path) { return PluginVaultFiles.url(path); }
+  /* FileSystemAdapter's paths on disk: known only to plugins with Node.js (the app asks for the folder) */
+  getBasePath() { return PluginNodeAccess.vault || ""; }
+  get basePath() { return this.getBasePath(); }
+  getFullPath(path) {
+    const s = this.split(path), base = this.getBasePath();
+    if (s.plugin) { const e = (PluginHost.installed || []).find(function (x) { return x.id === s.plugin; }); if (e && e.dir) return e.dir + (s.rel ? "/" + s.rel : ""); }
+    return base ? base + (s.path ? "/" + s.path : "") : s.path;
+  }
+  getFilePath(path) { return "file://" + this.getFullPath(path); }
+  getRealPath(path) { return path; }
+  get fs() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("fs") : undefined; }
+  get fsPromises() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("fs/promises") : undefined; }
+  get path() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("path") : PluginNode.path; }
+  get url() { return PluginNodeAccess.have() ? window.cfDesktop.node.require("url") : PluginNode.url; }
 }
 function cfDesktopPlugins() { return (window.cfDesktop && window.cfDesktop.plugins) || null; }
 
@@ -1212,7 +1245,9 @@ class PluginVault extends PluginEvents {
     this.adapter = new PluginAdapter(this);
     this.configDir = ".obsidian";
     this.config = { useMarkdownLinks: false, newLinkFormat: "shortest", attachmentFolderPath: "/", newFileLocation: "root", tabSize: 4, useTab: false,
-      showLineNumber: false, readableLineLength: true, defaultViewMode: "source", livePreview: true, foldHeading: false, alwaysUpdateLinks: false, userIgnoreFilters: [] };
+      showLineNumber: false, readableLineLength: true, defaultViewMode: "source", livePreview: true, foldHeading: false, alwaysUpdateLinks: false, userIgnoreFilters: [],
+      cssTheme: "", theme: "obsidian", baseFontSize: 16, accentColor: "", enabledCssSnippets: [], spellcheck: true, strictLineBreaks: false, showFrontmatter: true, propertiesInDocument: "visible",
+      promptDelete: true, trashOption: "system", showInlineTitle: true, foldIndent: true, autoPairBrackets: true, autoPairMarkdown: true, vimMode: false };
   }
   getName() { return state.dirHandle ? state.dirHandle.name : "CarbonFibre"; }
   getConfig(k) { return this.config[k]; }
@@ -1249,7 +1284,8 @@ class PluginVault extends PluginEvents {
   trash(file) { return PluginApp.deleteFile(file); }
   rename(file, newPath) { return PluginApp.renameFile(file, PluginText.normalizePath(newPath)); }
   copy(file, newPath) { return this.read(file).then(function (t) { return this.create(newPath, t); }.bind(this)); }
-  getResourcePath() { return ""; }
+  getResourcePath(file) { return this.adapter.getResourcePath(file && file.path); }
+  exists(path) { const p = PluginText.normalizePath(path); return this.getAbstractFileByPath(p) ? Promise.resolve(true) : this.adapter.exists(p); }
   getAvailablePath(base, ext) { let p = base + "." + ext, k = 1; while (this.getAbstractFileByPath(p)) { p = base + " " + k + "." + ext; k++; } return p; }
   static recurseChildren(folder, cb) { cb(folder); (folder.children || []).forEach(function (c) { if (c instanceof PluginTFolder) PluginVault.recurseChildren(c, cb); else cb(c); }); }
 }
@@ -1374,6 +1410,7 @@ class PluginMetadataCache extends PluginEvents {
     this.resolvedCache = { resolved: resolved, unresolved: unresolved };
     return this.resolvedCache;
   }
+  resolveLinks() { this.resolvedCache = null; }
   get resolvedLinks() { return this.computeLinks().resolved; }
   get unresolvedLinks() { return this.computeLinks().unresolved; }
   getBacklinksForFile(file) {
@@ -1397,10 +1434,63 @@ class PluginMetadataCache extends PluginEvents {
   }
   getLinkSuggestions() { return PluginApp.files().map(function (f) { return { file: f, path: f.path }; }); }
   isUserIgnored() { return false; }
+  getCachedFiles() { return PluginApp.files().map(function (f) { return f.path; }); }
+  /* Obsidian's private parser hooks: some plugins patch these to add their own fields */
+  computeFileMetadataAsync(file) { return Promise.resolve(this.getFileCache(file)); }
+  computeMetadataAsync(buf) { return Promise.resolve(this.parse(typeof buf === "string" ? buf : new TextDecoder().decode(buf))); }
   get initialized() { return true; }
 }
 
 /* ---- the workspace ---- */
+/* Obsidian's file explorer, as plugins find it (getLeavesOfType("file-explorer")): CarbonFibre's own
+   note list, with fileItems built from its rows each time they're asked for. The list redraws as
+   notes change, so what a plugin adds to a row lasts until the next redraw. */
+const PluginExplorer = {
+  leafObj: null,
+  items() {
+    const out = {}, app = PluginApp.app, list = document.getElementById("notesList");
+    if (!list || !app) return out;
+    list.querySelectorAll(".side-item[data-nid]").forEach(function (el) {
+      const n = state.notes.find(function (x) { return String(x.id) === el.dataset.nid; });
+      const f = n && PluginApp.fileFor(n);
+      if (!f) return;
+      const row = el.querySelector(".side-item-row") || el, title = el.querySelector(".side-item-title") || row;
+      out[f.path] = { el: el, selfEl: row, titleEl: row, titleInnerEl: title, innerEl: title, coverEl: row, file: f, view: PluginExplorer.leafObj && PluginExplorer.leafObj.view,
+        setCollapsed: function () { return Promise.resolve(); }, updateTitle: function () {} };
+    });
+    list.querySelectorAll(".fold-head").forEach(function (head) {
+      const nm = head.querySelector(".fold-name"), dir = nm && nm.title;
+      const f = dir && app.vault.getFolderByPath(dir);
+      if (!f) return;
+      const body = head.nextElementSibling;
+      out[f.path] = { el: head, selfEl: head, titleEl: head, titleInnerEl: nm, innerEl: nm, coverEl: head, childrenEl: body, file: f, collapsed: head.classList.contains("collapsed"),
+        setCollapsed: function (on) { collapsedFolders[f.path] = !!on; renderSidebar(); return Promise.resolve(); }, updateTitle: function () {} };
+    });
+    return out;
+  },
+  leaf() {
+    if (PluginExplorer.leafObj) return PluginExplorer.leafObj;
+    const leaf = new PluginWorkspaceLeaf();
+    const view = new PluginView(leaf);
+    Object.defineProperty(view, "fileItems", { get: PluginExplorer.items });
+    Object.assign(view, {
+      containerEl: document.getElementById("side") || document.body, tree: { infinityScroll: { compute: function () {} } },
+      getViewType: function () { return "file-explorer"; }, getDisplayText: function () { return "Files"; },
+      requestSort: function () { renderSidebar(); }, sort: function () { renderSidebar(); }, onRename: function () {}, onCreate: function () {}, onDelete: function () {},
+      revealInFolder: function (file) {
+        const it = PluginExplorer.items()[file && file.path];
+        if (it) it.el.scrollIntoView({ block: "nearest" });
+      },
+      getSortedFolderItems: function (folder) { return (folder.children || []).map(function (c) { return PluginExplorer.items()[c.path]; }).filter(Boolean); }
+    });
+    view.navFileContainerEl = view.containerEl;
+    leaf.view = view;
+    leaf.getViewState = function () { return { type: "file-explorer", state: {} }; };
+    PluginExplorer.leafObj = leaf;
+    return leaf;
+  }
+};
+
 class PluginWorkspace extends PluginEvents {
   constructor() {
     super();
@@ -1415,6 +1505,8 @@ class PluginWorkspace extends PluginEvents {
     this.leftSplit.collapsed = sideEl ? sideEl.classList.contains("side-closed") : false;
     this.containerEl = document.getElementById("workarea") || document.body;
     this.requestSaveLayout = PluginText.debounce(function () {}, 1000);
+    this.protocolHandlers = new Map();
+    this.editorSuggest = { suggests: PluginHost.suggests, currentSuggest: null, addSuggest: function (s) { PluginHost.suggests.push(s); }, removeSuggest: function (s) { const i = PluginHost.suggests.indexOf(s); if (i !== -1) PluginHost.suggests.splice(i, 1); }, close: function () {} };
     this.requestActiveLeafEvents = function () {};
     this.requestResize = function () {};
   }
@@ -1463,6 +1555,7 @@ class PluginWorkspace extends PluginEvents {
   moveLeafToPopout(leaf) { return leaf; }
   getLeavesOfType(type) {
     if (type === "markdown") return panes.filter(function (p) { return p.type === "note" && p.note(); }).map(this.leafFor, this);
+    if (type === "file-explorer") return [PluginExplorer.leaf()];
     return PluginDock.leaves.filter(function (l) { return l.view && l.view.getViewType() === type; });
   }
   getLeafById(id) { let found = null; this.iterateAllLeaves(function (l) { if (l.id === id) found = l; }); return found; }
@@ -1477,6 +1570,9 @@ class PluginWorkspace extends PluginEvents {
   iterateAllLeaves(cb) { panes.forEach(function (p) { cb(this.leafFor(p)); }, this); PluginDock.leaves.slice().forEach(function (l) { if (l.view) cb(l); }); }
   iterateRootLeaves(cb) { panes.forEach(function (p) { cb(this.leafFor(p)); }, this); }
   iterateCodeMirrors() {}
+  /* the sources of hover previews (Page preview settings) */
+  registerHoverLinkSource(id, info) { this.hoverLinkSources = this.hoverLinkSources || {}; this.hoverLinkSources[id] = info; }
+  unregisterHoverLinkSource(id) { if (this.hoverLinkSources) delete this.hoverLinkSources[id]; }
   onLayoutReady(cb) { if (this.layoutReady) setTimeout(function () { try { cb(); } catch (e) { console.error(e); } }, 0); else this.readyCbs.push(cb); }
   markReady() {
     if (this.layoutReady) return;

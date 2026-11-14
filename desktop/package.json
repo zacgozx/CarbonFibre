@@ -15,7 +15,7 @@
     "dist:mac": "node build-page.js && electron-builder --mac --publish never",
     "dist:win": "node build-page.js && electron-builder --win --publish never",
     "dist:linux": "node build-page.js && electron-builder --linux --publish never",
-    "test": "node build-page.js && electron test/run.js && electron test/update_test.js",
+    "test": "node build-page.js && electron test/run.js && electron test/node_test.js && electron test/update_test.js",
     "icons": "electron build-icons.js"
   },
   "build": {
@@ -40,6 +40,10 @@
       {
         "from": "page/index.html",
         "to": "page/index.html"
+      },
+      {
+        "from": "page/vendor",
+        "to": "page/vendor"
       }
     ],
     "mac": {
@@ -112,7 +116,19 @@
     }
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "6.20.4",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/lint": "6.9.7",
+    "@codemirror/search": "6.7.2",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "@lezer/common": "1.5.4",
+    "@lezer/highlight": "1.2.5",
+    "@lezer/lr": "1.4.11",
     "electron": "^45.3.2",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "esbuild": "0.28.2",
+    "moment": "2.30.1"
   }
 }

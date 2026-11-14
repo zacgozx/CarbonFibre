@@ -110,6 +110,7 @@ app.on("browser-window-created", (_e, w) => {
     } catch (e) { check("desktop run", false, e.stack); }
     try { await netCheck(w); } catch (e) { check("internet run", false, e.stack); }
     try { await defsCheck(w); } catch (e) { check("1.13 settings run", false, e.stack); }
+    try { await extrasCheck(w); } catch (e) { check("Obsidian extras run", false, e.stack); }
     webCheck();
   });
 });
@@ -131,7 +132,8 @@ async function netCheck(w) {
   const url = "http://127.0.0.1:" + server.address().port;
   const code = "\"use strict\";\nvar obsidian = require(\"obsidian\");\nclass P extends obsidian.Plugin { onload() { window.cfNetFix = {" +
     " ru: (u) => obsidian.requestUrl({ url: u, method: \"POST\", body: \"hi\", headers: { \"x-test\": \"yes\" } }).json," +
-    " f: (u) => fetch(u + \"/f\").then((r) => r.json()) }; } }\nmodule.exports = P;\n";
+    " f: (u) => fetch(u + \"/f\").then((r) => r.json())," +
+    " x: (u) => new Promise((ok, bad) => { const q = new XMLHttpRequest(); q.open(\"PUT\", u + \"/x\"); q.setRequestHeader(\"x-test\", \"xhr\"); q.responseType = \"json\"; q.onload = () => ok(q.response); q.onerror = () => bad(new Error(\"xhr failed\")); q.send(\"yo\"); }) }; } }\nmodule.exports = P;\n";
   const placed = await store.place("cf-netfix", { manifest: JSON.stringify({ id: "cf-netfix", name: "Net fixture", version: "1.0.0" }), main: code, styles: null });
   check("internet: a plugin using requestUrl and fetch is rated working, marked as using the internet", placed.compat.level === "ok" && placed.compat.net === true, JSON.stringify(placed.compat));
   asked.length = 0;
@@ -145,6 +147,7 @@ async function netCheck(w) {
     out.listed = (await cfDesktop.plugins.list()).find(p => p.id === "cf-netfix").network;
     out.ru = await window.cfNetFix.ru(U + "/ru");
     out.f = await window.cfNetFix.f(U);
+    out.x = await window.cfNetFix.x(U).catch((e) => String(e.message));
     out.pageFetch = await err(fetch(U + "/page"));
     out.metadata = await err(window.cfNetFix.f("http://169.254.169.254"));
     out.viaRedirect = await err(cfDesktop.plugins.request("cf-netfix", { url: U + "/to-metadata" }));
@@ -164,6 +167,7 @@ async function netCheck(w) {
   check("internet: switching it on asks once, in the app's dialog", asked.length === 1 && /Net fixture/.test(asked[0]) && r.listed === true, JSON.stringify(asked) + " " + r.listed);
   check("internet: requestUrl sends method, body and headers, and reads JSON", r.ru && r.ru.method === "POST" && r.ru.body === "hi" && r.ru.agent === "yes" && r.ru.path === "/ru", JSON.stringify(r.ru));
   check("internet: the plugin's fetch() works", r.f && r.f.path === "/f", JSON.stringify(r.f));
+  check("internet: the plugin's XMLHttpRequest works", r.x && r.x.path === "/x" && r.x.method === "PUT" && r.x.body === "yo" && r.x.agent === "xhr", JSON.stringify(r.x));
   check("internet: the page's own fetch is still blocked", r.pageFetch !== "no error", r.pageFetch);
   check("internet: link-local addresses (cloud metadata) are refused", /Blocked address/.test(r.metadata), r.metadata);
   check("internet: ...also when a redirect points there", /Blocked address/.test(r.viaRedirect), r.viaRedirect);
@@ -173,6 +177,64 @@ async function netCheck(w) {
   check("internet: Installed lists it with a way to take it away", /Can use the internet/.test(r.row) && /Take away/.test(r.row), r.row);
   check("internet: taking it away stops its requests", /isn't allowed|Failed to fetch/.test(r.after), r.after);
   server.close();
+}
+
+/* what popular plugins reach for beyond the documented API: old compiled classes, Obsidian's globals,
+   registries, the file explorer, vault images, secrets */
+async function extrasCheck(w) {
+  const code = `"use strict";
+var obsidian = require("obsidian");
+var __extends = function (d, b) { function __() { this.constructor = d; } __.prototype = b.prototype; d.prototype = new __(); Object.setPrototypeOf(d, b); };
+var M = (function (_super) { __extends(M, _super); function M(app) { var _this = _super.call(this, app) || this; _this.mine = 1; return _this; } return M; })(obsidian.Modal);
+var P = (function (_super) {
+  __extends(P, _super);
+  function P() { var _this = _super !== null && _super.apply(this, arguments) || this; _this.es5 = true; return _this; }
+  P.prototype.onload = function () {
+    var m = new M(this.app);
+    window.cfES5 = { ok: this.es5 === true, app: !!this.app, id: this.manifest.id, modal: m instanceof obsidian.Modal && m.mine === 1 && !!m.contentEl, plugin: this instanceof obsidian.Plugin };
+    this.registerHoverLinkSource("cf-extras", { display: "Extras", defaultMod: true });
+    this.registerExtensions(["cfx"], "cf-extras-view");
+    this.registerCodeMirror(function () {});
+  };
+  return P;
+})(obsidian.Plugin);
+module.exports = P;
+`;
+  await store.place("cf-extras", { manifest: JSON.stringify({ id: "cf-extras", name: "Extras fixture", version: "1.0.0" }), main: code, styles: null });
+  const r = await w.webContents.executeJavaScript(`(async () => {
+    const out = {}, wait = (ms) => new Promise((x) => setTimeout(x, ms)), app = PluginApp.app;
+    await PluginHost.enable("cf-extras");
+    out.err = PluginHost.errors.get("cf-extras") || "";
+    out.es5 = window.cfES5;
+    out.hover = !!(app.workspace.hoverLinkSources && app.workspace.hoverLinkSources["cf-extras"]);
+    out.ext = app.viewRegistry.getTypeByExtension("cfx");
+    out.moment = [typeof window.moment.version, window.moment.locale(), window.moment.localeData().weekdays().length, window.moment("2026-11-14").format("dddd, Do MMMM YYYY")];
+    out.buffer = [Buffer.from("hi").toString("base64"), Buffer.from("aGk=", "base64").toString(), Buffer.from("hi").toString("hex"), Buffer.concat([Buffer.from("a"), Buffer.from("b")]).toString()];
+    out.i18n = window.i18next.t("x.y");
+    out.cm = await (async () => { try { const st = PluginHost.require("@codemirror/state"), v = PluginHost.require("@codemirror/view"); const E = st.StateEffect.define(); class W extends v.WidgetType { toDOM() { return document.createElement("span"); } } return typeof E.of === "function" && typeof new W().toDOM === "function" && st.EditorState.create({ doc: "abc" }).doc.length === 3; } catch (e) { return String(e.message); } })();
+    out.secret = (app.secretStorage.setSecret("cf-test-key", "s3"), app.secretStorage.getSecret("cf-test-key"));
+    const dot = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,31,21,196,137,0,0,0,13,73,68,65,84,120,156,99,248,15,4,0,9,251,3,253,227,85,242,156,0,0,0,0,73,69,78,68,174,66,96,130]);
+    await app.vault.adapter.writeBinary("dot.png", dot.buffer);
+    out.url = app.vault.adapter.getResourcePath("dot.png");
+    out.img = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i.naturalWidth); i.onerror = () => ok("error"); i.src = out.url; });
+    out.outside = await new Promise((ok) => { const i = new Image(); i.onload = () => ok("loaded"); i.onerror = () => ok("refused"); i.src = "app://carbonfibre/vault/..%2Fplugins%2Fenabled.json.png"; });
+    renderSidebar(); await wait(50);
+    const ex = app.workspace.getLeavesOfType("file-explorer")[0];
+    out.explorer = !!ex && ex.view.getViewType() === "file-explorer" && !!ex.view.fileItems["Alpha.md"] && ex.view.fileItems["Alpha.md"].titleEl instanceof HTMLElement;
+    await PluginHost.disable("cf-extras");
+    out.extGone = app.viewRegistry.getTypeByExtension("cfx") === undefined && !app.workspace.hoverLinkSources["cf-extras"];
+    return out;
+  })()`);
+  check("old compiled (ES5) plugins load, and their subclasses of Obsidian classes work", !r.err && r.es5 && r.es5.ok && r.es5.app && r.es5.modal && r.es5.plugin, r.err + " " + JSON.stringify(r.es5));
+  check("hover sources and file extensions register, and go away with the plugin", r.hover && r.ext === "cf-extras-view" && r.extGone, JSON.stringify([r.hover, r.ext, r.extGone]));
+  check("the real moment.js, with locale data", r.moment[0] === "string" && r.moment[1] === "en" && r.moment[2] === 7 && r.moment[3] === "Saturday, 14th November 2026", JSON.stringify(r.moment));
+  check("Buffer for plugins without Node.js", JSON.stringify(r.buffer) === JSON.stringify(["aGk=", "hi", "6869", "ab"]), JSON.stringify(r.buffer));
+  check("i18next answers with the key", r.i18n === "x.y", r.i18n);
+  check("the real CodeMirror 6 modules (plugins build editor extensions from them)", r.cm === true, String(r.cm));
+  check("app.secretStorage keeps a secret", r.secret === "s3", r.secret);
+  check("vault images show (getResourcePath)", /^app:\/\/carbonfibre\/vault\/dot\.png\?/.test(r.url) && r.img === 1, r.url + " " + r.img);
+  check("...and nothing outside the notes folder is served", r.outside === "refused", r.outside);
+  check("the file explorer is there for plugins, with its items", r.explorer);
 }
 
 /* settings pages described with getSettingDefinitions (Obsidian 1.13+): groups, controls bound to a key,

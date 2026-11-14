@@ -3,6 +3,8 @@
      plugins/<id>/manifest.json, main.js, styles.css, data.json, compat.json
      plugins/enabled.json
      plugins/network.json      which plugins you let use the internet (id: true / false)
+     plugins/node.json         which plugins you let use Node.js, and your notes folder's path for them
+     secrets.json              plugins' API keys and tokens (app.secretStorage), encrypted by the system keychain
      plugin-cache/catalog.json, plugin-cache/<id>@<version>/...   (checked but not installed)
    Only this file touches the network: GitHub for the catalog and release files, and (request below)
    the requests of plugins you let use the internet. The page itself still can't reach the network. */
@@ -12,7 +14,7 @@ const dns = require("node:dns").promises;
 const netmod = require("node:net");
 const path = require("node:path");
 const { Worker } = require("node:worker_threads");
-const { app, net } = require("electron");
+const { app, net, safeStorage } = require("electron");
 const { VERSION } = require("./compat");
 
 const CATALOG_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
@@ -132,14 +134,15 @@ async function compatOf(id) {
 async function list() {
   let names = [];
   try { names = await fs.readdir(root(), { withFileTypes: true }); } catch (e) { return []; }
-  const enabled = await enabledSet(), net = await networkMap();
+  const enabled = await enabledSet(), net = await networkMap(), nodes = await nodeState();
   const out = [];
   for (const d of names) {
     if (!d.isDirectory() || !ID_RE.test(d.name)) continue;
     const manifest = await readJson(path.join(root(), d.name, "manifest.json"));
     if (!manifest) continue;
     const compat = await compatOf(d.name);
-    out.push({ id: d.name, manifest, enabled: enabled.has(d.name) && compat.level !== "no", compat, network: net[d.name] === undefined ? null : !!net[d.name],
+    out.push({ id: d.name, manifest, enabled: enabled.has(d.name), compat, network: net[d.name] === undefined ? null : !!net[d.name],
+      node: nodes.grants[d.name] === undefined ? null : !!nodes.grants[d.name],
       hasStyles: (await readText(path.join(root(), d.name, "styles.css"))) != null });
   }
   return out.sort((a, b) => String(a.manifest.name || a.id).localeCompare(String(b.manifest.name || b.id)));
@@ -189,6 +192,7 @@ async function uninstall(id) {
   await fs.rm(dirOf(id), { recursive: true, force: true });
   const e = await enabledSet(); e.delete(id); await saveEnabled(e);
   const n = await networkMap(); delete n[id]; await writeText(path.join(root(), "network.json"), JSON.stringify(n));
+  const st = await nodeState(); delete st.grants[id]; await saveNode(st);
 }
 async function setEnabled(id, on) {
   checkId(id);
@@ -297,6 +301,42 @@ async function saveData(id, text) {
   await writeText(path.join(dirOf(id), "data.json"), text);
 }
 
+/* ---- Node.js, per plugin ----
+   Like the internet: granted only by a dialog in main.js, taken away from the page. A window opened
+   while an enabled plugin has it runs plugins with Node (desktop/preload.js); otherwise the page has
+   none. vault: the notes folder's real path, which such plugins need (FileSystemAdapter.getBasePath). */
+async function nodeState() {
+  const o = await readJson(path.join(root(), "node.json"));
+  const grants = o && o.grants && typeof o.grants === "object" && !Array.isArray(o.grants) ? o.grants : {};
+  return { grants, vault: o && typeof o.vault === "string" ? o.vault : null };
+}
+async function saveNode(st) { await writeText(path.join(root(), "node.json"), JSON.stringify({ grants: st.grants, vault: st.vault })); }
+async function setNode(id, on) { checkId(id); const st = await nodeState(); st.grants[id] = !!on; await saveNode(st); return !!on; }
+async function nodeWanted() { const st = await nodeState(), e = await enabledSet(); return Array.from(e).some((id) => st.grants[id] === true); }
+async function vaultPath() { return (await nodeState()).vault; }
+async function setVaultPath(p) { const st = await nodeState(); st.vault = p ? path.resolve(String(p)) : null; await saveNode(st); return st.vault; }
+
+/* ---- secrets (Obsidian's app.secretStorage) ----
+   One file of name -> encrypted value. Without a system keychain (some Linux setups) values can't be
+   kept safely, so they aren't kept at all. */
+const SECRET_RE = /^[\w.:@/-]{1,200}$/;
+async function secretsAll() {
+  const o = await readJson(path.join(app.getPath("userData"), "secrets.json")) || {};
+  const out = {};
+  if (!safeStorage.isEncryptionAvailable()) return out;
+  for (const k of Object.keys(o)) { try { out[k] = safeStorage.decryptString(Buffer.from(String(o[k]), "base64")); } catch (e) { /* from another machine */ } }
+  return out;
+}
+async function secretSet(name, value) {
+  name = String(name);
+  if (!SECRET_RE.test(name)) throw new Error("Not a valid secret name");
+  if (String(value || "").length > 64 * 1024) throw new Error("Secret too large");
+  if (value && !safeStorage.isEncryptionAvailable()) throw new Error("This computer has no keychain to keep secrets in");
+  const f = path.join(app.getPath("userData"), "secrets.json"), o = await readJson(f) || {};
+  if (value) o[name] = safeStorage.encryptString(String(value)).toString("base64"); else delete o[name];
+  await writeText(f, JSON.stringify(o));
+}
+
 /* a plugin's own folder, for app.vault.adapter calls under manifest.dir */
 function inPluginDir(id, rel) {
   const dir = dirOf(id), f = path.resolve(dir, String(rel || "."));
@@ -330,8 +370,10 @@ async function wrappedCode(id) {
   const code = await readText(path.join(dirOf(id), "main.js"));
   if (code == null) return null;
   /* fetch: the plugin's own, through its internet permission (window.fetch stays blocked by the page's policy) */
-  return "window.__cfPluginDefine(" + JSON.stringify(id) + ", function (require, module, exports, process, global, fetch) {\n" + code +
+  /* XMLHttpRequest: the same, as the old browser API; Buffer, __dirname: Node's names, for plugins that expect them */
+  return "window.__cfPluginDefine(" + JSON.stringify(id) + ", function (require, module, exports, process, global, fetch, XMLHttpRequest, Buffer, __dirname, __filename) {\n" + code +
     "\n});\n//# sourceURL=plugin:" + id + "/main.js\n";
 }
 
-module.exports = { catalog, check, list, install, installFromDir, place, uninstall, setEnabled, anyEnabled, networkAllowed, setNetwork, request, styles, loadData, saveData, pluginFs, wrappedCode, checkId };
+module.exports = { catalog, check, list, install, installFromDir, place, uninstall, setEnabled, anyEnabled, networkAllowed, setNetwork, request, styles, loadData, saveData, pluginFs, wrappedCode, checkId,
+  setNode, nodeWanted, vaultPath, setVaultPath, secretsAll, secretSet, dirOf };

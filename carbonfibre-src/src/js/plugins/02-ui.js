@@ -598,6 +598,13 @@ class PluginAbstractTextComponent extends PluginValueComponent {
 class PluginTextComponent extends PluginAbstractTextComponent {
   constructor(containerEl) { const i = document.createElement("input"); i.type = "text"; i.spellcheck = false; containerEl.appendChild(i); super(i); }
 }
+/* Obsidian 1.11: a field for a key or token, kept in app.secretStorage; the setting stores the secret's name */
+class PluginSecretComponent extends PluginAbstractTextComponent {
+  constructor(app, containerEl) {
+    const el = containerEl || app;
+    const i = document.createElement("input"); i.type = "password"; i.autocomplete = "off"; i.spellcheck = false; el.appendChild(i); super(i);
+  }
+}
 class PluginTextAreaComponent extends PluginAbstractTextComponent {
   constructor(containerEl) { const t = document.createElement("textarea"); containerEl.appendChild(t); super(t); }
 }
@@ -690,6 +697,7 @@ class PluginButtonComponent extends PluginBaseComponent {
   setCta() { this.buttonEl.classList.add("mod-cta"); return this; }
   removeCta() { this.buttonEl.classList.remove("mod-cta"); return this; }
   setWarning() { this.buttonEl.classList.add("mod-warning"); return this; }
+  setDestructive() { this.buttonEl.classList.add("mod-destructive", "mod-warning"); return this; }
   setClass(c) { this.buttonEl.classList.add(c); return this; }
   setTooltip(t) { pluginTooltip(this.buttonEl, t); return this; }
   onClick(cb) { this.cb = cb; return this; }

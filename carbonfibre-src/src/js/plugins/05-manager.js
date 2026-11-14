@@ -67,7 +67,8 @@ const PluginManager = {
   badge(c) {
     if (!c) return '<span class="cfp-badge cfp-wait">Checking…</span>';
     if (c.error) return '<span class="cfp-badge cfp-wait" title="' + escAttr(c.error) + '">Couldn’t check</span>';
-    return (c.net && c.level !== "no" ? '<span class="cfp-badge cfp-netb" title="Asks to use the internet when you switch it on">Internet</span> ' : "") + (c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
+    return (c.node && c.level !== "no" ? '<span class="cfp-badge cfp-nodeb" title="Asks to use Node.js (files, programs, the internet) when you switch it on, as it has in Obsidian">Node.js</span> '
+      : c.net && c.level !== "no" ? '<span class="cfp-badge cfp-netb" title="Asks to use the internet when you switch it on">Internet</span> ' : "") + (c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
       : c.level === "partial" ? '<span class="cfp-badge cfp-part">Partly works</span>'
       : '<span class="cfp-badge cfp-no">Can’t run here</span>');
   },
@@ -91,7 +92,7 @@ const PluginManager = {
     const n = PluginHost.installed.length;
     w.querySelector('.cfp-tab[data-cfptab="installed"]').textContent = "Installed" + (n ? " (" + n + ")" : "");
     w.querySelector(".cfp-lede").innerHTML = desk
-      ? "Obsidian community plugins, running inside CarbonFibre. A plugin that uses the internet asks first, and you can take that back below. Ones that need something CarbonFibre doesn’t have are greyed out. A plugin can read and change your notes, so install ones you trust."
+      ? "Obsidian community plugins, running inside CarbonFibre. A plugin that uses the internet, or Node.js (files and programs on this computer, as in Obsidian), asks first, and you can take that back below. A plugin can read and change your notes, so install ones you trust."
       : "<strong>Plugins run in the CarbonFibre desktop app</strong> (macOS, Windows and Linux). This web version only runs its own code, which keeps your notes safe from injected scripts, so plugins are switched off here.";
     w.classList.toggle("cfp-web", !desk);
     const body = w.querySelector(".cfp-body");
@@ -117,7 +118,7 @@ const PluginManager = {
         '<div class="cfp-main"><div class="cfp-name">' + esc(String(m.name || p.id)) + ' <span class="cfp-ver">' + esc(String(m.version || "")) + "</span> " + PluginManager.badge(c) + "</div>" +
           '<div class="cfp-by">' + (m.author ? "by " + esc(String(m.author)) : "") + "</div>" +
           '<div class="cfp-desc">' + esc(String(m.description || "")) + "</div>" +
-          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + PluginManager.netLine(p) + "</div>" +
+          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + PluginManager.nodeLine(p) + PluginManager.netLine(p) + "</div>" +
         '<div class="cfp-side">' +
           (tab ? '<button class="cfp-icon" data-cfpact="settings" title="Settings" aria-label="Settings for ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("settings", 16) + "</button>" : "") +
           '<button class="cfp-icon" data-cfpact="remove" title="Uninstall" aria-label="Uninstall ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("trash", 16) + "</button>" +
@@ -128,9 +129,18 @@ const PluginManager = {
     body.innerHTML = h;
   },
 
+  /* a plugin that uses Node.js: whether it may, and the button to change that */
+  nodeLine(p) {
+    if (!p.compat || !p.compat.node) return "";
+    const live = PluginNodeAccess.have();
+    return p.node
+      ? '<p class="cfp-net cfp-node">' + PluginIcons.svg("terminal", 14) + " Can use Node.js" + (live ? "" : " (once its window reopens)") + ' <button class="cfp-btn cfp-small" data-cfpact="nodeoff">Take away</button></p>'
+      : '<p class="cfp-net cfp-dim">' + PluginIcons.svg("terminal", 14) + " " + (p.node === false ? "Not allowed to use Node.js: those parts are off" : "Uses Node.js: asks when switched on") +
+        ' <button class="cfp-btn cfp-small" data-cfpact="nodeon">Allow…</button></p>';
+  },
   /* a plugin that uses the internet: whether it may, and the button to change that */
   netLine(p) {
-    if (!p.compat || !p.compat.net) return "";
+    if (!p.compat || !p.compat.net || p.node) return "";
     return p.network
       ? '<p class="cfp-net">' + PluginIcons.svg("globe", 14) + ' Can use the internet <button class="cfp-btn cfp-small" data-cfpact="netoff">Take away</button></p>'
       : '<p class="cfp-net cfp-dim">' + PluginIcons.svg("globe", 14) + ' ' + (p.network === false ? "Not allowed to use the internet" : "Uses the internet: asks when switched on") +
@@ -246,9 +256,11 @@ const PluginManager = {
     if (!a || a.disabled) return;
     const act = a.dataset.cfpact, row = a.closest(".cfp-row"), id = row && row.dataset.id;
     if (act === "toggle") return;
-    if (act === "neton" || act === "netoff") {
+    if (act === "neton" || act === "netoff" || act === "nodeon" || act === "nodeoff") {
       const d = cfDesktopPlugins();
-      (act === "neton" ? d.askNetwork(id) : d.revokeNetwork(id)).catch(function () {})
+      const run = { neton: d.askNetwork, netoff: d.revokeNetwork, nodeon: d.askNode, nodeoff: d.revokeNode }[act];
+      /* Node.js is taken away at once for that plugin's next start; switching it off and on again applies it */
+      Promise.resolve(run(id)).catch(function () {})
         .then(function () { return d.list(); }).then(function (l) { PluginHost.installed = l; PluginManager.refresh(); });
       return;
     }
@@ -267,7 +279,7 @@ const PluginManager = {
     return cfDesktopPlugins().list().then(function (list) {
       PluginHost.installed = list;
       const name = (r.manifest && r.manifest.name) || r.id;
-      if (r.compat && r.compat.level === "no") { pushToastLike(name + " is installed but can’t run here."); PluginManager.refresh(); return null; }
+      if (r.compat && r.compat.level === "no") { pushToastLike(name + " is installed but has no code to run."); PluginManager.refresh(); return null; }
       return Dialogs.confirm("Turn on " + name + " now?\n\nA plugin can read and change your notes.").then(function (ok) {
         if (!ok) { PluginManager.refresh(); return null; }
         return PluginHost.enable(r.id).catch(function (e) { pushToastLike(name + " didn’t start: " + e.message); }).then(function () { return cfDesktopPlugins().list(); }).then(function (l2) { PluginHost.installed = l2; PluginManager.refresh(); });

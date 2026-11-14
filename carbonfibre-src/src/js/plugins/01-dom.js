@@ -113,7 +113,7 @@ const PluginDom = {
     getter(E, "innerWidth", function () { return this.clientWidth; });
     getter(E, "innerHeight", function () { return this.clientHeight; });
     def(E, "onClickEvent", function (fn, opts) { this.addEventListener("click", fn, opts); this.addEventListener("auxclick", fn, opts); });
-    def(E, "on", function (type, sel, fn, opts) {
+    def(N, "on", function (type, sel, fn, opts) {
       if (!this._cfDelegates) Object.defineProperty(this, "_cfDelegates", { value: [], enumerable: false });
       const wrapped = function (e) {
         const t = e.target && e.target.closest ? e.target.closest(sel) : null;
@@ -122,13 +122,13 @@ const PluginDom = {
       this._cfDelegates.push({ type: type, sel: sel, fn: fn, wrapped: wrapped });
       this.addEventListener(type, wrapped, opts);
     });
-    def(E, "off", function (type, sel, fn, opts) {
+    def(N, "off", function (type, sel, fn, opts) {
       (this._cfDelegates || []).filter(function (d) { return d.type === type && d.sel === sel && d.fn === fn; }).forEach(function (d) {
         this.removeEventListener(type, d.wrapped, opts);
         this._cfDelegates.splice(this._cfDelegates.indexOf(d), 1);
       }, this);
     });
-    def(E, "trigger", function (type) { this.dispatchEvent(new Event(type, { bubbles: true })); });
+    def(N, "trigger", function (type) { this.dispatchEvent(new Event(type, { bubbles: true })); });
     def(E, "onNodeInserted", function (fn, once) {
       const el = this;
       let done = false;
