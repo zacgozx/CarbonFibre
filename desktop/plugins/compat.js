@@ -9,7 +9,7 @@
    desktop/test/run.js (npm test) checks that every SUPPORTED name exists there. Bump VERSION whenever a rule changes, so cached answers are redone. */
 "use strict";
 
-const VERSION = 7;
+const VERSION = 8;
 
 /* names exported by the "obsidian" module that the page provides and that work */
 const SUPPORTED = [
@@ -177,6 +177,8 @@ function analyze(code, manifest, info) {
   if (/\bmonkey-around\b|\baround\s*\(\s*[\w$.]+\.prototype/.test(code)) internals.push("patching Obsidian's classes");
   if (internals.length) notes.push("Uses private Obsidian internals (" + uniq(internals).join(", ") + "); those parts may not work");
 
+  /* settings for an Obsidian theme (Minimal, AnuPpuccin, ...): they style that theme's CSS, which CarbonFibre doesn't load */
+  if (/\btheme\b/i.test(text) && /\b(body|document\.body)\.(addClass|toggleClass|classList)\b|\bcustomCss\b/.test(code)) notes.push("Made for an Obsidian theme: its settings show and save, but CarbonFibre uses its own theme, so most of them change nothing");
   if (/\.registerObsidianProtocolHandler\s*\(/.test(code)) notes.push("obsidian:// links aren't handled");
   if (/\.registerExtensions\s*\(/.test(code)) notes.push("Opening non-Markdown file types isn't supported");
   if (/\.registerBasesView\s*\(|\.BasesView\b/.test(code)) notes.push("Obsidian Bases views aren't available");

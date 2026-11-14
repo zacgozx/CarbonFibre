@@ -109,6 +109,7 @@ app.on("browser-window-created", (_e, w) => {
       check("turning it off removes everything it added", Object.values(r.off).every(Boolean), JSON.stringify(r.off));
     } catch (e) { check("desktop run", false, e.stack); }
     try { await netCheck(w); } catch (e) { check("internet run", false, e.stack); }
+    try { await defsCheck(w); } catch (e) { check("1.13 settings run", false, e.stack); }
     webCheck();
   });
 });
@@ -172,6 +173,52 @@ async function netCheck(w) {
   check("internet: Installed lists it with a way to take it away", /Can use the internet/.test(r.row) && /Take away/.test(r.row), r.row);
   check("internet: taking it away stops its requests", /isn't allowed|Failed to fetch/.test(r.after), r.after);
   server.close();
+}
+
+/* settings pages described with getSettingDefinitions (Obsidian 1.13+): groups, controls bound to a key,
+   visible/disabled predicates, and sub-pages */
+async function defsCheck(w) {
+  const code = `"use strict";
+var obsidian = require("obsidian");
+class Tab extends obsidian.PluginSettingTab {
+  getSettingDefinitions() { return [
+    { name: "Intro", desc: "About", render: (s) => s.addButton((b) => b.setButtonText("Go")) },
+    { type: "group", heading: "Look", items: [
+      { name: "Fancy", control: { type: "toggle", key: "fancy" } },
+      { name: "Scheme", control: { type: "dropdown", key: "scheme", options: { a: "A", b: "B" } }, visible: () => this.plugin.settings.fancy },
+      { name: "Size", control: { type: "slider", key: "size", min: 1, max: 9, step: 1, displayFormat: (n) => n + " px" } },
+      { name: "Label", control: { type: "text", key: "label", validate: (v) => v.length > 5 ? "Too long" : "" } } ] },
+    { type: "page", name: "More", items: [{ name: "Deep", control: { type: "toggle", key: "deep" } }] } ]; }
+}
+class P extends obsidian.Plugin { async onload() { this.settings = Object.assign({ fancy: false, scheme: "a", size: 3, label: "hi", deep: false }, await this.loadData()); this.addSettingTab(new Tab(this.app, this)); } }
+module.exports = P;
+`;
+  await store.place("cf-defs", { manifest: JSON.stringify({ id: "cf-defs", name: "Defs fixture", version: "1.0.0" }), main: code, styles: null });
+  const r = await w.webContents.executeJavaScript(`(async () => {
+    const wait = (ms) => new Promise((x) => setTimeout(x, ms));
+    await PluginHost.enable("cf-defs");
+    PluginManager.open("installed"); PluginManager.openSettings("cf-defs"); await wait(150);
+    const box = () => document.querySelector(".cfp-settings");
+    const out = { heads: [...box().querySelectorAll(".setting-group > .setting-item-heading")].map((e) => e.textContent),
+      names: [...box().querySelectorAll(".setting-item-name")].map((e) => e.textContent),
+      schemeHidden: [...box().querySelectorAll(".setting-item")].find((e) => e.textContent.includes("Scheme")).hidden,
+      slider: (box().querySelector(".cfp-slider-value") || {}).textContent };
+    const tog = box().querySelector(".checkbox-container"); tog.click(); await wait(200);
+    out.schemeShown = ![...box().querySelectorAll(".setting-item")].find((e) => e.textContent.includes("Scheme")).hidden;
+    const text = box().querySelector(".setting-item-control input[type=text]"); text.value = "far too long"; text.dispatchEvent(new Event("input")); await wait(200);
+    out.invalid = (box().querySelector(".cfp-err:not([hidden])") || {}).textContent;
+    out.saved = JSON.parse(await cfDesktop.plugins.loadData("cf-defs"));
+    [...box().querySelectorAll("button")].find((b) => b.textContent === "Open").click(); await wait(100);
+    out.page = [...box().querySelectorAll(".setting-item-name")].map((e) => e.textContent);
+    PluginManager.close(); await PluginHost.disable("cf-defs");
+    return out;
+  })()`);
+  check("1.13 settings: groups and items render", JSON.stringify(r.heads) === JSON.stringify(["Look"]) && ["Intro", "Fancy", "Scheme", "Size", "Label", "More"].every((n) => r.names.includes(n)), JSON.stringify(r.names));
+  check("1.13 settings: visible predicates hide, and update after a change", r.schemeHidden === true && r.schemeShown === true);
+  check("1.13 settings: slider shows its formatted value", r.slider === "3 px", r.slider);
+  check("1.13 settings: changes save through setControlValue", r.saved && r.saved.fancy === true, JSON.stringify(r.saved));
+  check("1.13 settings: validate rejects without saving", r.invalid === "Too long" && r.saved.label === "hi", r.invalid);
+  check("1.13 settings: a sub-page opens with its own items", r.page.includes("Deep"), JSON.stringify(r.page));
 }
 
 /* the page as the website runs it: no desktop bridge, so plugins must stay off and greyed out */

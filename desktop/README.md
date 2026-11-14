@@ -63,7 +63,7 @@ What they don't get, so plugins that depend on it are greyed out or partly work:
 | Obsidian's editor (CodeMirror) | CarbonFibre has its own editor, so editor decorations don't show. Plugins that only change the editor are greyed out. |
 | Obsidian internals | Private APIs (core plugins, themes, Bases) aren't there; those parts may not work. |
 
-On the 500 most downloaded plugins (November 2026), the checker rates 149 as working, 285 as partly
+On the 500 most downloaded plugins (November 2026), the checker rates 147 as working, 287 as partly
 working and 66 (13%) as unable to run: 87% can run (before internet per plugin: 71%). 184 of them use
 the internet and ask for it. Of the 66: 44 need Node.js or Electron (files, a shell), 22 reach the
 internet through Node's `http`/`https`, 8 only change Obsidian's editor, 6 use XMLHttpRequest or sockets

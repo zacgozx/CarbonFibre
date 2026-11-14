@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2PHw+sQBc7Q7IllGu4cRECFI1/MAqhNDYK3iJHQpW+E=' 'sha256-mT/LqV8nRyod1k5mCBwuT0TX5jXGEXpxeu0VS/Z4DcE='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2PHw+sQBc7Q7IllGu4cRECFI1/MAqhNDYK3iJHQpW+E=' 'sha256-LR8oSPVnF4p0qZIOe0AVjD+z5guIDkW7Rw52mZBH7iw='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2527,6 +2527,13 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
 .cfp-net { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; font-size: 12.5px; }
 .cfp-net svg { flex-shrink: 0; }
 .cfp-btn.cfp-small { min-height: 24px; padding: 0 8px; font-size: 12px; }
+
+/* settings pages described with getSettingDefinitions (Obsidian 1.13+): group headings and slider values */
+.cfp-settings .setting-group { margin-top: 10px; }
+.cfp-settings .setting-group > .setting-item-heading { font-weight: 600; border-top: 0; padding: 14px 0 4px; }
+.cfp-settings .setting-item.mod-clickable { cursor: pointer; }
+.cfp-settings .cfp-slider-value { min-width: 2.5em; text-align: right; }
+.cfp-settings .setting-item[hidden], .cfp-settings .setting-group[hidden] { display: none; }
 </style>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
 </head>
@@ -3812,21 +3819,150 @@ class PluginSettingGroup {
     this.groupEl.appendChild(this.headerEl); this.groupEl.appendChild(this.listEl);
     containerEl.appendChild(this.groupEl);
   }
-  setHeading(t) { this.headerEl.textContent = t; return this; }
+  setHeading(t) { this.headerEl.textContent = ""; if (t instanceof Node) this.headerEl.appendChild(t); else this.headerEl.textContent = t == null ? "" : String(t); return this; }
   addSetting(cb) { const s = new PluginSetting(this.listEl); cb(s); return this; }
-  addClass(c) { this.groupEl.classList.add(c); return this; }
+  addClass() { this.groupEl.classList.add.apply(this.groupEl.classList, arguments); return this; }
+  addSearch(cb) { const s = new PluginSetting(this.listEl); s.addSearch(cb); this.listEl.insertBefore(s.settingEl, this.listEl.firstChild); return this; }
+  addExtraButton(cb) { const c = new PluginExtraButtonComponent(this.headerEl); if (cb) cb(c); return this; }
 }
 
+/* A plugin's settings page. Older plugins draw it themselves in display(); plugins for Obsidian 1.13
+   and later may instead describe it with getSettingDefinitions() (groups, pages and controls bound to
+   a key), which this draws: PluginSettingDefs below. */
 class PluginSettingTab {
   constructor(app, plugin) {
     this.app = app;
     this.plugin = plugin;
     this.containerEl = document.createElement("div");
     this.containerEl.className = "vertical-tab-content";
+    this.settingItems = [];
+    this.icon = "settings";
   }
-  display() {}
+  getSettingDefinitions() { return []; }
+  /* a plugin tab reads and writes this.plugin.settings, saved with saveData */
+  getControlValue(key) { const st = this.plugin && this.plugin.settings; return st ? st[key] : undefined; }
+  setControlValue(key, value) {
+    if (!this.plugin) return;
+    if (!this.plugin.settings || typeof this.plugin.settings !== "object") this.plugin.settings = {};
+    this.plugin.settings[key] = value;
+    return this.plugin.saveData(this.plugin.settings);
+  }
+  update() { this.settingItems = this.getSettingDefinitions() || []; if (this.containerEl.isConnected) this.display(); }
+  refreshDomState() { PluginSettingDefs.refresh(this); }
+  display() { PluginSettingDefs.render(this); }
   hide() { this.containerEl.textContent = ""; }
 }
+
+const PluginSettingDefs = {
+  /* a predicate that may be a value or a function */
+  is(v, dflt) { if (typeof v === "function") { try { return !!v(); } catch (e) { return dflt; } } return v === undefined ? dflt : !!v; },
+  render(tab) {
+    tab.settingItems = tab.getSettingDefinitions() || [];
+    tab.containerEl.textContent = "";
+    tab._defRows = [];
+    tab._pages = tab._pages || [];
+    const page = tab._pages[tab._pages.length - 1];
+    if (page) {
+      const back = new PluginSetting(tab.containerEl).setName(page.name);
+      back.setHeading();
+      back.addButton(function (b) { b.setButtonText("Back").onClick(function () { tab._pages.pop(); PluginSettingDefs.render(tab); }); });
+    }
+    PluginSettingDefs.items(tab, tab.containerEl, page ? page.items || [] : tab.settingItems, null);
+    PluginSettingDefs.refresh(tab);
+  },
+  items(tab, el, list, group) {
+    (list || []).forEach(function (def, i) {
+      if (!def || typeof def !== "object") return;
+      if (def.type === "group" || def.type === "list") {
+        const g = new PluginSettingGroup(el);
+        if (def.heading) g.setHeading(def.heading); else g.headerEl.hidden = true;
+        if (def.cls) String(def.cls).split(/\s+/).filter(Boolean).forEach(function (c) { g.addClass(c); });
+        (def.extraButtons || []).forEach(function (cb) { g.addExtraButton(cb); });
+        tab._defRows.push({ def: def, el: g.groupEl });
+        if (def.type === "list" && !(def.items || []).length && def.emptyState) {
+          const e = document.createElement("div"); e.className = "setting-item setting-item-description";
+          if (def.emptyState instanceof Node) e.appendChild(def.emptyState); else e.textContent = String(def.emptyState);
+          g.listEl.appendChild(e);
+        }
+        PluginSettingDefs.items(tab, g.listEl, def.items, g);
+        if (def.addItem) new PluginSetting(g.listEl).setName(def.addItem.name).addButton(function (b) { b.setButtonText("+").onClick(function () { def.addItem.action(b.buttonEl); }); });
+        return;
+      }
+      const s = new PluginSetting(el);
+      s.setName(def.name || "");
+      if (def.desc) s.setDesc(def.desc);
+      tab._defRows.push({ def: def, el: s.settingEl, setting: s });
+      try {
+        if (def.type === "page") PluginSettingDefs.page(tab, s, def);
+        else if (typeof def.render === "function") def.render(s, group);
+        else if (typeof def.action === "function") {
+          s.settingEl.classList.add("mod-clickable");
+          s.settingEl.addEventListener("click", function () { if (!s.settingEl.classList.contains("is-disabled")) def.action(s.settingEl, i); });
+        } else if (def.control) PluginSettingDefs.control(tab, s, def.control);
+      } catch (e) {
+        console.error(e);
+        s.setDesc("This setting couldn\u2019t be shown: " + ((e && e.message) || e));
+      }
+    });
+  },
+  /* a sub-page: an entry that opens it in place, with Back to return */
+  page(tab, s, def) {
+    const val = typeof def.displayValue === "function" ? def.displayValue() : def.displayValue;
+    if (val) { const v = document.createElement("span"); v.className = "setting-item-description"; v.textContent = String(val); s.controlEl.appendChild(v); }
+    s.addButton(function (b) {
+      b.setButtonText("Open").onClick(function () {
+        if (def.items) { tab._pages.push(def); PluginSettingDefs.render(tab); return; }
+        if (typeof def.page === "function") {
+          const pg = def.page();
+          tab.containerEl.textContent = "";
+          new PluginSetting(tab.containerEl).setName(pg.title || def.name).setHeading().addButton(function (bb) { bb.setButtonText("Back").onClick(function () { PluginSettingDefs.render(tab); }); });
+          if (pg.containerEl) { tab.containerEl.appendChild(pg.containerEl); pg.display(); }
+        }
+      });
+    });
+  },
+  /* one control bound to a key: shows getControlValue, saves through setControlValue */
+  control(tab, s, c) {
+    let v = tab.getControlValue(c.key);
+    if (v === undefined || v === null) v = c.defaultValue;
+    const err = document.createElement("div"); err.className = "setting-item-description cfp-err"; err.hidden = true; s.infoEl.appendChild(err);
+    const save = function (val) {
+      const check = typeof c.validate === "function" ? Promise.resolve(c.validate(val)) : Promise.resolve("");
+      return check.then(function (msg) {
+        err.hidden = !msg; err.textContent = msg || "";
+        if (msg) return null;
+        return Promise.resolve(tab.setControlValue(c.key, val)).then(function () { PluginSettingDefs.refresh(tab); });
+      }).catch(function (e) { console.error(e); err.hidden = false; err.textContent = String((e && e.message) || e); });
+    };
+    if (typeof c.validate === "function") Promise.resolve(c.validate(v)).then(function (msg) { if (msg) { err.hidden = false; err.textContent = msg; } }).catch(function () {});
+    const t = c.type;
+    if (t === "toggle") s.addToggle(function (x) { x.setValue(!!v).onChange(save); });
+    else if (t === "dropdown") s.addDropdown(function (x) { x.addOptions(c.options || {}).setValue(v == null ? "" : String(v)).onChange(save); });
+    else if (t === "slider") {
+      const shown = document.createElement("span"); shown.className = "setting-item-description cfp-slider-value";
+      const fmt = function (n) { return typeof c.displayFormat === "function" ? String(c.displayFormat(n)) : String(n); };
+      s.addSlider(function (x) { x.setLimits(c.min, c.max, c.step).setValue(Number(v) || 0).onChange(function (n) { shown.textContent = fmt(n); save(n); }); });
+      shown.textContent = fmt(Number(v) || 0); s.controlEl.insertBefore(shown, s.controlEl.firstChild);
+    } else if (t === "color") s.addColorPicker(function (x) { x.setValue(v || "#000000").onChange(save); });
+    else if (t === "textarea") s.addTextArea(function (x) { if (c.placeholder) x.setPlaceholder(c.placeholder); if (c.rows) x.inputEl.rows = c.rows; x.setValue(v == null ? "" : String(v)).onChange(save); });
+    else if (t === "number") s.addText(function (x) {
+      x.inputEl.type = "number";
+      ["min", "max", "step"].forEach(function (k) { if (c[k] !== undefined) x.inputEl[k] = c[k]; });
+      if (c.placeholder) x.setPlaceholder(c.placeholder);
+      x.setValue(v == null ? "" : String(v)).onChange(function (str) { const n = parseFloat(str); save(isFinite(n) ? n : (c.defaultValue || 0)); });
+    });
+    else s.addText(function (x) { if (c.placeholder) x.setPlaceholder(c.placeholder); x.setValue(v == null ? "" : String(v)).onChange(save); });   /* text, file, folder, secret */
+    s._control = c;
+  },
+  /* visible / disabled can depend on other settings: re-checked after every change */
+  refresh(tab) {
+    (tab._defRows || []).forEach(function (r) {
+      r.el.hidden = !PluginSettingDefs.is(r.def.visible, true);
+      const dis = r.setting && PluginSettingDefs.is((r.def.control && r.def.control.disabled !== undefined) ? r.def.control.disabled : r.def.disabled, false);
+      if (r.setting) r.setting.setDisabled(!!dis);
+    });
+  }
+};
 /* ============================================================
    Obsidian plugins 3/5: the app a plugin talks to: app.vault (notes as files), app.metadataCache,
    app.workspace (panes, and a side panel for plugin views), the Editor over a pane,
