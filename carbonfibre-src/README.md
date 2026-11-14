@@ -25,6 +25,7 @@ rebuild after changing any JavaScript; a hand-joined file would have no valid ha
 | `src/js/pane/` | The editor pane, by job: DOM, content, focus and live view, line selection, extra cursors, line operations, mouse, dropping, the edited line (completion, input and paste, keys), split view, render |
 | `src/js/01-host-bridge.js` | Inside the VS Code extension: folders, dialogs, storage and links go through VS Code. Does nothing in a browser |
 | `src/js/grid/` | The sheet grid: view, render, editing, structure, sorting, clipboard, find, fill |
+| `src/js/plugins/` | Obsidian plugins (desktop app only): DOM helpers, UI pieces, the app/vault/workspace/editor API, the host that loads plugins, the Plugins window. Styles in `css/26-plugins.css`. The rules for which plugins can run are in `desktop/plugins/compat.js` |
 
 **Note:** the files in `js/pane/` are consecutive parts of one function (`createPane`), and
 `js/grid/` of `makeGrid`. They share that function's local variables, so they are not

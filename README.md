@@ -9,7 +9,7 @@ publishes the app only.
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
 | `vscode-extension/` | The same app as a VS Code extension, working on a notes folder (see its README) | No |
-| `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron; see its README) | No |
+| `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron), which also runs Obsidian community plugins (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
 | `.github/workflows/desktop.yml` | Builds the desktop installers on a `v*` tag | — |
 
@@ -62,6 +62,13 @@ disabled with the reason. Switch any time from the bottom-left of the window.
   origin, so any other Pages site on the same account can read this one's browser storage and saved folder
   handle. Keep notes in a folder rather than browser storage, don't publish untrusted Pages sites on the
   same account, or give CarbonFibre its own custom domain.
+- **Plugins run only in the desktop app.** The website never runs plugin code; its Plugins window is greyed
+  out. In the desktop app a plugin you switch on can read and change your notes (as in Obsidian), but it
+  still can't reach the network: the page keeps `connect-src 'none'`. The desktop app widens the script
+  lock there only for installed plugin code and for code plugins build from strings; injected `<script>`
+  tags and `onerror=` handlers stay blocked. While any plugin is on, links opened from the page ask before
+  your browser opens them. Only the desktop app itself talks to GitHub, and only to fetch the plugin
+  catalog and the plugins you check or install.
 
 ## Good to know
 

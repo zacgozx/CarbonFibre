@@ -14,7 +14,8 @@
     "dist": "node build-page.js && electron-builder --publish never",
     "dist:mac": "node build-page.js && electron-builder --mac --publish never",
     "dist:win": "node build-page.js && electron-builder --win --publish never",
-    "dist:linux": "node build-page.js && electron-builder --linux --publish never"
+    "dist:linux": "node build-page.js && electron-builder --linux --publish never",
+    "test": "node build-page.js && electron test/run.js"
   },
   "build": {
     "appId": "io.github.carbonfibre.desktop",
@@ -29,6 +30,7 @@
       "prompt-preload.js",
       "prompt.html",
       "prompt.js",
+      "plugins/*.js",
       "package.json"
     ],
     "extraResources": [
@@ -84,7 +86,11 @@
         "deb"
       ],
       "maintainer": "CarbonFibre"
-    }
+    },
+    "asarUnpack": [
+      "plugins/analyze-worker.js",
+      "plugins/compat.js"
+    ]
   },
   "devDependencies": {
     "electron": "^45.3.2",

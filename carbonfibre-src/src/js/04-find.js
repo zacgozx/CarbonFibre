@@ -197,6 +197,8 @@ function highlightCode(line) {
 /* ---------------- rendering primitives ---------------- */
 
 function lineClass(raw, fenceInfo) {
+  if (fenceInfo && fenceInfo.plugHidden) return "ln ln-hidden";        /* inside a block a plugin draws */
+  if (fenceInfo && fenceInfo.plug) return "ln ln-plugblock";
   if (fenceInfo && fenceInfo.fence && fenceInfo.lang === "excalidraw")
     return fenceInfo.fence === "open" ? "ln ln-sketch" : "ln ln-hidden";
   if (fenceInfo && fenceInfo.fence)
@@ -217,6 +219,8 @@ function lineClass(raw, fenceInfo) {
 }
 
 function lineInnerHtml(raw, fenceInfo, idx) {
+  if (fenceInfo && fenceInfo.plugHidden) return "";
+  if (fenceInfo && fenceInfo.plug) return PluginHost.blockHtml(fenceInfo, idx);
   var emb = !(fenceInfo && fenceInfo.fence) && /^!\[\[([^\]|]+?\.excalidraw)(?:\|[^\]]*)?\]\]\s*$/i.exec(raw);
   if (emb) {                                            /* a sketch file shown in the note */
     var ep = sketchPathOf(emb[1]), ef = sketchFileOf(ep), eurl = ef ? sketchPreviewUrl(ef.text) : "", en = ef ? sketchCount(ef) : 0;
@@ -294,6 +298,7 @@ function makeRenderedNode(raw, fenceInfo, idx) {
     if (idx === fenceInfo.table.last) div.classList.add("ln-tlast");
   }
   div.innerHTML = lineInnerHtml(raw, fenceInfo, idx);
+  if (PluginHost.running) PluginHost.afterRender(div, raw, fenceInfo, idx);
   return div;
 }
 

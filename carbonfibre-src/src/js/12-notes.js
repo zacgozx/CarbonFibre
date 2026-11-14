@@ -129,7 +129,7 @@ function moveNote(id, dirPath) {
   const oldParent = n.parent || state.dirHandle;
   const newParent = folderHandle(dirPath);
   const newBase = uniqueBasename(oldBase.replace(/\.md$/i, ""), prefix);
-  writeFile(newParent, newBase, n.content).then(function (fh) {
+  return writeFile(newParent, newBase, n.content).then(function (fh) {
     n.handle = fh;
     return oldParent.removeEntry(oldBase).catch(function () {});
   }).then(function () {
@@ -143,6 +143,7 @@ function moveNote(id, dirPath) {
     collapsedFolders[dirPath] = false;
     renderSidebar();
     renderPanes();
+    PluginHost.noteRenamed(n, oldId);
   }).catch(function (e) {
     console.error(e); setSaveState("error");
     alert("Couldn't move that note: " + e.message);
@@ -258,6 +259,7 @@ function deleteFolderNow(path, inside) {
     });
     savePins();
     state.notes = state.notes.filter(function (n) { return n.path.indexOf(path + "/") !== 0; });
+    inside.forEach(function (n) { PluginHost.noteDeleted(n); });
     state.folders = state.folders.filter(function (f) { return f.path !== path && f.path.indexOf(path + "/") !== 0; });
     renderSidebar();
     renderPanes();
@@ -276,11 +278,13 @@ function createNote(dirPath) {
     sortNotes();
     writeNoteFile(n).catch(function (e) { console.error(e); setSaveState("error"); });
     id = n.id;
+    PluginHost.noteCreated(n);
   } else {
     const ln = { id: noteSeq++, title: "Untitled", content: "", path: null, handle: null, parent: null };
     state.notes.push(ln);
     schedulePersist();
     id = ln.id;
+    PluginHost.noteCreated(ln);
   }
   target.open(id);
   target.caret = 0;
@@ -334,6 +338,7 @@ function removeNoteNow(id) {
   if (state.backend === "local") schedulePersist();
   renderSidebar();
   panes.forEach(function (p) { p.renderBacklinks(); });
+  PluginHost.noteDeleted(n);
 }
 
 function commitRename(n, title) {
@@ -341,18 +346,20 @@ function commitRename(n, title) {
   state.renamingId = null;
   const clean = sanitizeName(title);
   if (state.backend === "local") {
+    const oldPath = PluginApp.notePath(n);
     n.title = clean;
     schedulePersist();
     renderSidebar();
     renderPanes();
-    return;
+    PluginHost.noteRenamed(n, oldPath);
+    return Promise.resolve();
   }
-  if (clean === n.title) { renderSidebar(); return; }
+  if (clean === n.title) { renderSidebar(); return Promise.resolve(); }
   const dirPrefix = n.path.indexOf("/") !== -1 ? n.path.slice(0, n.path.lastIndexOf("/") + 1) : "";
   const oldBase = n.path.split("/").pop();
   const newBase = uniqueBasename(clean, dirPrefix);
   const parent = n.parent || state.dirHandle;
-  writeFile(parent, newBase, n.content).then(function (fh) {
+  return writeFile(parent, newBase, n.content).then(function (fh) {
     n.handle = fh;
     return parent.removeEntry(oldBase).catch(function () {});
   }).then(function () {
@@ -364,6 +371,7 @@ function commitRename(n, title) {
     sortNotes();
     renderSidebar();
     renderPanes();
+    PluginHost.noteRenamed(n, oldId);
   }).catch(function (e) {
     console.error(e); setSaveState("error"); renderSidebar();
   });

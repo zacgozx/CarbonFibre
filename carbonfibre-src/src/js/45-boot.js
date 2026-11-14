@@ -11,6 +11,8 @@
   first.root.classList.add("focused");
   updateStorageUI();
   NarrowLayout.settle();                               /* before anything loads, so a phone never flashes the panel */
+  PluginManager.init();                                /* the Plugins button; plugins themselves run only in the desktop app */
+  PluginHost.start();
 
   function bootLocal() {
     loadLocalNotes();
@@ -21,6 +23,7 @@
     restoreSession();
     tbLaunchPin();
     NarrowLayout.settle();
+    PluginHost.notesReady();
   }
 
   /* inside VS Code: the notes folder is the one the extension hands over (no browser folder handles) */

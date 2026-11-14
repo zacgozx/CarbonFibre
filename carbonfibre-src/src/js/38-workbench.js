@@ -161,7 +161,7 @@ function palCommands() {
   if (state.backend === "folder") list.push({ label: "New folder", run: function () { createFolder(); } },
                                             { label: "Reload folder from disk", run: click("#btnReload") });
   else list.push({ label: "Open a folder to store notes as files", run: click("#btnFolder") });
-  return list;
+  return list.concat(PluginHost.paletteCommands());   /* Obsidian plugins' commands (js/plugins/) */
 }
 /* run an editor shortcut through the editor itself, so the command and the key stay one behaviour */
 function palEditorKey(key) {

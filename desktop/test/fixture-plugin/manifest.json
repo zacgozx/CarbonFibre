@@ -1,0 +1,9 @@
+{
+  "id": "cf-fixture",
+  "name": "CarbonFibre test plugin",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Exercises the Obsidian API CarbonFibre provides. Used by desktop/test/run.js only.",
+  "author": "CarbonFibre",
+  "isDesktopOnly": false
+}

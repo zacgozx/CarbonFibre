@@ -44,6 +44,7 @@
     p.render();
     markSidebar();
     scheduleSession();
+    PluginHost.fileOpened(p);
   };
 
   p.closeTab = function (id) {

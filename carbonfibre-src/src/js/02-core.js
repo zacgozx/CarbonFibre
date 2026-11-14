@@ -251,6 +251,7 @@ function computeFenceMeta(ls) {
     meta[i].sketch = count;
     meta[i].skBody = body.join("\n");               /* drawn as a picture in the note */
   }
+  PluginHost.markBlocks(ls, meta);                 /* code blocks an Obsidian plugin draws (js/plugins/) */
   computeTableMeta(ls, meta);
   return meta;
 }

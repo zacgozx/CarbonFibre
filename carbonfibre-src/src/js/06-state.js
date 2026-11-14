@@ -89,6 +89,7 @@ function markDirty(n) {
   n.touched = Date.now();          /* drives the "recent" sort in the sidebar */
   if (state.backend === "folder") dirty[n.id] = true;
   schedulePersist();
+  PluginHost.noteChanged(n);
 }
 function noteStamp(n) { return n.touched || n.mtime || 0; }
 
@@ -619,6 +620,7 @@ function loadFolder() {
     renderSidebar();
     restoreSession();
     if (state.sketchHandle) sketchScan();                /* a chosen sketch folder wins over the vault's sketch/ */
+    PluginHost.notesReady();
     return tbLoadVault().then(function () { tbLaunchPin(); });
   }).catch(function (e) {
     console.error(e);
