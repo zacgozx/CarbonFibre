@@ -163,6 +163,7 @@ function palCommands() {
                                             { label: "Reload folder from disk", run: click("#btnReload") });
   else list.push({ label: "Open a folder to store notes as files", run: click("#btnFolder") });
   return list.concat(UserTheme.paletteCommands(),     /* js/43-user-theme.js */
+                     GetApp.paletteCommands(),        /* js/44-get-app.js: the website only */
                      PluginHost.paletteCommands());   /* Obsidian plugins' commands (js/plugins/) */
 }
 /* run an editor shortcut through the editor itself, so the command and the key stay one behaviour */

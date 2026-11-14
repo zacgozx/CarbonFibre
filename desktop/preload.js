@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld("cfDesktop", {
   confirm: (message) => ipcRenderer.invoke("cf:confirm", String(message)),
   prompt: (message, value) => ipcRenderer.invoke("cf:prompt", String(message), value == null ? "" : String(value)),
   choose: (message, choices) => ipcRenderer.invoke("cf:choose", String(message), Array.from(choices || [], String)),
+  /* updates (updater.js): the page shows them; installing asks in the app's own dialog first */
+  updates: {
+    state: () => ipcRenderer.invoke("cf:update:state"),
+    install: () => ipcRenderer.invoke("cf:update:install"),
+    onChange: (cb) => { if (typeof cb === "function") ipcRenderer.on("cf:update", (_e, st) => cb(st)); }
+  },
   /* Obsidian plugins: installed list, the community catalog, settings files (see plugins/store.js) */
   plugins: {
     list: () => ipcRenderer.invoke("cf:plug:list"),

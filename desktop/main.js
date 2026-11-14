@@ -10,8 +10,8 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, session, shell
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const fsp = require("node:fs/promises");
-const os = require("node:os");
 const plugins = require("./plugins/store");
+const { Updater, RELEASES } = require("./updater");
 
 const ORIGIN = "app://carbonfibre";
 const PAGE = app.isPackaged
@@ -210,51 +210,38 @@ plugHandle("openRepo", (_e, repo) => {
   if (/^[\w.-]+\/[\w.-]+$/.test(String(repo))) shell.openExternal("https://github.com/" + repo);
 });
 
-/* ---- Update from Git (macOS): pull the repo, build this Mac's app, swap it in, reopen ----
-   The work is desktop/scripts/update-mac.sh in your own copy of the repo, run in Terminal so you can
-   watch it. Only this menu item starts it: the page and plugins have no way to. */
-const updateSettings = () => path.join(app.getPath("userData"), "update-from-git.json");
-async function repoFolder(ask) {
-  let repo = null;
-  try { repo = JSON.parse(await fsp.readFile(updateSettings(), "utf8")).repo; } catch (e) { repo = null; }
-  const ok = async (d) => { try { await fsp.access(path.join(d, ".git")); await fsp.access(path.join(d, "desktop", "scripts", "update-mac.sh")); return true; } catch (e) { return false; } };
-  if (repo && !ask && await ok(repo)) return repo;
-  const r = await dialog.showOpenDialog(win, { title: "Where is your CarbonFibre repo? (the folder you cloned from GitHub)", properties: ["openDirectory"] });
-  if (r.canceled || !r.filePaths.length) return null;
-  if (!(await ok(r.filePaths[0]))) {
-    await dialog.showMessageBox(win, { type: "warning", message: "That isn't the CarbonFibre repo.", detail: "Pick the folder that holds .git and desktop/scripts/update-mac.sh." });
-    return null;
+/* ---- updates from GitHub Releases (updater.js) ----
+   The page shows "Update available" and asks for the update; only this dialog says yes to it. */
+const updater = new Updater((st) => { if (win && !win.isDestroyed()) win.webContents.send("cf:update", st); });
+async function confirmUpdate() {
+  const st = updater.state;
+  if (st.status !== "available") return false;
+  if (!st.canInstall) { shell.openExternal(st.page || RELEASES); return false; }
+  const r = await dialog.showMessageBox(win, { type: "question", buttons: ["Update and restart", "Later"], defaultId: 0, cancelId: 1, noLink: true,
+    message: "Update CarbonFibre to " + st.latest + "?",
+    detail: "You have " + st.current + ". It downloads the new version from GitHub, checks it, and restarts CarbonFibre. Your notes are saved first." });
+  if (r.response !== 0) return false;
+  try { await updater.install(); return true; } catch (e) {
+    dialog.showMessageBox(win, { type: "warning", message: "CarbonFibre couldn't update itself.", detail: e.message + "\n\nYou can download the new version from GitHub instead.", buttons: ["Open GitHub", "Close"], defaultId: 0, cancelId: 1 })
+      .then((x) => { if (x.response === 0) shell.openExternal(st.page || RELEASES); });
+    return false;
   }
-  await fsp.mkdir(path.dirname(updateSettings()), { recursive: true });
-  await fsp.writeFile(updateSettings(), JSON.stringify({ repo: r.filePaths[0] }, null, 2));
-  return r.filePaths[0];
 }
-async function updateFromGit(chooseAgain) {
-  const repo = await repoFolder(!!chooseAgain);
-  if (!repo) return;
-  /* the installed .app this is running from (Contents/MacOS/CarbonFibre -> CarbonFibre.app) */
-  const bundle = app.isPackaged ? path.resolve(path.dirname(app.getPath("exe")), "..", "..") : "/Applications/CarbonFibre.app";
-  const go = await dialog.showMessageBox(win, {
-    type: "question", buttons: ["Update", "Cancel"], defaultId: 0, cancelId: 1,
-    message: "Update CarbonFibre from Git?",
-    detail: "Terminal will pull the latest from " + repo + " and build it (a few minutes; longer the first time). " +
-      "When it's built, CarbonFibre closes, the new version replaces " + bundle + ", and it opens again. Keep using it until then."
-  });
-  if (go.response !== 0) return;
-  const q = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
-  const cmd = path.join(os.tmpdir(), "carbonfibre-update-" + Date.now() + ".command");
-  await fsp.writeFile(cmd, "#!/bin/bash\nrm -f " + q(cmd) + "\nexec bash " + q(path.join(repo, "desktop", "scripts", "update-mac.sh")) + " " + q(repo) + " " + q(bundle) + "\n", { mode: 0o755 });
-  const err = await shell.openPath(cmd);   /* .command files open in Terminal */
-  if (err) dialog.showMessageBox(win, { type: "error", message: "Couldn't open Terminal.", detail: err });
+async function checkFromMenu() {
+  if (!updater.enabled()) { dialog.showMessageBox(win, { message: "Updates are checked in the installed app.", detail: "This copy is running from source (" + app.getVersion() + ")." }); return; }
+  const st = await updater.check();
+  if (st.status === "available") return confirmUpdate();
+  dialog.showMessageBox(win, st.status === "error" ? { type: "warning", message: st.error } : { message: "CarbonFibre is up to date.", detail: "Version " + st.current + "." });
 }
+ipcMain.handle("cf:update:state", (e) => { if (!fromApp(e)) throw new Error("Not allowed"); return updater.state; });
+ipcMain.handle("cf:update:install", (e) => { if (!fromApp(e)) throw new Error("Not allowed"); return confirmUpdate(); });
 
 function buildMenu() {
   const mac = process.platform === "darwin";
   const template = [
     ...(mac ? [{ label: app.name, submenu: [
       { role: "about" },
-      { label: "Update from Git\u2026", click: () => updateFromGit(false) },
-      { label: "Choose Repo Folder for Updates\u2026", click: () => updateFromGit(true) },
+      { label: "Check for Updates\u2026", click: () => checkFromMenu() },
       { type: "separator" },
       { role: "services" }, { type: "separator" },
       { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" },
@@ -273,7 +260,8 @@ function buildMenu() {
         { role: "togglefullscreen" }
       ]
     },
-    { role: "windowMenu" }
+    { role: "windowMenu" },
+    ...(mac ? [] : [{ label: "Help", submenu: [{ label: "Check for Updates\u2026", click: () => checkFromMenu() }, { label: "About CarbonFibre " + app.getVersion(), enabled: false }] }])
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -311,6 +299,7 @@ app.whenReady().then(() => {
   plugins.anyEnabled().then((on) => { pluginsOn = on; }).catch(() => {});
   buildMenu();
   createWindow();
+  updater.start();
   app.on("activate", () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
 });
 

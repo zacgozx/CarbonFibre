@@ -17,17 +17,17 @@ npm start          # builds page/index.html from ../carbonfibre-src, then opens 
 ## Make installers
 
 ```
-npm run dist:linux   # AppImage + .deb
-npm run dist:win     # installer + portable .exe   (build on Windows)
+npm run dist:linux   # AppImage, x64 and arm64
+npm run dist:win     # installer, x64 and arm64   (build on Windows)
 npm run dist:mac     # .dmg + .zip, Intel and Apple silicon   (build on a Mac)
 ```
 
-Output goes to `desktop/dist/`. Each platform is best built on that platform, so the easy route is
-GitHub Actions: push a tag such as `v1.0.0` (or run **Desktop** from the Actions tab) and
-`.github/workflows/desktop.yml` builds all three. The files are on the run page, and a tag also puts
-them on a GitHub Release.
-
-Bump `version` in `package.json` for each release.
+Output goes to `desktop/dist/`. You rarely need to: every push to `main` runs
+`.github/workflows/desktop.yml`, which tests, builds all three and publishes a GitHub Release
+`v1.0.<build number>` with fixed file names (`CarbonFibre-mac-arm64.dmg`, `CarbonFibre-win-x64-setup.exe`,
+`CarbonFibre-linux-x86_64.AppImage`, ...). The website's **Get the app** links to the latest one, and
+installed apps update from it (`updater.js`, see INSTALL.md, Updates). The `version` in `package.json`
+is set by the workflow; leave it at 1.0.0.
 
 ## Obsidian plugins
 
@@ -80,10 +80,11 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
 | `preload.js` | Gives the page `window.cfDesktop`: native confirm, choose and prompt, and the plugin calls (internet requests only for plugins you allowed). No Node or file access |
 | `prompt.html`, `prompt.js`, `prompt-preload.js` | The text-input dialog (Electron has no `window.prompt`) |
 | `build-page.js` | Runs `carbonfibre-src/build.py` into `page/index.html` |
-| `scripts/update-mac.sh`, `Update CarbonFibre.command` | Updating on a Mac: pull, build for this Mac, swap the app in place, reopen. Started from the app (CarbonFibre menu > Update from Git...) or by double-clicking the .command file. See INSTALL.md |
+| `updater.js` | Updates: checks the latest GitHub release, and on your yes downloads it, checks its SHA-256, swaps it in and restarts |
 | `build-icons.js`, `build/icon.*` | The app icon: the butterfly the app draws as its logo (`appIconSvg`, dark theme), as `icon.svg`, a 1024 px `icon.png` (macOS, Linux) and `icon.ico` (Windows). `npm run icons` redraws them after the logo changes |
 | `plugins/store.js` | Plugins: the community catalog, downloads (GitHub), installed plugins, their settings files, which may use the internet (`network.json`) and their requests, the code the page loads |
 | `plugins/compat.js` | Reads a plugin's code (never runs it) and decides Works / Partly works / Can't run, with reasons |
+| `test/update_test.js` | The update path end to end on Linux, with a made-up release: check, download, SHA-256, swap, restart |
 | `test/run.js` | `npm test`: installs `test/fixture-plugin/` in a throwaway data folder and checks the plugin API end to end, the internet permission against a server on this machine, then checks the web build keeps plugins off |
 
 `Dialogs` in `carbonfibre-src/src/js/01-host-bridge.js` uses `window.cfDesktop` when it's there.

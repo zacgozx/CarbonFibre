@@ -8,10 +8,9 @@ publishes the app only.
 | `public/` | The app (`index.html`) and `robots.txt` | Yes |
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
-| `vscode-extension/` | The same app as a VS Code extension, working on a notes folder (see its README) | No |
 | `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron), which also runs Obsidian community plugins (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
-| `.github/workflows/desktop.yml` | Builds the desktop installers on a `v*` tag | — |
+| `.github/workflows/desktop.yml` | Tests and builds the desktop app on every push and publishes it as a GitHub Release (the website's **Get the app** and the app's updates use it) | — |
 
 ## First time
 
@@ -51,7 +50,7 @@ disabled with the reason. Switch any time from the bottom-left of the window.
 
 ## Security
 
-- **No network.** A Content-Security-Policy in the page blocks every network request (`connect-src 'none'`),
+- **No network.** (The **Get the app** button is a plain link to GitHub's download.) A Content-Security-Policy in the page blocks every network request (`connect-src 'none'`),
   external scripts, frames and form submissions. The app has nothing to send and no way to send it.
 - **Only its own code runs.** The policy allows the page's two script blocks by their SHA-256 hash
   (`build.py` fills these in). An injected `<script>`, an `onerror=` handler or a `javascript:` link is
@@ -63,12 +62,12 @@ disabled with the reason. Switch any time from the bottom-left of the window.
   handle. Keep notes in a folder rather than browser storage, don't publish untrusted Pages sites on the
   same account, or give CarbonFibre its own custom domain.
 - **Plugins run only in the desktop app.** The website never runs plugin code; its Plugins window is greyed
-  out. In the desktop app a plugin you switch on can read and change your notes (as in Obsidian), but it
-  still can't reach the network: the page keeps `connect-src 'none'`. The desktop app widens the script
+  out. In the desktop app a plugin you switch on can read and change your notes (as in Obsidian). The page
+  keeps `connect-src 'none'`; a plugin reaches the internet only if you allowed it in the app's dialog. The desktop app widens the script
   lock there only for installed plugin code and for code plugins build from strings; injected `<script>`
   tags and `onerror=` handlers stay blocked. While any plugin is on, links opened from the page ask before
-  your browser opens them. Only the desktop app itself talks to GitHub, and only to fetch the plugin
-  catalog and the plugins you check or install.
+  your browser opens them. The desktop app itself talks to GitHub only: the plugin catalog, the plugins
+  you check or install, and its own updates (checked against each release's SHA-256).
 
 ## Good to know
 

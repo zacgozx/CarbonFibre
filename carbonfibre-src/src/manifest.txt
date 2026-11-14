@@ -29,7 +29,7 @@ css/25-theme.css
 css/26-plugins.css
 html/02-body.html
 js/01-start.js
-js/01-host-bridge.js
+js/01-dialogs.js
 js/plugins/01-dom.js
 js/plugins/02-ui.js
 js/plugins/03-app.js
@@ -104,5 +104,6 @@ js/43-session.js
 js/43-user-theme.js
 js/44-shortcuts.js
 js/44-narrow-layout.js
+js/44-get-app.js
 js/45-boot.js
 html/03-tail.html

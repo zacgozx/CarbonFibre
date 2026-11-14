@@ -2,8 +2,9 @@
 
 Two ways to get it:
 
-- **Download a build.** On GitHub: **Releases** (each `v*` tag builds all three), or **Actions** > **Desktop** >
-  **Run workflow**, then the run's **Artifacts**. Nothing to install first. Skip to [Opening it the first time](#opening-it-the-first-time).
+- **Download a build.** On the website, **Get the app** (bottom right) picks the file for your computer. Or
+  on GitHub, **Releases**: each push to `main` publishes one. Nothing to install first. Skip to
+  [Opening it the first time](#opening-it-the-first-time).
 - **Build it yourself** from this repo, below. You need **Node.js** (LTS, 20 or newer), **Python 3** and
   **Git**. Each system builds its own app: build the Windows app on Windows, the Mac app on a Mac.
 
@@ -52,8 +53,7 @@ Type these **one line at a time**. Windows PowerShell 5.1 (the one built into Wi
 npm run dist:win
 ```
 
-Output in `desktop\dist\`: an installer (`CarbonFibre Setup 1.0.0.exe`) and a portable
-`CarbonFibre 1.0.0.exe` that runs without installing.
+Output in `desktop\dist\`: the installers `CarbonFibre-win-x64-setup.exe` and `CarbonFibre-win-arm64-setup.exe`.
 
 ## macOS
 
@@ -112,22 +112,22 @@ npm start
 npm run dist:linux
 ```
 
-Output in `desktop/dist/`: an `.AppImage` (runs anywhere) and a `.deb` (Ubuntu, Debian).
+Output in `desktop/dist/`: `CarbonFibre-linux-x86_64.AppImage` and `CarbonFibre-linux-arm64.AppImage` (run anywhere, and update themselves).
 
-## Updating on a Mac
+## Updates
 
-Installed apps don't change when the repo does. On a Mac that has the repo cloned (and Git, Node and
-Python from step 1), CarbonFibre updates itself from Git:
+Every push to `main` builds a new release on GitHub (`v1.0.<build number>`, about 10 minutes after the
+push). An installed app checks for one a little after it starts and every few hours; when there is one,
+**Update available** shows in the status bar. Click it, say yes, and it downloads the new version,
+checks it against the release's SHA-256, replaces itself and restarts. **Check for Updates...** is in the
+CarbonFibre menu on a Mac, and in **Help** on Windows and Linux.
 
-- **In the app:** CarbonFibre menu > **Update from Git...** The first time it asks where the repo is.
-- **Or in Finder:** double-click `desktop/Update CarbonFibre.command`.
-
-Terminal opens and runs `desktop/scripts/update-mac.sh`. It does a `git pull`, builds the app for this
-Mac (the same build as `npm run dist:mac`, for this Mac only, which is quicker), closes CarbonFibre,
-puts the new version where the old one was, and opens it again. Built on your Mac, it opens without
-the "Open Anyway" step. If anything fails, the version you have stays.
-
-If `git pull` stops because you changed files in the repo on that Mac, commit them or `git stash` first.
+- **Mac:** keep the app in **Applications** (it can't replace itself while it runs from the disk image or
+  Downloads). The new version swaps in place, so the "Open Anyway" step doesn't come back.
+- **Windows:** the installer runs silently over the installed copy.
+- **Linux:** the AppImage file is replaced where it is. A copy built yourself with `npm run dist:linux`
+  updates the same way.
+- A copy run from source (`npm start`) never checks.
 
 ## Opening it the first time
 
@@ -139,7 +139,6 @@ None of the builds are signed (that needs paid certificates), so each system war
 | macOS 15 or newer | "Apple could not verify CarbonFibre" | System Settings > Privacy & Security > **Open Anyway**, or in Terminal: `xattr -cr /Applications/CarbonFibre.app` |
 | macOS 14 or older | "unidentified developer" | Right-click the app > **Open** > **Open** |
 | Linux AppImage | It doesn't start | `chmod +x CarbonFibre-*.AppImage`. On Ubuntu 22.04 or newer also `sudo apt install libfuse2` |
-| Linux .deb | | `sudo apt install ./carbonfibre-desktop_*.deb` |
 
 A managed work computer may block unsigned apps outright. Ask IT rather than working around it.
 

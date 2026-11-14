@@ -15,7 +15,7 @@
     "dist:mac": "node build-page.js && electron-builder --mac --publish never",
     "dist:win": "node build-page.js && electron-builder --win --publish never",
     "dist:linux": "node build-page.js && electron-builder --linux --publish never",
-    "test": "node build-page.js && electron test/run.js",
+    "test": "node build-page.js && electron test/run.js && electron test/update_test.js",
     "icons": "electron build-icons.js"
   },
   "build": {
@@ -27,6 +27,7 @@
     },
     "files": [
       "main.js",
+      "updater.js",
       "preload.js",
       "prompt-preload.js",
       "prompt.html",
@@ -59,7 +60,8 @@
           ]
         }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "artifactName": "CarbonFibre-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -69,25 +71,25 @@
             "x64",
             "arm64"
           ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "CarbonFibre-win-${arch}-setup.${ext}"
     },
     "linux": {
       "category": "Office",
       "target": [
-        "AppImage",
-        "deb"
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "maintainer": "CarbonFibre",
       "icon": "build/icon.png"
@@ -95,7 +97,11 @@
     "asarUnpack": [
       "plugins/analyze-worker.js",
       "plugins/compat.js"
-    ]
+    ],
+    "appImage": {
+      "artifactName": "CarbonFibre-linux-${arch}.${ext}"
+    },
+    "publish": null
   },
   "devDependencies": {
     "electron": "^45.3.2",

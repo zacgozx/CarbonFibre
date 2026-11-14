@@ -1,23 +1,32 @@
-# Builds the desktop app (desktop/) for macOS, Windows and Linux.
-# Runs on a version tag (git tag v1.0.0 && git push --tags) or by hand from the Actions tab.
-# The installers appear as downloadable artifacts on the run; a tag also attaches them to a GitHub Release.
+# Builds the desktop app (desktop/) for macOS, Windows and Linux on every push to main, and publishes it as
+# a GitHub Release named v1.0.<build number>. The website's "Get the app" links to the latest release, and
+# installed apps update themselves from it (desktop/updater.js). The file names never change between
+# releases, so .../releases/latest/download/<name> always means the newest:
+#   CarbonFibre-mac-arm64.dmg / .zip, CarbonFibre-mac-x64.dmg / .zip       (.dmg to install, .zip to update)
+#   CarbonFibre-win-x64-setup.exe, CarbonFibre-win-arm64-setup.exe
+#   CarbonFibre-linux-x86_64.AppImage, CarbonFibre-linux-arm64.AppImage
+# Nothing is signed (no Apple or Microsoft certificate). Run it by hand from the Actions tab too.
 name: Desktop
 
 on:
   push:
-    tags: ["v*"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: desktop
+  cancel-in-progress: true          # a newer push replaces a build still running
+
+env:
+  VERSION: "1.0.${{ github.run_number }}"
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+  test:
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: desktop
@@ -32,30 +41,99 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - run: npm ci
-      - name: Build installers
-        run: npm run dist
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Desktop tests (plugins, internet permission, updates)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q xvfb
+          node build-page.js
+          xvfb-run -a npx electron --no-sandbox test/run.js
+          xvfb-run -a npx electron --no-sandbox test/update_test.js
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - name: Version ${{ env.VERSION }}
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+      - run: node build-page.js
+
+      - name: Linux (AppImage, x64 and arm64)
+        if: runner.os == 'Linux'
+        run: npx electron-builder --linux AppImage --x64 --arm64 --publish never
+      - name: Windows (installer, x64 and arm64)
+        if: runner.os == 'Windows'
+        # one run per processor: both at once would make a single installer holding both
+        run: |
+          npx electron-builder --win nsis --x64 --publish never
+          npx electron-builder --win nsis --arm64 --publish never
+      # macOS: package, sign "ad hoc" (no certificate, but Apple silicon refuses an app with no signature at
+      # all, and a broken one reads as "damaged"), then make the disk images and zips from the signed apps
+      - name: macOS, package
+        if: runner.os == 'macOS'
+        run: npx electron-builder --mac --dir --arm64 --x64 --publish never
+      - name: macOS, ad-hoc signature
+        if: runner.os == 'macOS'
+        run: |
+          for a in dist/mac-arm64/CarbonFibre.app dist/mac/CarbonFibre.app; do
+            codesign --force --deep --sign - "$a"
+            codesign --verify --deep --strict "$a"
+          done
+      - name: macOS, disk images and zips
+        if: runner.os == 'macOS'
+        run: |
+          npx electron-builder --mac dmg zip --arm64 --prepackaged dist/mac-arm64/CarbonFibre.app --publish never
+          npx electron-builder --mac dmg zip --x64 --prepackaged dist/mac/CarbonFibre.app --publish never
+
+      - name: The files the website and the updater expect
+        run: |
+          case "$RUNNER_OS" in
+            Linux)   want="CarbonFibre-linux-x86_64.AppImage CarbonFibre-linux-arm64.AppImage" ;;
+            Windows) want="CarbonFibre-win-x64-setup.exe CarbonFibre-win-arm64-setup.exe" ;;
+            macOS)   want="CarbonFibre-mac-arm64.dmg CarbonFibre-mac-x64.dmg CarbonFibre-mac-arm64.zip CarbonFibre-mac-x64.zip" ;;
+          esac
+          mkdir -p out
+          for f in $want; do test -f "dist/$f" || { echo "missing dist/$f"; ls dist; exit 1; }; cp "dist/$f" out/; done
+          ls -la out
       - uses: actions/upload-artifact@v4
         with:
-          name: CarbonFibre-${{ runner.os }}
-          path: |
-            desktop/dist/*.dmg
-            desktop/dist/*.zip
-            desktop/dist/*.exe
-            desktop/dist/*.AppImage
-            desktop/dist/*.deb
+          name: carbonfibre-${{ runner.os }}
+          path: desktop/out/*
+          retention-days: 3
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write                # only this job can publish
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: out/*
+      - name: Publish v${{ env.VERSION }} as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          ls -la out
+          printf 'Built from %s\n\n%s\n' "${GITHUB_SHA::7}" "${MSG:-manual build}" > notes.md
+          gh release create "v$VERSION" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "CarbonFibre $VERSION" --notes-file notes.md --latest

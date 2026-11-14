@@ -9,7 +9,6 @@ document.getElementById("btnNewFolder").addEventListener("click", createFolder);
    palette and template strips are drawn once, so they are rebuilt next time they open. */
 /* Windows' light/dark setting, as Edge reports it */
 function systemTheme() {
-  if (HostBridge.active) return HostBridge.themeKind();   /* inside VS Code: its theme, not the system's */
   try { return window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
   catch (e) { return "dark"; }
 }
@@ -140,8 +139,6 @@ document.addEventListener("click", function () { exportMenu.classList.remove("sh
 Array.prototype.forEach.call(exportMenu.querySelectorAll("[data-export]"), function (b) {
   b.addEventListener("click", function () {
     exportMenu.classList.remove("show");
-    /* VS Code's webviews can't open the print dialog that PDF export uses */
-    if (HostBridge.active && b.dataset.export === "pdf") { pushToastLike("PDF export isn't available inside VS Code. Export to Word, or use the website."); return; }
     exportNote(b.dataset.export);
   });
 });

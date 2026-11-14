@@ -1,5 +1,8 @@
-vscode-extension/*.vsix
-vscode-extension/media/carbonfibre.html
 
 # builds downloaded from Claude, kept out of the repo
 Claude outputs/
+
+# the build writes this beside build.py; public/index.html is the copy that ships
+carbonfibre-src/CarbonFibre.html
+.DS_Store
+.venv/
