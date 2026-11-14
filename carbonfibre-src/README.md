@@ -33,27 +33,6 @@ Plain greys with one accent, light and dark (`css/01-base.css` sets the variable
 loaded after the other sheets, re-points them to the plain look). The page follows
 the system's light/dark setting until you pick one with the moon button (Alt+L).
 
-**Your own theme** (command palette: *Theme: accent colour and custom CSS*): pick an accent colour, and
-optionally paste CSS or load a `.css` file. The accent is adjusted per theme so text on it stays
-readable. Both are kept in browser storage and applied before the page draws (`js/43-user-theme.js`,
-and the script in `html/02-body.html`). *Theme: back to the default colours* clears it. Variables worth
-setting, in `:root { }` for dark and `:root[data-theme="light"] { }` for light:
-
-| Variable | What it colours |
-|---|---|
-| `--bg` | Page background (notes, sheets) |
-| `--panel` | Side bars, dialogs, cards |
-| `--chrome` | Title bar and activity bar |
-| `--txt`, `--dim` | Text, secondary text and icons |
-| `--line` | Borders and dividers |
-| `--acc`, `--acc-text`, `--acc-soft` | Accent: buttons, focus, the active tab; accent text; accent backgrounds |
-| `--sel` | Selected text and lines |
-| `--h1c`, `--h2c` | Headings |
-| `--sans`, `--mono` | Fonts (ones installed on the computer) |
-
-A stylesheet can't load anything from outside: the page's security policy allows images and fonts from
-`data:` only and no requests, so pasted CSS restyles the app but can't send anything anywhere.
-
 ## Graph
 
 The website shows the graph as dots and lines (`js/14-graph-simple.js`, a small force layout; drag a

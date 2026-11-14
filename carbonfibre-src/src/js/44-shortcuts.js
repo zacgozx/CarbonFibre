@@ -84,13 +84,15 @@ function appIconSvg(pal) {
 }
 function appIconApply() {
   const light = document.documentElement.getAttribute("data-theme") === "light";
-  const svg = appIconSvg(Object.assign({}, APP_ICON_PALETTE[light ? "light" : "dark"], UserTheme.iconColours(light)));   /* wings in your accent, if you chose one */
+  const svg = appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]);
   const fav = document.getElementById("appFavicon");
   if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(svg);
   const logo = document.getElementById("appLogo");
   if (logo) logo.innerHTML = svg;                /* drawn in the page, not as an image, so its wings can move */
 }
 appIconApply();                                  /* drawn once at start, in the theme the page opened in */
+/* the custom theme (accent colour and pasted CSS) was removed: clear what it left in storage */
+try { ["carbonfibre-user-css", "carbonfibre-accent", "carbonfibre-user-snippet"].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { /* storage off */ }
 function themeTitle() {
   const b = document.getElementById("btnTheme");
   if (!b) return;

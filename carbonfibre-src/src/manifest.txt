@@ -101,7 +101,6 @@ js/40-mermaid.js
 js/41-mermaid-layout.js
 js/42-mermaid-to-sketch.js
 js/43-session.js
-js/43-user-theme.js
 js/44-shortcuts.js
 js/44-narrow-layout.js
 js/44-get-app.js

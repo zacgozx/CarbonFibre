@@ -1,8 +1,7 @@
 /* ============================================================
    The plain look: neutral greys and one accent, flat surfaces, nothing that glows or moves.
    Loaded after every other sheet, so it re-points their colours. Light and dark follow the
-   system (or the moon/sun button). Your own accent colour and CSS come after this (Theme...
-   in the command palette); the variables they can set are listed in carbonfibre-src/README.md.
+   system (or the moon/sun button).
    ============================================================ */
 :root {
   --bg: #18181b; --panel: #1e1e22; --txt: #e4e4e7; --dim: #a1a1aa; --line: #2e2e33;
@@ -85,18 +84,4 @@
 :root:not([data-theme="light"]) .tb-card--run { box-shadow: none; }
 .tb-top { background: var(--chrome); }
 
-/* ---- the Theme window (js/43-user-theme.js): the Plugins window's frame, smaller ---- */
-.cfp-dialog.cfth-dialog { width: min(560px, 100%); height: auto; max-height: calc(100vh - 32px); }
-.cfth-gap { flex: 1; }
-.cfp-dialog.cfth-dialog .cfp-body { padding-top: 6px; }
-.cfth-h { margin: 14px 0 8px; font-size: 13px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
-.cfth-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
-.cfth-row input[type=color] { width: 44px; height: 32px; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); cursor: pointer; }
-.cfth-swatch { min-width: 70px; color: var(--dim); font: 13px var(--mono, Consolas, monospace); }
-.cfth-css { width: 100%; min-height: 160px; box-sizing: border-box; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--txt);
-  font: 12.5px/1.5 var(--mono, Consolas, monospace); resize: vertical; }
-.cfth-css:focus { outline: none; border-color: var(--acc); }
-.cfth-vars ul { margin: 8px 0; padding-left: 18px; }
-.cfth-vars li { margin: 2px 0; font-size: 13px; }
-.cfth-vars code, .cfth-dialog .cfp-count code { font-size: 12px; }
 #graphMode[hidden] { display: none; }
