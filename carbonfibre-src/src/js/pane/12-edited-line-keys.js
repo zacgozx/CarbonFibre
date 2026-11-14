@@ -1,8 +1,8 @@
     ta.addEventListener("keydown", function (e) {
-      var raw = ta.value;
-      var s = ta.selectionStart, se = ta.selectionEnd;
-      var mod = e.ctrlKey || e.metaKey;
-      var i = p.activeLine;
+      let raw = ta.value;
+      let s = ta.selectionStart, se = ta.selectionEnd;
+      const mod = e.ctrlKey || e.metaKey;
+      const i = p.activeLine;
 
       if (ac.el) {
         if (e.key === "ArrowDown") { e.preventDefault(); ac.idx = (ac.idx + 1) % ac.items.length; acRender(); return; }
@@ -14,10 +14,10 @@
       if (e.key === "Escape" && p.carets.length) { e.preventDefault(); p.clearCarets(); return; }
       if (mod && e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         e.preventDefault();
-        var step = e.key === "ArrowUp" ? -1 : 1;
-        var edge = p.activeLine;
+        const step = e.key === "ArrowUp" ? -1 : 1;
+        let edge = p.activeLine;
         p.carets.forEach(function (c) { edge = step < 0 ? Math.min(edge, c.line) : Math.max(edge, c.line); });
-        var nl = edge + step;
+        const nl = edge + step;
         if (nl >= 0 && nl < p.lines.length) { p.col = null; p.addCaret(nl, s); }
         return;
       }
@@ -62,13 +62,13 @@
       }
       /* Shift+arrows extend from where the caret is, by line keeping the column, or by character
          across line ends; Shift+Home / Shift+End take the moving end to its line's edge */
-      var ends = p.selEnds();
-      var caretPos = ta.selectionDirection === "backward" ? s : se, anchorPos = ta.selectionDirection === "backward" ? se : s;
+      const ends = p.selEnds();
+      const caretPos = ta.selectionDirection === "backward" ? s : se, anchorPos = ta.selectionDirection === "backward" ? se : s;
       if (e.shiftKey && !mod && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && p.lines.length > 1) {
         e.preventDefault();
-        var E2 = ends || { aL: i, aC: anchorPos, fL: i, fC: caretPos };
+        const E2 = ends || { aL: i, aC: anchorPos, fL: i, fC: caretPos };
         if (p.goalCol === null || !ends) p.goalCol = E2.fC;
-        var toLine = E2.fL + (e.key === "ArrowUp" ? -1 : 1), toCol;
+        let toLine = E2.fL + (e.key === "ArrowUp" ? -1 : 1), toCol;
         if (toLine < 0) { toLine = 0; toCol = 0; } else if (toLine >= p.lines.length) { toLine = p.lines.length - 1; toCol = p.lines[toLine].length; }
         else toCol = Math.min(p.goalCol, p.lines[toLine].length);
         p.setPartial(E2.aL, E2.aC, toLine, toCol);
@@ -76,10 +76,11 @@
         return;
       }
       if (e.shiftKey && !mod && !e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        var left = e.key === "ArrowLeft";
+        const left = e.key === "ArrowLeft";
         if (ends || (left && caretPos === 0 && i > 0) || (!left && caretPos === raw.length && i < p.lines.length - 1)) {
           e.preventDefault();
-          var E3 = ends || { aL: i, aC: anchorPos, fL: i, fC: caretPos }, fl = E3.fL, fc = E3.fC + (left ? -1 : 1);
+          const E3 = ends || { aL: i, aC: anchorPos, fL: i, fC: caretPos };
+          let fl = E3.fL, fc = E3.fC + (left ? -1 : 1);
           if (fc < 0) { if (fl > 0) { fl--; fc = p.lines[fl].length; } else fc = 0; }
           else if (fc > p.lines[fl].length) { if (fl < p.lines.length - 1) { fl++; fc = 0; } else fc = p.lines[fl].length; }
           p.goalCol = null;
@@ -94,7 +95,7 @@
         return;
       }
       if (p.allSelected) {
-        var k = e.key.toLowerCase();
+        const k = e.key.toLowerCase();
         if (mod && k === "c") { e.preventDefault(); copyRich(p.selectedText().split("\n")); return; }      /* formatted for Teams too */
         if (mod && k === "x") { e.preventDefault(); copyRich(p.selectedText().split("\n")); p.replaceAll(""); return; }
         if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); p.replaceAll(""); return; }
@@ -111,13 +112,14 @@
 
       /* autocorrect: fix the word just finished; the typed space/punctuation still lands after it */
       if (AUTOCORRECT_ON && !mod && !e.altKey && s === se && /^[ .,;:!?]$/.test(e.key) && !(p.fmeta[i] && p.fmeta[i].fence)) {
-        var head = raw.slice(0, s);
-        var wm = head.match(/(^|[^A-Za-z'])([A-Za-z']+)$/);
+        const head = raw.slice(0, s);
+        const wm = head.match(/(^|[^A-Za-z'])([A-Za-z']+)$/);
         if (wm && (head.split("`").length - 1) % 2 === 0) {   /* not inside `inline code` */
-          var word = wm[2], fix = AUTOCORRECT[word.toLowerCase()];
+          const word = wm[2];
+          let fix = AUTOCORRECT[word.toLowerCase()];
           if (fix && fix !== word) {
             if (word.charAt(0) !== word.charAt(0).toLowerCase() && word.length > 1) fix = fix.charAt(0).toUpperCase() + fix.slice(1);
-            var ws0 = s - word.length;
+            const ws0 = s - word.length;
             applyInline(raw.slice(0, ws0) + fix + raw.slice(s), ws0 + fix.length, ws0 + fix.length);
             raw = ta.value; s = se = ta.selectionStart;
           }
@@ -126,22 +128,23 @@
 
       if (mod && e.key.toLowerCase() === "b") {
         e.preventDefault();
-        var rb = wrapSelection(ta, "**", "**", "bold");
+        const rb = wrapSelection(ta, "**", "**", "bold");
         applyInline(rb.next, rb.ns, rb.ne); return;
       }
       if (mod && e.key.toLowerCase() === "i") {
         e.preventDefault();
-        var ri = wrapSelection(ta, "*", "*", "italic");
+        const ri = wrapSelection(ta, "*", "*", "italic");
         applyInline(ri.next, ri.ns, ri.ne); return;
       }
       if (mod && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        var sel = raw.slice(s, se), nk, a, b;
+        const sel = raw.slice(s, se);
+        let nk, a, b;
         if (looksLikeUrl(sel)) {
           nk = raw.slice(0, s) + "[](" + sel + ")" + raw.slice(se);
           a = b = s + 1;
         } else {
-          var label = sel || "link";
+          const label = sel || "link";
           nk = raw.slice(0, s) + "[" + label + "](url)" + raw.slice(se);
           a = s + label.length + 3; b = a + 3;
         }
@@ -156,8 +159,8 @@
       if (mod && e.shiftKey && e.key.toLowerCase() === "t") {
         e.preventDefault();
         histBreak(p);
-        var tbl = ["| Column | Column |", "| --- | --- |", "|  |  |"];
-        var at = raw.trim() === "" ? i : i + 1;
+        const tbl = ["| Column | Column |", "| --- | --- |", "|  |  |"];
+        const at = raw.trim() === "" ? i : i + 1;
         if (raw.trim() === "") p.lines.splice(i, 1);
         Array.prototype.splice.apply(p.lines, [at, 0].concat(tbl));
         p.commit(true);
@@ -169,30 +172,31 @@
       }
       if (e.key === "Escape") { e.preventDefault(); ta.blur(); return; }
 
-      var tmeta = p.fmeta[i] && p.fmeta[i].table;
+      const tmeta = p.fmeta[i] && p.fmeta[i].table;
       if (tmeta && e.key === "Tab") {
         e.preventDefault();
-        var cellsT = splitCells(raw), ci = -1;
-        for (var q = 0; q < cellsT.length; q++) {
+        const cellsT = splitCells(raw);
+        let ci = -1;
+        for (let q = 0; q < cellsT.length; q++) {
           if (s >= cellsT[q].start && s <= cellsT[q].start + cellsT[q].text.length) { ci = q; }
         }
         if (ci === -1) ci = s < (cellsT[0] ? cellsT[0].start : 0) ? -1 : cellsT.length - 1;
-        var target = ci + (e.shiftKey ? -1 : 1);
+        const target = ci + (e.shiftKey ? -1 : 1);
         if (target >= 0 && target < cellsT.length) {
-          var cs = cellsT[target].start, ce = cs + cellsT[target].text.length;
+          const cs = cellsT[target].start, ce = cs + cellsT[target].text.length;
           ta.setSelectionRange(cs, ce);
         } else if (!e.shiftKey && i < p.lines.length - 1 && p.fmeta[i + 1] && p.fmeta[i + 1].table) {
-          var skip = p.fmeta[i + 1].table.role === "delim" ? 2 : 1;
-          var ti = i + skip;
+          const skip = p.fmeta[i + 1].table.role === "delim" ? 2 : 1;
+          const ti = i + skip;
           if (ti < p.lines.length && p.fmeta[ti] && p.fmeta[ti].table) {
-            var nc = splitCells(p.lines[ti]);
+            const nc = splitCells(p.lines[ti]);
             p.setActive(ti, nc[0] ? nc[0].start : 2);
           }
         } else if (e.shiftKey && i > 0 && p.fmeta[i - 1] && p.fmeta[i - 1].table) {
-          var pi = p.fmeta[i - 1].table.role === "delim" ? i - 2 : i - 1;
+          const pi = p.fmeta[i - 1].table.role === "delim" ? i - 2 : i - 1;
           if (pi >= 0) {
-            var pc = splitCells(p.lines[pi]);
-            var lastc = pc[pc.length - 1];
+            const pc = splitCells(p.lines[pi]);
+            const lastc = pc[pc.length - 1];
             p.setActive(pi, lastc ? lastc.start + lastc.text.length : p.lines[pi].length);
           }
         }
@@ -200,27 +204,27 @@
       }
       if (tmeta && tmeta.role !== "delim" && e.key === "Enter") {
         e.preventDefault();
-        var emptyRow = splitCells(raw).every(function (c) { return c.text === ""; });
+        const emptyRow = splitCells(raw).every(function (c) { return c.text === ""; });
         if (emptyRow && tmeta.role === "body" && i === tmeta.last) {
           /* Enter on a trailing empty row leaves the table */
           p.lines[i] = "";
           p.lines.splice(i + 1, 0, "");
           p.commit(true);
           unmountActive();
-          var ph0 = document.createElement("div");
+          const ph0 = document.createElement("div");
           p.linesEl.insertBefore(ph0, nodeAt(i).nextSibling);
           p.activeLine = i + 1; p.caret = 0;
           mountActive(i + 1);
           rerenderInactive();
           return;
         }
-        var blank = "|" + new Array(tmeta.cols + 1).join("  |");
-        var insertAt = tmeta.role === "header" ? i + 2 : i + 1; /* header: skip past the delimiter row */
+        const blank = "|" + new Array(tmeta.cols + 1).join("  |");
+        let insertAt = tmeta.role === "header" ? i + 2 : i + 1; /* header: skip past the delimiter row */
         if (insertAt > p.lines.length) insertAt = p.lines.length;
         p.lines.splice(insertAt, 0, blank);
         p.commit(true);
         unmountActive();
-        var ph = document.createElement("div");
+        const ph = document.createElement("div");
         p.linesEl.insertBefore(ph, nodeAt(insertAt - 1).nextSibling);
         p.activeLine = insertAt; p.caret = 2;
         mountActive(insertAt);
@@ -237,10 +241,10 @@
       if (e.key === "Tab") {
         e.preventDefault();
         if (isDelim(raw)) return;
-        var unit = indentUnit(i);
+        const unit = indentUnit(i);
         if (e.shiftKey) {
-          var lead = raw.match(/^ */)[0].length;
-          var removed = raw.charAt(0) === "\t" ? 1 : lead ? (lead % unit.length || unit.length) : 0;
+          const lead = raw.match(/^ */)[0].length;
+          const removed = raw.charAt(0) === "\t" ? 1 : lead ? (lead % unit.length || unit.length) : 0;
           if (removed) applyInline(raw.slice(removed), Math.max(0, s - removed), Math.max(0, se - removed));
         } else {
           applyInline(unit + raw, s + unit.length, se + unit.length);
@@ -249,7 +253,7 @@
       }
       /* Backspace inside the indentation removes a whole level, not one space */
       if (e.key === "Backspace" && s === se && s > 0 && /^ +$/.test(raw.slice(0, s))) {
-        var u = indentUnit(i).length, back = s % u || u;
+        const u = indentUnit(i).length, back = s % u || u;
         e.preventDefault();
         applyInline(raw.slice(0, s - back) + raw.slice(s), s - back, s - back);
         return;
@@ -258,12 +262,13 @@
       if (e.key === "Enter") {
         e.preventDefault();
         histBreak(p);
-        var before = raw.slice(0, s), after = raw.slice(se), prefix = "";
-        var inFenceE = p.fmeta[i] && p.fmeta[i].fence === "in";
-        var lm = inFenceE ? null : raw.match(/^(\s*)([-*+]\s(?:\[( |x|X)\]\s)?|\d+\.\s)/);
+        const before = raw.slice(0, s), after = raw.slice(se);
+        let prefix = "";
+        const inFenceE = p.fmeta[i] && p.fmeta[i].fence === "in";
+        const lm = inFenceE ? null : raw.match(/^(\s*)([-*+]\s(?:\[( |x|X)\]\s)?|\d+\.\s)/);
         if (!lm) {
           /* code or indented text: carry the leading whitespace forward */
-          var ws = raw.match(/^[ \t]*/)[0];
+          const ws = raw.match(/^[ \t]*/)[0];
           if (s >= ws.length) {
             prefix = ws;
             /* opening brace / colon: one extra level, like an IDE */
@@ -271,17 +276,17 @@
           }
         }
         if (lm) {
-          var rest = raw.slice(lm[0].length).trim();
+          const rest = raw.slice(lm[0].length).trim();
           if (rest === "" && after === "") { applyInline("", 0, 0); return; }
           if (/\d+\./.test(lm[2])) prefix = lm[1] + (parseInt(lm[2], 10) + 1) + ". ";
           else if (lm[3] !== undefined) prefix = lm[1] + "- [ ] ";
           else prefix = lm[0];
         }
-        var touched = isDelim(raw) || isDelim(before) || isDelim(prefix + after) || isRow(raw) || isRow(before) || isRow(prefix + after);
+        const touched = isDelim(raw) || isDelim(before) || isDelim(prefix + after) || isRow(raw) || isRow(before) || isRow(prefix + after);
         p.lines.splice(i, 1, before, prefix + after);
         p.commit(true);
         unmountActive();
-        var placeholder = document.createElement("div");
+        const placeholder = document.createElement("div");
         p.linesEl.insertBefore(placeholder, nodeAt(i).nextSibling);
         p.activeLine = i + 1;
         p.caret = prefix.length;
@@ -295,8 +300,8 @@
       if (e.key === "Backspace" && s === 0 && se === 0 && i > 0) {
         e.preventDefault();
         histBreak(p);
-        var prevRaw = p.lines[i - 1];
-        var touchedB = isDelim(raw) || isDelim(prevRaw) || isRow(raw) || isRow(prevRaw);
+        const prevRaw = p.lines[i - 1];
+        const touchedB = isDelim(raw) || isDelim(prevRaw) || isRow(raw) || isRow(prevRaw);
         p.lines.splice(i - 1, 2, prevRaw + raw);
         p.commit(true);
         unmountActive();
@@ -313,8 +318,8 @@
       if (e.key === "Delete" && s === raw.length && se === raw.length && i < p.lines.length - 1) {
         e.preventDefault();
         histBreak(p);
-        var nextRaw = p.lines[i + 1];
-        var touchedD = isDelim(raw) || isDelim(nextRaw) || isRow(raw) || isRow(nextRaw);
+        const nextRaw = p.lines[i + 1];
+        const touchedD = isDelim(raw) || isDelim(nextRaw) || isRow(raw) || isRow(nextRaw);
         p.lines.splice(i, 2, raw + nextRaw);
         p.commit(true);
         p.linesEl.removeChild(nodeAt(i + 1));
@@ -350,8 +355,8 @@
          (with Shift, the highlight grows by a screen) */
       if ((e.key === "PageDown" || e.key === "PageUp") && !mod) {
         e.preventDefault();
-        var sc = p.editorEl, lh = (wrap.getBoundingClientRect().height || 24), screen = Math.max(1, Math.floor((sc ? sc.clientHeight : 600) / lh) - 3);
-        var dir = e.key === "PageDown" ? 1 : -1;
+        const sc = p.editorEl, lh = (wrap.getBoundingClientRect().height || 24), screen = Math.max(1, Math.floor((sc ? sc.clientHeight : 600) / lh) - 3);
+        const dir = e.key === "PageDown" ? 1 : -1;
         if (e.shiftKey) {
           if (!p.allSelected) { p.selAnchor = i; p.selFocus = i; }
           p.selFocus = Math.max(0, Math.min(p.lines.length - 1, p.selFocus + dir * screen));
@@ -360,7 +365,7 @@
           return;
         }
         if (p.goalCol === null) p.goalCol = s;
-        var to = Math.max(0, Math.min(p.lines.length - 1, i + dir * screen));
+        const to = Math.max(0, Math.min(p.lines.length - 1, i + dir * screen));
         if (sc) sc.scrollTop += dir * screen * lh;
         p.setActive(to, Math.min(p.goalCol, p.lines[to].length)); p.keepVisible(to);
         return;

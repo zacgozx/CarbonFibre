@@ -3,7 +3,8 @@
    ============================================================ */
 
 function wikilinksIn(text) {
-  var re = /\[\[([^\]\n]+)\]\]/g, out = [], m;
+  const re = /\[\[([^\]\n]+)\]\]/g, out = [];
+  let m;
   while ((m = re.exec(text)) !== null) out.push(m[1]);
   return out;
 }
@@ -11,23 +12,23 @@ function wikilinksIn(text) {
 /* One pass over the vault builds every note's backlinks at once. Rebuilt only when
    the notes actually change, which a cheap signature detects without any call sites
    having to remember to invalidate. */
-var blCache = { sig: null, index: null };
+const blCache = { sig: null, index: null };
 
 function notesSignature() {
-  var sig = state.notes.length + ":";
-  for (var i = 0; i < state.notes.length; i++) sig += state.notes[i].content.length + ",";
+  let sig = state.notes.length + ":";
+  for (let i = 0; i < state.notes.length; i++) sig += state.notes[i].content.length + ",";
   return sig;
 }
 function buildBacklinkIndex() {
-  var index = {};
+  const index = {};
   state.notes.forEach(function (n) {
-    var ls = n.content.split("\n");
-    for (var i = 0; i < ls.length; i++) {
-      var links = wikilinksIn(ls[i]);
+    const ls = n.content.split("\n");
+    for (let i = 0; i < ls.length; i++) {
+      const links = wikilinksIn(ls[i]);
       if (!links.length) continue;
-      var seen = {};
-      for (var j = 0; j < links.length; j++) {
-        var k = links[j].toLowerCase();
+      const seen = {};
+      for (let j = 0; j < links.length; j++) {
+        const k = links[j].toLowerCase();
         if (seen[k]) continue;                 /* one entry per line, as before */
         seen[k] = 1;
         (index[k] = index[k] || []).push({ note: n, line: i, text: ls[i] });
@@ -38,30 +39,30 @@ function buildBacklinkIndex() {
 }
 function backlinksFor(title) {
   syncAllPanes();
-  var sig = notesSignature();
+  const sig = notesSignature();
   if (blCache.sig !== sig) { blCache.index = buildBacklinkIndex(); blCache.sig = sig; }
-  var t = String(title).toLowerCase();
+  const t = String(title).toLowerCase();
   return (blCache.index[t] || []).filter(function (r) { return r.note.title.toLowerCase() !== t; });
 }
 
 function buildGraph() {
   syncAllPanes();
-  var nodes = state.notes.map(function (n) {
+  const nodes = state.notes.map(function (n) {
     return { id: n.id, title: n.title, x: 0, y: 0, vx: 0, vy: 0, deg: 0 };
   });
-  var byTitle = {};
+  const byTitle = {};
   nodes.forEach(function (nd) { byTitle[nd.title.toLowerCase()] = nd; });
-  var edges = [];
+  const edges = [];
   /* one edge per pair of notes, whichever way round they link: the graph draws a single
      line either way, and counting A->B and B->A separately listed the same note twice
      and inflated link counts and how prominent a body looks */
-  var seen = {};
+  const seen = {};
   state.notes.forEach(function (n) {
-    var from = byTitle[n.title.toLowerCase()];
+    const from = byTitle[n.title.toLowerCase()];
     wikilinksIn(n.content).forEach(function (t) {
-      var to = byTitle[String(t).toLowerCase()];
+      const to = byTitle[String(t).toLowerCase()];
       if (!to || to === from) return;
-      var key = String(from.id) < String(to.id) ? from.id + "\u0000" + to.id : to.id + "\u0000" + from.id;
+      const key = String(from.id) < String(to.id) ? from.id + "\u0000" + to.id : to.id + "\u0000" + from.id;
       if (seen[key]) return;
       seen[key] = 1;
       edges.push({ a: from, b: to });

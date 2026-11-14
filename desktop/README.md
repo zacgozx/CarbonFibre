@@ -22,7 +22,7 @@ npm run dist:win     # installer, x64 and arm64   (build on Windows)
 npm run dist:mac     # .dmg + .zip, Intel and Apple silicon   (build on a Mac)
 ```
 
-Output goes to `desktop/dist/`. You rarely need to: every push to `main` runs
+Output goes to `desktop/dist/`. You rarely need to: every push to `main` that changes the app runs
 `.github/workflows/desktop.yml`, which tests, builds all three and publishes a GitHub Release
 `v1.0.<build number>` with fixed file names (`CarbonFibre-mac-arm64.dmg`, `CarbonFibre-win-x64-setup.exe`,
 `CarbonFibre-linux-x86_64.AppImage`, ...). The website's **Get the app** links to the latest one, and
@@ -95,8 +95,11 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
   It can only send them somewhere if you let it use the internet; otherwise the network is blocked, and
   while plugins are on, links ask before opening.
 
-- **Storage is separate from the website.** "This browser" notes in the desktop app live in the app's own
-  storage, not in your browser's. Folder notes are just `.md` files, so both can open the same folder.
+- **Notes live in a folder, always.** The desktop app has no "browser storage" option: on first start it asks
+  for a folder (pick one or make one), and doesn't go further until it has one. Notes an older version kept
+  in the app's own storage are moved into that folder as `.md` files (sheets as `.csv` in `sheets/`), then
+  removed from there. The website and the app can open the same folder. Settings (theme, pins, layout)
+  are still remembered by the app itself.
 - **Closing while saving:** if folder writes are still going, the app asks before closing.
 - **Icon:** put a 1024×1024 `icon.png` in `desktop/build/`; electron-builder makes the Mac, Windows and
   Linux icons from it. Until then the default Electron icon shows.

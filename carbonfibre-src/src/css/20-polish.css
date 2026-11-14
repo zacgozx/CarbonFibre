@@ -1,4 +1,4 @@
-/* ---------- inspection round 1 ---------- */
+/* ---------- polish: status bar type, sidebar overlay, quiet stars ---------- */
 .statusbar .storage-row { color: inherit; font-size: 12.5px; }
 .statusbar .storage-label { flex: none; }
 #btnTheme .i-moon { display: none; }
@@ -48,11 +48,8 @@ and no animated layout properties */
 .sh-table thead th,
 .sh-rownum,
 .sk-parked-hint,
-.sketch.docked .sk-bar,
 .sk-open-split,
-.sk-pop-head,
 .sk-recent:empty::before,
-.sk-custom,
 .sk-hex,
 .sk-hint,
 .sk-width-num,
@@ -77,7 +74,6 @@ and no animated layout properties */
 .ln-fencedelim,
 .fence-tick,
 .graph-hint,
-.sk-pop-head,
 .sk-hex,
 .sk-hint,
 .sk-lbl,
@@ -86,7 +82,6 @@ and no animated layout properties */
 input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
 :root { --pop-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35); }
 :root[data-theme="light"] { --pop-shadow: 0 4px 12px rgba(26, 42, 79, 0.14), 0 1px 3px rgba(26, 42, 79, 0.08); }
-.timer-pop, .timer-alert, .sk-pop, .rn-box, .menu, .cmdpal-box, .ac { box-shadow: var(--pop-shadow); }
+.timer-pop, .timer-alert, .rn-box, .menu, .cmdpal-box, .ac { box-shadow: var(--pop-shadow); }
 .timer-bar { width: 100%; transform: scaleX(0); transform-origin: left center; transition: transform 1s linear; }
-
 

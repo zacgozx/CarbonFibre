@@ -1,9 +1,9 @@
   /* ---- insert a block of text (agent answers) ---- */
   p.insertBlock = function (text) {
-    var n = p.note();
+    const n = p.note();
     if (!n) return;
     histBreak(p);
-    var ls = text.replace(/\r\n?/g, "\n").replace(/\n+$/, "").split("\n");
+    const ls = text.replace(/\r\n?/g, "\n").replace(/\n+$/, "").split("\n");
     if (p.mode !== "live") {
       p.sync();
       n.content = n.content.replace(/\n*$/, "") + "\n\n" + ls.join("\n") + "\n";
@@ -12,15 +12,15 @@
       markDirty(n);
       return;
     }
-    var at = p.activeLine !== null ? p.activeLine + 1 : p.lines.length;
-    var block = ls.slice();
+    const at = p.activeLine !== null ? p.activeLine + 1 : p.lines.length;
+    const block = ls.slice();
     if (at > 0 && p.lines[at - 1].trim() !== "") block.unshift("");
     Array.prototype.splice.apply(p.lines, [at, 0].concat(block));
     p.commit(true);
     p.deactivate();
     p.activeLine = null;
     renderAllLines();
-    var node = nodeAt(at);
+    const node = nodeAt(at);
     if (node && node.scrollIntoView) node.scrollIntoView({ block: "center" });
     node && node.classList.add("flash");
   };
@@ -33,26 +33,26 @@
   });
 
   p.renderBacklinks = function () {
-    var n = p.note();
+    const n = p.note();
     p.blBody.innerHTML = "";
     if (!n) { p.blEl.style.display = "none"; return; }
     p.blEl.style.display = "";
-    var refs = backlinksFor(n.title);
+    const refs = backlinksFor(n.title);
     p.blCount.textContent = refs.length ? String(refs.length) : "0";
     if (!refs.length) {
-      var e0 = document.createElement("div");
+      const e0 = document.createElement("div");
       e0.className = "bl-empty";
       e0.textContent = "No other note links here yet. Use [[" + n.title + "]] elsewhere to create one.";
       p.blBody.appendChild(e0);
       return;
     }
     refs.forEach(function (r) {
-      var it = document.createElement("div");
+      const it = document.createElement("div");
       it.className = "bl-item";
-      var src = document.createElement("div");
+      const src = document.createElement("div");
       src.className = "bl-src";
       src.textContent = r.note.title;
-      var ln = document.createElement("div");
+      const ln = document.createElement("div");
       ln.className = "bl-line";
       ln.textContent = r.text.trim() || "(empty line)";
       it.appendChild(src); it.appendChild(ln);
@@ -93,7 +93,7 @@
     p.blEl.style.display = "none";
     p.closeBtn.style.display = panes.length > 1 ? "" : "none";
   }
-  var PANE_RENDER = {
+  const PANE_RENDER = {
     note: function () { p.renderNote(); renderCrumbs(p); },
     sheet: function () {
       showNonNote();
@@ -111,14 +111,14 @@
     if (p.tbRoot) p.tbRoot.classList.toggle("show", p.type === "taskboard");
     if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" ? "none" : "";   /* the note's breadcrumbs don't belong on the board */
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
-    var ab = document.getElementById("actBoard");
+    const ab = document.getElementById("actBoard");
     if (ab) ab.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
   };
 
   p.renderNote = function () {
     if (p.grid) p.grid.root.classList.remove("show");
     if (p.parkEl) p.parkEl.classList.remove("show");
-    var n = p.note();
+    const n = p.note();
     p.liveBtn.classList.toggle("on", p.mode === "live");
     p.splitBtn.classList.toggle("on", p.mode === "split");
     p.renderTabs();

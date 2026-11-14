@@ -66,7 +66,7 @@ function createWindow() {
     show: false,
     title: "CarbonFibre",
     icon: path.join(__dirname, "build", "icon.png"),   /* the butterfly in the taskbar and window (installed builds also carry it in the .exe / .app) */
-    backgroundColor: "#1a1a1f",
+    backgroundColor: "#18181b",
     autoHideMenuBar: process.platform !== "darwin",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -127,20 +127,23 @@ ipcMain.handle("cf:choose", async (e, message, choices) => {
 
 /* Electron has no text-input dialog, so a prompt is a small modal window of our own */
 const prompts = new Map();   /* prompt window webContents id -> { message, value, resolve } */
-ipcMain.handle("cf:prompt", (e, message, value) => {
+ipcMain.handle("cf:prompt", async (e, message, value) => {
   if (!fromApp(e)) return null;
   const parent = BrowserWindow.fromWebContents(e.sender);
+  /* the page's light or dark and accent colour, so the little window matches it */
+  const look = await e.sender.executeJavaScript('[document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark", getComputedStyle(document.documentElement).getPropertyValue("--acc").trim()]').catch(() => ["dark", ""]);
+  const theme = look[0] === "light" ? "light" : "dark", accent = /^#[0-9a-f]{6}$/i.test(look[1]) ? look[1] : "";
   return new Promise((resolve) => {
     const p = new BrowserWindow({
       parent, modal: true, show: false, width: 460, height: 180, useContentSize: true,
       resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
-      title: "CarbonFibre", backgroundColor: "#202027", autoHideMenuBar: true,
+      title: "CarbonFibre", backgroundColor: theme === "light" ? "#f7f7f8" : "#1e1e22", autoHideMenuBar: true,
       webPreferences: { preload: path.join(__dirname, "prompt-preload.js"), contextIsolation: true, sandbox: true }
     });
     const id = p.webContents.id;
     let done = false;
     const finish = (v) => { if (done) return; done = true; prompts.delete(id); resolve(v); if (!p.isDestroyed()) p.close(); };
-    prompts.set(id, { message: String(message), value: String(value == null ? "" : value), finish });
+    prompts.set(id, { message: String(message), value: String(value == null ? "" : value), theme, accent, finish });
     p.on("closed", () => finish(null));
     p.webContents.on("will-navigate", (ev) => ev.preventDefault());
     p.loadURL(ORIGIN + "/prompt.html");
@@ -148,7 +151,7 @@ ipcMain.handle("cf:prompt", (e, message, value) => {
 });
 ipcMain.handle("cf:prompt-init", (e) => {
   const p = prompts.get(e.sender.id);
-  return p ? { message: p.message, value: p.value } : null;
+  return p ? { message: p.message, value: p.value, theme: p.theme, accent: p.accent } : null;
 });
 ipcMain.on("cf:prompt-size", (e, h) => {
   const w = BrowserWindow.fromWebContents(e.sender);

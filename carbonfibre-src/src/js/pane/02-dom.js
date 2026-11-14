@@ -1,5 +1,5 @@
   /* ---- DOM ---- */
-  var col = document.createElement("div");
+  const col = document.createElement("div");
   col.className = "pane-col";
   col.innerHTML =
     '<div class="pane-bar">' +

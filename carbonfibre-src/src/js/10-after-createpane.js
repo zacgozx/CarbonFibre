@@ -7,13 +7,13 @@ function paneForShift(p) {
 }
 
 function nextPane(p) {
-  var i = panes.indexOf(p);
+  const i = panes.indexOf(p);
   if (panes.length < 2) return p;
   return panes[(i + 1) % panes.length];
 }
 
 /* mirror edits into any other pane showing the same note */
-var mirrorTimer = null;
+let mirrorTimer = null;
 function scheduleMirror(source, noteId) {
   if (panes.length < 2) return;
   if (mirrorTimer) clearTimeout(mirrorTimer);

@@ -1,4 +1,4 @@
-# Builds the desktop app (desktop/) for macOS, Windows and Linux on every push to main, and publishes it as
+# Builds the desktop app (desktop/) for macOS, Windows and Linux on every push to main that changes the app, and publishes it as
 # a GitHub Release named v1.0.<build number>. The website's "Get the app" links to the latest release, and
 # installed apps update themselves from it (desktop/updater.js). The file names never change between
 # releases, so .../releases/latest/download/<name> always means the newest:
@@ -11,6 +11,13 @@ name: Desktop
 on:
   push:
     branches: ["main"]
+    # only what goes into the app: a push that changes only docs, tests or the website's built copy builds nothing
+    paths:
+      - "carbonfibre-src/src/**"
+      - "carbonfibre-src/build.py"
+      - "desktop/**"
+      - "!desktop/**/*.md"
+      - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
 permissions:
@@ -31,11 +38,11 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -60,11 +67,11 @@ jobs:
         shell: bash
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -111,7 +118,7 @@ jobs:
           mkdir -p out
           for f in $want; do test -f "dist/$f" || { echo "missing dist/$f"; ls dist; exit 1; }; cp "dist/$f" out/; done
           ls -la out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: carbonfibre-${{ runner.os }}
           path: desktop/out/*
@@ -124,7 +131,7 @@ jobs:
     permissions:
       contents: write                # only this job can publish
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: out
           merge-multiple: true

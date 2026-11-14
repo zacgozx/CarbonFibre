@@ -4,13 +4,13 @@
 
   p.sync = function () {
     if (!p.stale) return;
-    var n = p.note();
+    const n = p.note();
     if (n) n.content = p.lines.join("\n");
     p.stale = false;
   };
 
   p.reload = function () {
-    var n = p.note();
+    const n = p.note();
     p.lines = n ? n.content.split("\n") : [];
     p.fmeta = computeFenceMeta(p.lines);
     p.stale = false;
@@ -18,7 +18,7 @@
 
   /* structural = line count changed or a ``` delimiter appeared/vanished */
   p.commit = function (structural) {
-    var n = p.note();
+    const n = p.note();
     if (!n) return;
     p.stale = true;
     if (structural) p.fmeta = computeFenceMeta(p.lines);
@@ -48,13 +48,13 @@
   };
 
   p.closeTab = function (id) {
-    var idx = -1;
-    for (var k = 0; k < p.tabs.length; k++) if (sameId(p.tabs[k], id)) { idx = k; break; }
+    let idx = -1;
+    for (let k = 0; k < p.tabs.length; k++) if (sameId(p.tabs[k], id)) { idx = k; break; }
     if (idx === -1) return;
     p.sync();
     p.tabs.splice(idx, 1);
     if (sameId(p.noteId, id)) {
-      var next = p.tabs.length ? p.tabs[Math.min(idx, p.tabs.length - 1)] : null;
+      const next = p.tabs.length ? p.tabs[Math.min(idx, p.tabs.length - 1)] : null;
       p.deactivate();
       p.noteId = next;
       p.reload();
@@ -67,32 +67,32 @@
 
   p.cycleTab = function (dir) {
     if (p.tabs.length < 2) return;
-    var idx = 0;
-    for (var k = 0; k < p.tabs.length; k++) if (sameId(p.tabs[k], p.noteId)) idx = k;
+    let idx = 0;
+    for (let k = 0; k < p.tabs.length; k++) if (sameId(p.tabs[k], p.noteId)) idx = k;
     p.open(p.tabs[(idx + dir + p.tabs.length) % p.tabs.length]);
   };
 
-  var isTabDrag = function (e) { return Array.prototype.indexOf.call(e.dataTransfer.types, "text/x-cf-tab") !== -1; };
+  const isTabDrag = function (e) { return Array.prototype.indexOf.call(e.dataTransfer.types, "text/x-cf-tab") !== -1; };
   /* where in this bar a tab would land: before the first tab whose middle is right of the pointer */
-  var tabDropIndex = function (x) {
-    var tabsHere = Array.prototype.filter.call(p.tabsEl.querySelectorAll(".tab[data-id]"), function (el) { return !el.classList.contains("dragging") || true; });
-    for (var k = 0; k < tabsHere.length; k++) { var r = tabsHere[k].getBoundingClientRect(); if (x < r.left + r.width / 2) return { at: k, el: tabsHere[k], before: true }; }
+  const tabDropIndex = function (x) {
+    const tabsHere = Array.prototype.filter.call(p.tabsEl.querySelectorAll(".tab[data-id]"), function (el) { return !el.classList.contains("dragging") || true; });
+    for (let k = 0; k < tabsHere.length; k++) { const r = tabsHere[k].getBoundingClientRect(); if (x < r.left + r.width / 2) return { at: k, el: tabsHere[k], before: true }; }
     return { at: tabsHere.length, el: tabsHere[tabsHere.length - 1] || null, before: false };
   };
   p.tabsEl.addEventListener("dragover", function (e) {
     if (!isTabDrag(e)) return;
     e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "move";
     clearTabDropMarks();
-    var d = tabDropIndex(e.clientX);
+    const d = tabDropIndex(e.clientX);
     if (d.el) d.el.classList.add(d.before ? "drop-before" : "drop-after"); else p.tabsEl.classList.add("drop-into");
   });
   p.tabsEl.addEventListener("dragleave", function (e) { if (!p.tabsEl.contains(e.relatedTarget)) clearTabDropMarks(); });
   p.tabsEl.addEventListener("drop", function (e) {
     if (!isTabDrag(e)) return;
     e.preventDefault(); e.stopPropagation();
-    var info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), d = tabDropIndex(e.clientX);
+    const info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), d = tabDropIndex(e.clientX);
     clearTabDropMarks();
-    var src = panes[info.pane];
+    const src = panes[info.pane];
     if (src) moveTab(src, info.id, p, d.at);
   });
   col.addEventListener("dragover", function (e) {
@@ -105,21 +105,21 @@
     if (!isTabDrag(e) || p.tabsEl.contains(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     col.classList.remove("tab-drop-on");
-    var info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), src = panes[info.pane];
+    const info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), src = panes[info.pane];
     if (src && src !== p) moveTab(src, info.id, p, p.tabs.length);
   });
   p.renderTabs = function () {
     tabTreeSoon();
     p.tabsEl.innerHTML = "";
     if (p.type === "taskboard" || p.type === "sheet") {   /* the board's or sheet's own tab: closing it goes back to the note */
-      var isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
-      var bt = document.createElement("div");
+      const isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
+      const bt = document.createElement("div");
       bt.className = "tab on tab-board";
-      var bl = document.createElement("span");
+      const bl = document.createElement("span");
       bl.className = "tab-lbl";
       if (isSheet) bl.innerHTML = ico("table");
       bl.appendChild(document.createTextNode((isSheet ? " " + (shObj ? shObj.title : "Sheet") : tb.view === "notes" ? "Notes" : "Task board")));
-      var bx = document.createElement("button");
+      const bx = document.createElement("button");
       bx.className = "tab-x"; bx.innerHTML = ico("x"); bx.title = isSheet ? "Close the sheet" : "Close the task board";
       bx.addEventListener("mousedown", function (e) { e.stopPropagation(); });
       bx.addEventListener("click", function (e) { e.stopPropagation(); if (isSheet) closeSheetPane(p); else tbClosePane(p); });
@@ -127,22 +127,22 @@
       p.tabsEl.appendChild(bt);
     }
     if (!p.tabs.length) {
-      var e = document.createElement("div");
+      const e = document.createElement("div");
       e.className = "tabs-empty";
       e.textContent = "No tabs \u2014 pick a note";
       p.tabsEl.appendChild(e);
       return;
     }
     p.tabs.forEach(function (id) {
-      var n = findNote(id);
+      const n = findNote(id);
       if (!n) return;
-      var t = document.createElement("div");
+      const t = document.createElement("div");
       t.className = "tab" + (sameId(id, p.noteId) && p.type === "note" ? " on" : "");
-      var lbl = document.createElement("span");
+      const lbl = document.createElement("span");
       lbl.className = "tab-lbl";
       lbl.textContent = n.title;
       lbl.title = n.path || n.title;
-      var x = document.createElement("button");
+      const x = document.createElement("button");
       x.className = "tab-x";
       x.innerHTML = ico("x");
       x.title = "Close tab";
@@ -169,10 +169,10 @@
     });
     /* scroll the strip itself, only when the active tab is out of sight: scrollIntoView
        could force a layout of the whole page, and scroll its parents too */
-    var on = p.tabsEl.querySelector(".tab.on"), strip = p.tabsEl;
+    const on = p.tabsEl.querySelector(".tab.on"), strip = p.tabsEl;
     if (on) {
-      var sr = strip.getBoundingClientRect(), tr = on.getBoundingClientRect();
-      var left = tr.left - sr.left + strip.scrollLeft, right = left + tr.width;
+      const sr = strip.getBoundingClientRect(), tr = on.getBoundingClientRect();
+      const left = tr.left - sr.left + strip.scrollLeft, right = left + tr.width;
       if (left < strip.scrollLeft) strip.scrollLeft = left;
       else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = right - strip.clientWidth;
     }

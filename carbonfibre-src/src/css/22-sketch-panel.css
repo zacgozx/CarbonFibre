@@ -1,10 +1,4 @@
 /* ---------- sketch board: tools on top, style on the left ---------- */
-.sk-bar { flex-wrap: nowrap; gap: 6px; padding: 6px 10px; overflow-x: auto; }
-.sk-tools { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--chrome); flex-shrink: 0; }
-.sk-tools .mini-pill { border-color: transparent; background: transparent; }
-.sk-tools .mini-pill:hover { background: var(--chrome-hi); }
-.sk-tools .mini-pill.on { background: var(--sel); border-color: transparent; font-weight: 600; }
-.sk-bar > .mini-pill, .sk-bar > .new-btn { flex-shrink: 0; }
 .sk-panel { flex-shrink: 0; border-right: 1px solid var(--line);}
 .sk-sec-h { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12.5px; font-weight: 600; color: var(--txt); }
 .sk-sec-h .sk-hex { margin-left: auto; font-weight: 400; color: var(--dim); }
@@ -35,7 +29,6 @@
 .sk-panel .sk-width, .sk-panel .sk-textrow { display: flex; align-items: center; gap: 8px; }
 .sk-panel input[type="range"] { flex: 1; min-width: 0; }
 .sk-row { display: flex; flex-wrap: wrap; gap: 6px; }
-
 
 /* ============================================================
    Sketch board layout: rail on the left, board actions on top, the selection's properties

@@ -22,17 +22,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Build the app from source
         run: |
           python carbonfibre-src/build.py public/index.html
           python carbonfibre-src/build.py --check public/index.html
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - name: Upload public/ only
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
       - name: Deploy

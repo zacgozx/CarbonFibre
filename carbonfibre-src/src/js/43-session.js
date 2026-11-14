@@ -2,8 +2,8 @@
    session - what was open, restored after a refresh
    ============================================================ */
 
-var SESSION_KEY = "carbonfibre-session";
-var sessionTimer = null, restoringSession = false;
+const SESSION_KEY = "carbonfibre-session";
+let sessionTimer = null, restoringSession = false;
 
 function saveSession() {
   if (restoringSession) return;
@@ -27,11 +27,11 @@ function scheduleSession() {
   sessionTimer = setTimeout(function () { sessionTimer = null; saveSession(); }, 300);
 }
 function restoreSession() {
-  var ss = null;
+  let ss = null;
   try { ss = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
   if (!ss || ss.backend !== state.backend || !Array.isArray(ss.panes)) return false;
   if (state.backend === "folder" && ss.folder && state.dirHandle && ss.folder !== state.dirHandle.name) return false;
-  var wanted = ss.panes.map(function (sp) {
+  const wanted = ss.panes.map(function (sp) {
     return { tabs: (sp.tabs || []).filter(function (t) { return findNote(t); }), noteId: sp.noteId,
       mode: sp.mode || "live", width: sp.width || 1, scroll: sp.scroll || 0,
       type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" ? sp.type : "note",
@@ -42,7 +42,7 @@ function restoreSession() {
   restoringSession = true;
   while (panes.length > 1) closePane(panes[panes.length - 1]);
   wanted.forEach(function (sp, i) {
-    var p = i === 0 ? panes[0] : addPane(panes[panes.length - 1]);
+    const p = i === 0 ? panes[0] : addPane(panes[panes.length - 1]);
     p.tabs = sp.tabs.slice();
     p.mode = sp.mode;
     p.width = sp.width;
@@ -50,7 +50,7 @@ function restoreSession() {
   });
   layoutPanes();
   renderPanes();
-  var fp = panes[Math.max(0, Math.min(panes.length - 1, ss.focused || 0))];
+  const fp = panes[Math.max(0, Math.min(panes.length - 1, ss.focused || 0))];
   fp.focusThis();
   if (ss.collapsed) collapsedFolders = ss.collapsed;
   if (ss.sideWidth) { sideWidth = ss.sideWidth; sideEl.style.setProperty("--side-w", sideWidth + "px"); }
@@ -60,7 +60,7 @@ function restoreSession() {
   renderSidebar();
   setTimeout(function () {
     wanted.forEach(function (sp, i) {
-      var p = panes[i]; if (!p) return;
+      const p = panes[i]; if (!p) return;
       if (p.mode === "live") p.editorEl.scrollTop = sp.scroll; else p.srcEl.scrollTop = sp.scroll;
     });
     wanted.forEach(function (sp, i) { if (sp.type === "taskboard" && panes[i]) tbOpenInPane(panes[i]); });
@@ -73,9 +73,9 @@ function restoreSession() {
        so the last to open is the live board and the rest show as snapshots */
     wanted.forEach(function (sp, i) {
       if (sp.type !== "sketch" || !(sp.sketchOpen >= 0) || !panes[i]) return;
-      var host = panes[i];
-      var src = skSourcePane(sp.noteId != null ? sp.noteId : host.noteId, host);
-      var idx = skFenceFind(src, sp.sketchOpen, null);
+      const host = panes[i];
+      const src = skSourcePane(sp.noteId != null ? sp.noteId : host.noteId, host);
+      const idx = skFenceFind(src, sp.sketchOpen, null);
       if (idx >= 0) openSketch(src, idx, host);
     });
     restoringSession = false;

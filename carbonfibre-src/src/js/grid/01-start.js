@@ -1,12 +1,12 @@
 function makeGrid(p) {
-  var g = {
+  const g = {
     pane: p, sheet: null, r: 0, c: 0, ar: 0, ac: 0,   /* cursor (sheet rows and columns), and the anchor of a range */
     editing: false, undo: [], redo: [], drag: false,
     filters: [], view: [], viewPos: null, find: { q: "", fuzzy: false, hits: [], at: -1, set: null }
   };
-  var ROW_H = 27, BUFFER = 30;                       /* rows are a fixed height so only those on screen are drawn */
+  const ROW_H = 27, BUFFER = 30;                       /* rows are a fixed height so only those on screen are drawn */
 
-  var wrap = document.createElement("div");
+  const wrap = document.createElement("div");
   wrap.className = "sheet-wrap";
   wrap.innerHTML =
     '<div class="sh-bar">' +
@@ -52,12 +52,12 @@ function makeGrid(p) {
 
   function rows() { return g.sheet ? g.sheet.rows : [[""]]; }
   function cols() { return rows()[0] ? rows()[0].length : 1; }
-  function cellAt(r, c) { var rw = rows()[r]; return rw && rw[c] !== undefined ? rw[c] : ""; }
+  function cellAt(r, c) { const rw = rows()[r]; return rw && rw[c] !== undefined ? rw[c] : ""; }
   g.calc = makeSheetCalc(rows, null);
   g.calc = (function () {                              /* the sheet's own name means this sheet */
-    var c = makeSheetCalc(rows, "\u0000");
-    var titled = null, titledFor = null;
-    var cur = function () { if (!g.sheet) return c; if (titledFor !== g.sheet) { titled = makeSheetCalc(rows, g.sheet.title); titledFor = g.sheet; } return titled; };
+    const c = makeSheetCalc(rows, "\u0000");
+    let titled = null, titledFor = null;
+    const cur = function () { if (!g.sheet) return c; if (titledFor !== g.sheet) { titled = makeSheetCalc(rows, g.sheet.title); titledFor = g.sheet; } return titled; };
     return { value: function (r, k) { return cur().value(r, k); }, text: function (r, k) { return cur().text(r, k); }, isFormula: function (r, k) { return cur().isFormula(r, k); },
              inside: function (r, k) { return cur().inside(r, k); }, reset: function () { c.reset(); if (titled) titled.reset(); } };
   })();
@@ -71,19 +71,19 @@ function makeGrid(p) {
   /* another sheet is about to be rewritten by this step (a moved / inserted / deleted row or column
      it refers to): its rows join the step, so one undo puts both back */
   g.snapshotOther = function (o) {
-    var top = g.undo[g.undo.length - 1];
+    let top = g.undo[g.undo.length - 1];
     if (top === undefined) return;
     if (typeof top === "string") top = g.undo[g.undo.length - 1] = { rows: top, others: [] };
     if (!top.others.some(function (x) { return x.id === o.id; })) top.others.push({ id: o.id, rows: JSON.stringify(o.rows) });
   };
   /* swap the sheets of a step with their current state: returns the step to push the other way */
-  var swapStep = function (step) {
-    var back = JSON.stringify(rows());
+  const swapStep = function (step) {
+    const back = JSON.stringify(rows());
     if (typeof step === "string") { g.sheet.rows = JSON.parse(step); return back; }
-    var out = { rows: back, others: [] };
+    const out = { rows: back, others: [] };
     g.sheet.rows = JSON.parse(step.rows);
     step.others.forEach(function (x) {
-      var o = sheets.filter(function (q) { return q.id === x.id; })[0]; if (!o) return;
+      const o = sheets.filter(function (q) { return q.id === x.id; })[0]; if (!o) return;
       out.others.push({ id: o.id, rows: JSON.stringify(o.rows) });
       o.rows = JSON.parse(x.rows);
       if (o.note) noteTableWriteBack(o); else sheetDirty(o);

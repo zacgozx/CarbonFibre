@@ -10,7 +10,8 @@ with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1300, "height": 900}, color_scheme="dark")
     pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-    pg.goto("file://" + CF); pg.wait_for_timeout(400)
+    pg.goto("file://" + CF)
+    pg.wait_for_function("() => typeof PluginHost !== 'undefined' && PluginHost.notesAreReady", timeout=10000)   # start-up has finished loading notes
     E = lambda js, *a: pg.evaluate(js, *a)
     # a vault opened as a folder: notes with paths, and the folders they live in
     E("""() => { state.backend = 'folder';
@@ -34,7 +35,9 @@ with sync_playwright() as p:
     pg.locator("#notesList .fold-head", has=pg.locator(".fold-name", has_text="2026")).locator(".fold-pin").click(); pg.wait_for_timeout(150)
     names = E("() => [...document.querySelectorAll('#notesList .pin-folders > .fold-head .fold-name')].map(e => e.textContent)")
     check("a nested folder pinned shows its full path (Incidents/2026)", "Incidents/2026" in names, str(names))
-    pg.reload(); pg.wait_for_timeout(400)
+    pg.reload()
+    try: pg.wait_for_function("() => typeof isFolderPinned === 'function' && isFolderPinned('Runbooks') && isFolderPinned('Incidents/2026')", timeout=5000)
+    except Exception: pass          # checked just below; a slow machine needs more than a fixed pause
     check("pins are remembered", E("() => isFolderPinned('Runbooks') && isFolderPinned('Incidents/2026')"))
     print("2. DRAG HIGHLIGHT")
     E("""() => { state.backend = 'folder'; state.folders = [{ path: 'Incidents' }, { path: 'Runbooks' }];

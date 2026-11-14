@@ -116,7 +116,7 @@ Output in `desktop/dist/`: `CarbonFibre-linux-x86_64.AppImage` and `CarbonFibre-
 
 ## Updates
 
-Every push to `main` builds a new release on GitHub (`v1.0.<build number>`, about 10 minutes after the
+Every push to `main` that changes the app builds a new release on GitHub (`v1.0.<build number>`, about 10 minutes after the
 push). An installed app checks for one a little after it starts and every few hours; when there is one,
 **Update available** shows in the status bar. Click it, say yes, and it downloads the new version,
 checks it against the release's SHA-256, replaces itself and restarts. **Check for Updates...** is in the

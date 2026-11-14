@@ -628,14 +628,15 @@ function loadFolder() {
   });
 }
 
+/* resolves true once a folder is open, false if the picker was cancelled */
 function pickFolder() {
-  window.showDirectoryPicker({ mode: "readwrite" }).then(function (h) {
+  return window.showDirectoryPicker({ mode: "readwrite", startIn: "documents" }).then(function (h) {
     state.dirHandle = h;
     state.backend = "folder";
     hideReconnect();
     idbSet("dirHandle", h).catch(function () {});
-    return loadFolder();
-  }).catch(function () {});
+    return NotesStorage.moveIntoFolder().then(function () { return loadFolder(); }).then(function () { return true; });
+  }).catch(function () { return false; });
 }
 
 function switchToLocal() {

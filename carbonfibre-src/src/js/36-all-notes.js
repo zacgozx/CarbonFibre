@@ -668,7 +668,7 @@ const TIMER_KEY = "carbonfibre-timer", TIMELOG_KEY = "carbonfibre-timelog", TIME
 let timer = null;             /* { task, noteId, planned, startedAt, pausedMs, pausedAt, alerted } */
 let timeLog = [];
 const timePrefs = { minutes: 25, logToNote: false, sound: true };
-let timerTick = null, timerAudio = null; // eslint-disable-line prefer-const -- reassigned in 37-taskboard-the-chime-two-soft-ton.js
+let timerTick = null, timerAudio = null; // eslint-disable-line prefer-const -- reassigned in 37-timer-chime.js
 
 try { timer = JSON.parse(localStorage.getItem(TIMER_KEY) || "null"); } catch (e) { timer = null; }
 try { timeLog = JSON.parse(localStorage.getItem(TIMELOG_KEY) || "[]") || []; } catch (e) { timeLog = []; }

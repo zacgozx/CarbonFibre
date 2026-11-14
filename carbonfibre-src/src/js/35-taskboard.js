@@ -229,7 +229,7 @@ function tbUndoRemove() {
   tb.tasks.splice(Math.min(u.at, tb.tasks.length), 0, u.task);
   tbSave(); tbRenderAll();
 }
-let tbEditing = null; /* the card being edited in place */ // eslint-disable-line prefer-const -- reassigned in 36-taskboard-all-notes-every-note-i.js
+let tbEditing = null; /* the card being edited in place */ // eslint-disable-line prefer-const -- reassigned in 36-all-notes.js
 
 /* ---- task board events: what happened when, for the dashboard's activity panel (7 days kept) ---- */
 function tbEvent(t, what) {
@@ -239,8 +239,6 @@ function tbEvent(t, what) {
   if (tb.events.length > 400) tb.events = tb.events.slice(-400);
 }
 /* ---- the dashboard: panels that summarise the day, as a team board does ---- */
-const TB_TYPE_COLOR = { inc: "var(--tb-flare)", chg: "var(--tb-blu)", ctask: "var(--tb-blu)", prb: "var(--tb-flare)", ptask: "var(--tb-flare)",
-                      sctask: "var(--tb-ora)", ritm: "var(--tb-ok)", stry: "var(--tb-vio)", stsk: "var(--tb-vio)", other: "var(--tb-mute)" };
 const TB_TYPE_HEX_DARK = { inc: "#e5534b", chg: "#8ea7b8", ctask: "#6f8da3", prb: "#c46a64", ptask: "#f08a80", sctask: "#d4917c", ritm: "#5cb87a", stry: "#b08ae6", stsk: "#9070c8", other: "#9a9ca2" };
 const TB_TYPE_HEX_LIGHT = { inc: "#b4323f", chg: "#1f6f94", ctask: "#5ba3c9", prb: "#d0606a", ptask: "#e08890", sctask: "#b45309", ritm: "#2e7d4f", stry: "#6b4fa8", stsk: "#9d86cf", other: "#46606f" };
 function tbTypeHex(type) { return (isLight() ? TB_TYPE_HEX_LIGHT : TB_TYPE_HEX_DARK)[type] || "#9a9ca2"; }

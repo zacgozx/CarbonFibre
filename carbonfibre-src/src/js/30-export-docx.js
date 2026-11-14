@@ -8,7 +8,7 @@ function xe(s) {
 }
 function wRuns(runs) {
   return runs.map(function (r) {
-    var props = "";
+    let props = "";
     if (r.b) props += "<w:b/>";
     if (r.i) props += "<w:i/>";
     if (r.strike) props += "<w:strike/>";
@@ -19,14 +19,14 @@ function wRuns(runs) {
   }).join("");
 }
 function wPara(runs, style, extra) {
-  var pr = "";
+  let pr = "";
   if (style) pr += '<w:pStyle w:val="' + style + '"/>';
   if (extra) pr += extra;
   return "<w:p>" + (pr ? "<w:pPr>" + pr + "</w:pPr>" : "") + wRuns(runs) + "</w:p>";
 }
 
 function docxBody(blocks, media) {
-  var out = [];
+  const out = [];
   blocks.forEach(function (bl) {
     if (bl.t === "h") { out.push(wPara(bl.runs, "Heading" + bl.level)); return; }
     if (bl.t === "p") { out.push(wPara(bl.runs)); return; }
@@ -37,7 +37,7 @@ function docxBody(blocks, media) {
     if (bl.t === "quote") { out.push(wPara(bl.runs, "Quote")); return; }
     if (bl.t === "list") {
       bl.items.forEach(function (it) {
-        var runs = it.check ? [{ text: (it.check === "done" ? "\u2612 " : "\u2610 ") }].concat(it.runs) : it.runs;
+        const runs = it.check ? [{ text: (it.check === "done" ? "\u2612 " : "\u2610 ") }].concat(it.runs) : it.runs;
         out.push(wPara(runs, "ListParagraph",
           '<w:numPr><w:ilvl w:val="' + it.indent + '"/><w:numId w:val="' + (bl.ordered ? 2 : 1) + '"/></w:numPr>'));
       });
@@ -50,17 +50,17 @@ function docxBody(blocks, media) {
       return;
     }
     if (bl.t === "table") {
-      var width = Math.floor(9360 / Math.max(1, bl.cols));
-      var grid = "";
-      for (var c = 0; c < bl.cols; c++) grid += '<w:gridCol w:w="' + width + '"/>';
-      var rows = bl.rows.map(function (row, ri) {
-        var cells = "";
-        for (var ci = 0; ci < bl.cols; ci++) {
-          var txt = row[ci] || "";
-          var runs = inlineRuns(txt);
+      const width = Math.floor(9360 / Math.max(1, bl.cols));
+      let grid = "";
+      for (let c = 0; c < bl.cols; c++) grid += '<w:gridCol w:w="' + width + '"/>';
+      const rows = bl.rows.map(function (row, ri) {
+        let cells = "";
+        for (let ci = 0; ci < bl.cols; ci++) {
+          const txt = row[ci] || "";
+          let runs = inlineRuns(txt);
           if (ri === 0) runs = runs.map(function (r) { return { text: r.text, b: true, i: r.i, code: r.code, href: r.href }; });
           if (!runs.length) runs = [{ text: "" }];
-          var shd = ri === 0 ? '<w:shd w:val="clear" w:fill="EFEFEF"/>' : "";
+          const shd = ri === 0 ? '<w:shd w:val="clear" w:fill="EFEFEF"/>' : "";
           cells += '<w:tc><w:tcPr><w:tcW w:w="' + width + '" w:type="dxa"/>' + shd + "</w:tcPr>" + wPara(runs, "TableText") + "</w:tc>";
         }
         return "<w:tr>" + cells + "</w:tr>";
@@ -73,11 +73,11 @@ function docxBody(blocks, media) {
       return;
     }
     if (bl.t === "sketch") {
-      var png = sketchPng(bl.elements, 900);
+      const png = sketchPng(bl.elements, 900);
       if (!png) return;
-      var id = media.length + 1;
+      const id = media.length + 1;
       media.push({ id: id, dataUrl: png.dataUrl });
-      var cx = Math.round(png.inchW * 914400), cy = Math.round(png.inchH * 914400);
+      const cx = Math.round(png.inchW * 914400), cy = Math.round(png.inchH * 914400);
       out.push('<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
         '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + id + '" name="Sketch ' + id + '"/>' +
         '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
@@ -91,12 +91,12 @@ function docxBody(blocks, media) {
   return out.join("");
 }
 
-var DOCX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+const DOCX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
 '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI"/><w:sz w:val="21"/></w:rPr></w:rPrDefault></w:docDefaults>' +
 '<w:style w:type="paragraph" w:styleId="Normal" w:default="1"><w:name w:val="Normal"/><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:style>' +
 [1, 2, 3, 4, 5, 6].map(function (n) {
-  var sz = [32, 26, 23, 21, 21, 21][n - 1];
+  const sz = [32, 26, 23, 21, 21, 21][n - 1];
   return '<w:style w:type="paragraph" w:styleId="Heading' + n + '"><w:name w:val="heading ' + n + '"/><w:basedOn w:val="Normal"/>' +
     '<w:pPr><w:outlineLvl w:val="' + (n - 1) + '"/><w:keepNext/><w:spacing w:before="240" w:after="80"/></w:pPr>' +
     '<w:rPr><w:b/><w:sz w:val="' + sz + '"/><w:color w:val="1A1A1A"/></w:rPr></w:style>';
@@ -111,13 +111,13 @@ var DOCX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/></w:style>' +
 '</w:styles>';
 
-var DOCX_NUMBERING = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+const DOCX_NUMBERING = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
 [1, 2].map(function (id) {
-  var levels = "";
-  for (var l = 0; l < 5; l++) {
-    var fmt = id === 1 ? "bullet" : "decimal";
-    var txt = id === 1 ? ["\u2022", "\u25E6", "\u25AA", "\u2022", "\u25E6"][l] : "%" + (l + 1) + ".";
+  let levels = "";
+  for (let l = 0; l < 5; l++) {
+    const fmt = id === 1 ? "bullet" : "decimal";
+    const txt = id === 1 ? ["\u2022", "\u25E6", "\u25AA", "\u2022", "\u25E6"][l] : "%" + (l + 1) + ".";
     levels += '<w:lvl w:ilvl="' + l + '"><w:start w:val="1"/><w:numFmt w:val="' + fmt + '"/>' +
       '<w:lvlText w:val="' + txt + '"/><w:lvlJc w:val="left"/>' +
       '<w:pPr><w:ind w:left="' + (360 + l * 360) + '" w:hanging="360"/></w:pPr>' +
@@ -130,17 +130,17 @@ var DOCX_NUMBERING = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 "</w:numbering>";
 
 function dataUrlToBytes(dataUrl) {
-  var b64 = dataUrl.split(",")[1], bin = atob(b64), out = new Uint8Array(bin.length);
-  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  const b64 = dataUrl.split(",")[1], bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
 function buildDocx(title, blocks) {
-  var media = [];
-  var body = docxBody(blocks, media);
-  var enc = new TextEncoder();
+  const media = [];
+  const body = docxBody(blocks, media);
+  const enc = new TextEncoder();
 
-  var doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  const doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
     'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
     'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
@@ -148,7 +148,7 @@ function buildDocx(title, blocks) {
     '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1021" w:right="907" w:bottom="1021" w:left="907"/></w:sectPr>' +
     "</w:body></w:document>";
 
-  var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
     '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
@@ -157,7 +157,7 @@ function buildDocx(title, blocks) {
     }).join("") +
     "</Relationships>";
 
-  var types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  const types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
     '<Default Extension="xml" ContentType="application/xml"/>' +
@@ -167,12 +167,12 @@ function buildDocx(title, blocks) {
     '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
     "</Types>";
 
-  var root = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  const root = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
     "</Relationships>";
 
-  var files = [
+  const files = [
     { name: "[Content_Types].xml", bytes: enc.encode(types) },
     { name: "_rels/.rels", bytes: enc.encode(root) },
     { name: "word/document.xml", bytes: enc.encode(doc) },

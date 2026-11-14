@@ -196,17 +196,12 @@ th[data-col]:hover .sh-sortbtn, .sh-sortbtn.on, .sh-sortbtn:focus-visible { opac
   pointer-events: none; transition: color var(--t), border-color var(--t);
 }
 .sk-parked:hover .sk-parked-hint { color: var(--txt); border-color: var(--acc); }
-.sketch.docked .sk-bar { padding: 5px 8px; font-size: 12.5px; }
 .pane-col.is-sketch .md-live, .pane-col.is-sketch .md-split { display: none; }
-.sk-bar { display: flex; align-items: center; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--dim);}
 .sk-open-split {
   margin-left: 10px; font-size: 12.5px; color: var(--blu); cursor: pointer;
   border-bottom: 1px dashed rgba(var(--blu-rgb), 0.5);
 }
 .sk-open-split:hover { color: var(--txt); }
-.sk-bar .sep { width: 1px; height: 18px; background: var(--line); margin: 0 6px; }
-.sk-bar .spacer { flex: 1; }
-.sk-bar .mini-pill { padding: 3px 9px; }
 .sk-swatch {
   width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--hair-12);
   cursor: pointer; padding: 0; position: relative;
@@ -221,33 +216,9 @@ th[data-col]:hover .sh-sortbtn, .sh-sortbtn.on, .sh-sortbtn:focus-visible { opac
   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
 }
 
-/* six most-used sit in the bar; the rest live one click away */
-.sk-quick { display: inline-flex; gap: 4px; }
-.sk-colorwrap { position: relative; display: inline-flex; }
-.sk-colorbtn {
-  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
-  background: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px 3px 4px;
-  transition: border-color var(--t);
-}
-.sk-colorbtn:hover { border-color: var(--dim); }
-.sk-colorbtn i { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--hair-15); display: block; }
-.sk-caret { color: var(--c6a6c71); }
-
-.sk-pop {
-  position: absolute; top: 32px; left: 0; z-index: 40; width: 208px;
-  background: var(--c171819); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
-  box-shadow: 0 14px 38px rgba(var(--shd-rgb), calc(0.55 * var(--shd-k))); display: none;
-}
-.sk-pop.show { display: block; }
-.sk-pop-head { font-size: 12.5px; color: var(--c6a6c71); letter-spacing: 0.06em; margin: 2px 0 6px; }
+/* the sketch colour palette */
 .sk-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 8px; }
 .sk-recent:empty::before { content: "nothing yet"; font-size: 12.5px; color: var(--c4a4c52); }
-.sk-pop-foot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
-.sk-custom { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim); cursor: pointer; }
-.sk-custom input[type=color] {
-  width: 22px; height: 22px; padding: 0; border: 1px solid var(--line);
-  border-radius: 6px; background: none; cursor: pointer;
-}
 .sk-hex { margin-left: auto; font-family: var(--mono); font-size: 12.5px; color: var(--c6a6c71); }
 .sk-hint { font-size: 12.5px; color: var(--c5a5a5a); }
 .sk-width { display: inline-flex; align-items: center; gap: 6px; }

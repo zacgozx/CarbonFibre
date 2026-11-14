@@ -2,7 +2,7 @@
 "use strict";
 
 /* Icons: drawn line icons at one stroke weight, in place of text glyphs. */
-var ICON = {
+const ICON = {
   x: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>',
   chevronDown: '<path d="M4 6l4 4 4-4"/>',
   chevronUp: '<path d="M4 10l4-4 4 4"/>',
@@ -19,9 +19,9 @@ var ICON = {
   sort: '<path d="M4.5 2.5v11M2.5 11.5l2 2 2-2M8.5 4h5M8.5 8h3.5M8.5 12h2"/>',
   check: '<path d="M3.5 8.5l3 3 6-6.5"/>'
 };
-var ICO_CACHE = {};
+const ICO_CACHE = {};
 function ico(name, cls) {
-  var key = name + "|" + (cls || "");
+  const key = name + "|" + (cls || "");
   return ICO_CACHE[key] || (ICO_CACHE[key] = '<svg class="ico' + (cls ? " " + cls : "") + '" viewBox="0 0 16 16" aria-hidden="true">' + ICON[name] + "</svg>");
 }
 

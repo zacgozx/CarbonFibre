@@ -19,3 +19,5 @@
 .nsw-primary { border-color: var(--acc); background: var(--acc-soft); color: var(--acc-text); }
 .nsw-btn:disabled { opacity: .45; cursor: not-allowed; }
 .nsw-foot { margin: 14px 0 0; color: var(--dim); font-size: 12.5px; }
+.nsw-dialog.nsw-one { width: min(520px, 100%); }
+.nsw-one .nsw-btn { margin-top: 6px; }

@@ -3,7 +3,7 @@
 /* ---- opening sheets in panes ---- */
 
 function pushToastLike(msg) {
-  var el = document.getElementById("saveState");
+  const el = document.getElementById("saveState");
   if (!el) return;
   el.className = "saving";
   el.textContent = msg;
@@ -20,7 +20,7 @@ function closeSheetPane(p) {
   scheduleSession();
 }
 function openSheetInPane(p, sheetId) {
-  var sh = findSheet(sheetId);
+  const sh = findSheet(sheetId);
   if (!sh) return;
   p.sync();
   p.deactivate();
@@ -35,16 +35,16 @@ function openSheetInPane(p, sheetId) {
   scheduleSession();
 }
 function openSheetSplit(from, sheetId) {
-  var target = panes.length < MAX_PANES ? addPane(from) : nextPane(from);
+  const target = panes.length < MAX_PANES ? addPane(from) : nextPane(from);
   openSheetInPane(target, sheetId);
 }
 
 /* ---- Phase 6: a markdown table in a note, edited as a sheet ---- */
 
 function noteTableToSheet(p) {
-  var n = p.note();
+  const n = p.note();
   if (!n || p.activeLine === null) return null;
-  var t = tableRowsAt(p.lines, p.fmeta, p.activeLine);
+  const t = tableRowsAt(p.lines, p.fmeta, p.activeLine);
   if (!t) return null;
   return {
     id: "tbl:" + n.id + ":" + t.first,
@@ -59,9 +59,9 @@ function noteTableToSheet(p) {
 }
 /* write the grid back into the note's lines, replacing the original table block */
 function noteTableWriteBack(sh) {
-  var p = sh.notePane;
+  const p = sh.notePane;
   if (!p || !sameId(p.noteId, sh.note.id)) return;
-  var md = rowsToMarkdown(sh.rows, sh.aligns);
+  const md = rowsToMarkdown(sh.rows, sh.aligns);
   histBreak(p);
   Array.prototype.splice.apply(p.lines, [sh.first, sh.last - sh.first + 1].concat(md));
   sh.last = sh.first + md.length - 1;
@@ -70,9 +70,9 @@ function noteTableWriteBack(sh) {
   p.render();
 }
 function editTableAsSheet(p) {
-  var sh = noteTableToSheet(p);
+  const sh = noteTableToSheet(p);
   if (!sh) { return false; }
-  var target = panes.length < MAX_PANES ? addPane(p) : nextPane(p);
+  const target = panes.length < MAX_PANES ? addPane(p) : nextPane(p);
   if (!target.grid) { target.grid = makeGrid(target); target.root.appendChild(target.grid.root); }
   target.type = "sheet";
   target.sheetId = null;
@@ -84,10 +84,10 @@ function editTableAsSheet(p) {
 
 /* sheet selection -> a markdown table at the cursor in a note pane */
 function sheetIntoNote(g) {
-  var target = null;
+  let target = null;
   panes.forEach(function (q) { if (!target && q.type === "note" && q.note()) target = q; });
   if (!target) { alert("Open a note in another pane first."); return; }
-  var rows = g.rangeRows();                                              /* what the cells show */
+  let rows = g.rangeRows();                                              /* what the cells show */
   if (rows.length === 1 && rows[0].length === 1) rows = g.displayRows ? g.displayRows() : g.sheet.rows;   /* nothing selected: the lot */
   target.insertBlock(rowsToMarkdown(rows, g.sheet.aligns).join("\n"));
   target.focusThis();

@@ -1,5 +1,5 @@
 function createPane(index) {
-  var p = {
+  const p = {
     index: index,
     noteId: null,
     lines: [],
@@ -23,6 +23,6 @@ function createPane(index) {
     allSelected: false, selFrom: -1, selTo: -1, selAnchor: -1, selFocus: -1,
     carets: [], col: null
   };
-  var dragFrom = -1;   /* line index where a mouse drag started */
-  var colDrag = null;  /* anchor for an Alt+drag column selection */
+  let dragFrom = -1;   /* line index where a mouse drag started */
+  let colDrag = null;  /* anchor for an Alt+drag column selection */
 

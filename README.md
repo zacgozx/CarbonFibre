@@ -10,7 +10,7 @@ publishes the app only.
 | `cf-tests/` | The test suite and code checker | No |
 | `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron), which also runs Obsidian community plugins (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
-| `.github/workflows/desktop.yml` | Tests and builds the desktop app on every push and publishes it as a GitHub Release (the website's **Get the app** and the app's updates use it) | — |
+| `.github/workflows/desktop.yml` | Tests and builds the desktop app on every push that changes it (not docs or tests alone) and publishes it as a GitHub Release (the website's **Get the app** and the app's updates use it) | — |
 
 ## First time
 
@@ -44,6 +44,8 @@ On a first visit the app asks:
 |---|---|---|
 | A folder you choose | `.md` files in that folder, readable by any editor | Edge, Chrome and other Chromium browsers on a desktop or laptop |
 | This browser | The browser's storage for this site, on this device | Any modern browser, including phones |
+
+The desktop app always uses a folder (it asks for one on first start).
 
 Firefox, Safari and phone browsers don't offer the folder API, so there the folder choice is shown
 disabled with the reason. Switch any time from the bottom-left of the window.
