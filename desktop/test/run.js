@@ -50,7 +50,7 @@ app.on("browser-window-created", (_e, w) => {
         out.status = [...document.querySelectorAll("#statusbar .status-bar-item")].some(e => e.textContent === "fixture status");
         const alpha = state.notes.find(n => n.title === "Alpha");
         openInPane(alpha.id, panes[0]);
-        await new Promise(r => setTimeout(r, 400));
+        for (let i = 0; i < 50 && !document.querySelector(".fixture-block"); i++) await new Promise(r => setTimeout(r, 100));   /* up to 5 s: CI machines are slow */
         out.block = (document.querySelector(".fixture-block") || {}).textContent || "";
         out.palette = palCommands().map(c => c.label).filter(l => l.startsWith("CarbonFibre test plugin:"));
         const ed = PluginApp.app.workspace.activeEditor.editor;
