@@ -8,7 +8,7 @@
 #btnSidebar .ham, #btnSidebar .ham::before, #btnSidebar .ham::after { width: 18px; height: 1.7px; border-radius: 1px; }
 #btnSidebar .ham::before { top: -5.5px; }
 #btnSidebar .ham::after { top: 5.5px; }
-.act-btn svg { width: 22px; height: 22px; stroke: var(--dim); }
+.act-btn svg { width: 20px; height: 20px; stroke: var(--dim); stroke-width: 1.75; }
 .act-btn:hover { background: var(--chrome-hi); }
 .act-btn:hover svg, .act-btn.on svg { stroke: var(--txt); }
 .act-btn.on { background: var(--sel); }

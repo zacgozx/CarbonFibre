@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hPochfJ6HvVE71fhMldYB760B4x53pGVqkjWkpedGdU=' 'sha256-PDCyG2aLGhOp9pbQ9u20RLMVz9cVyKdFvztzKHq5F3w='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hPochfJ6HvVE71fhMldYB760B4x53pGVqkjWkpedGdU=' 'sha256-gSWbCZP5bIEnU36SPTewKJWcP5vVCrXoQGuzyCLgbmg='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -1735,7 +1735,7 @@ body { font-family: var(--sans); font-size: 13px; }
 #btnSidebar .ham, #btnSidebar .ham::before, #btnSidebar .ham::after { width: 18px; height: 1.7px; border-radius: 1px; }
 #btnSidebar .ham::before { top: -5.5px; }
 #btnSidebar .ham::after { top: 5.5px; }
-.act-btn svg { width: 22px; height: 22px; stroke: var(--dim); }
+.act-btn svg { width: 20px; height: 20px; stroke: var(--dim); stroke-width: 1.75; }
 .act-btn:hover { background: var(--chrome-hi); }
 .act-btn:hover svg, .act-btn.on svg { stroke: var(--txt); }
 .act-btn.on { background: var(--sel); }
@@ -2333,7 +2333,7 @@ body.cf-plugins-on {
 }
 
 /* the activity bar button and plugin ribbon buttons */
-.act-btn.cfp-ribbon svg, #actPlugins svg { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.act-btn.cfp-ribbon svg, #actPlugins svg { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---- the Plugins window ---- */
 .cfp-win { position: fixed; inset: 0; z-index: 225; background: rgba(var(--scrim-rgb), calc(.55 * var(--scrim-k))); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -2562,21 +2562,21 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
 <div class="mo-body">
   <nav class="activity" id="activity">
     <button class="act-btn on" data-view="notes" title="Notes (Ctrl+Shift+E)">
-      <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8z"/><path d="M14 3.5V8h4.5"/><path d="M9 12.5h6M9 16h4"/></svg>
     </button>
     <button class="act-btn" data-view="search" title="Search all notes (Ctrl+Shift+F)">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
     </button>
     <button class="act-btn" id="actLibrary" title="All notes: every note, sortable and filterable (Alt+N)" aria-label="All notes">
-      <svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="m16 6 3.7-1 3.3 13.5-3.7 1z"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.5h17M9 9.5v10"/></svg>
     </button>
     <button class="act-btn" data-view="tabs" title="Open tabs (Alt+O)" aria-label="Open tabs">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/><path d="M8 13h8M8 16.5h5"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="13" height="12" rx="2.5"/><path d="M7.5 4.5h10.5a2.5 2.5 0 0 1 2.5 2.5v9"/></svg>
     </button>
     <div class="act-spacer"></div>
-    <button class="act-btn" id="actBoard" title="Task board" aria-label="Task board"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h3.2v11H2zM6.4 2.5h3.2v7H6.4zM10.8 2.5H14v4.5h-3.2z"/></svg></button>
+    <button class="act-btn" id="actBoard" title="Task board" aria-label="Task board"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="4.5" height="15" rx="1.5"/><rect x="9.75" y="4.5" width="4.5" height="10.5" rx="1.5"/><rect x="15.5" y="4.5" width="4.5" height="6.5" rx="1.5"/></svg></button>
     <button class="act-btn" id="actGraph" title="Graph (Ctrl+G)">
-      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="M8.2 7.2 15.6 8M7 8.4l1.4 7.2M16.2 10.2l-5.4 6.2"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.25"/><circle cx="18" cy="7" r="2.25"/><circle cx="12" cy="17.5" r="2.25"/><path d="M8.25 7h7.5M7.15 9l3.7 6.5M16.85 9l-3.7 6.5"/></svg>
     </button>
   </nav>
 
@@ -3074,7 +3074,7 @@ const PluginIcons = {
     "filter": "M22 3H2l8 9.5V19l4 2v-8.5z", "save": "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8", "send": "m22 2-7 20-4-9-9-4zM22 2 11 13",
     "inbox": "M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z", "archive": "M3 3h18v5H3zM5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4",
     "layers": "m12 2 10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5", "package": "m16.5 9.4-9-5.2M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7zM3.3 7 12 12l8.7-5M12 22V12",
-    "puzzle": "M19.4 13.5a2.5 2.5 0 1 0 0-3H18V7a1 1 0 0 0-1-1h-3.5V4.6a2.5 2.5 0 1 0-3 0V6H7a1 1 0 0 0-1 1v3.5H4.6a2.5 2.5 0 1 0 0 3H6V17a1 1 0 0 0 1 1h3.5v-1.4a2.5 2.5 0 1 1 3 0V18H17a1 1 0 0 0 1-1v-3.5z",
+    "puzzle": "M10 6V5a2 2 0 1 1 4 0v1h3a1 1 0 0 1 1 1v3h1a2 2 0 1 1 0 4h-1v3a1 1 0 0 1-1 1h-3v-1a2 2 0 1 0-4 0v1H7a1 1 0 0 1-1-1v-3h1a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1z",
     "wand": "M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M15 9h.01M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5", "lightbulb": "M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.3 1 2.3h6c0-1 .3-1.7 1-2.3A7 7 0 0 0 12 2z",
     "flame": "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4.1 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.6 1.2 2.8 2.5 2.8z",
     "target": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2z", "flag": "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",

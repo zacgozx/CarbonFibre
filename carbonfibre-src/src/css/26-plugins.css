@@ -23,7 +23,7 @@ body.cf-plugins-on {
 }
 
 /* the activity bar button and plugin ribbon buttons */
-.act-btn.cfp-ribbon svg, #actPlugins svg { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.act-btn.cfp-ribbon svg, #actPlugins svg { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---- the Plugins window ---- */
 .cfp-win { position: fixed; inset: 0; z-index: 225; background: rgba(var(--scrim-rgb), calc(.55 * var(--scrim-k))); display: flex; align-items: center; justify-content: center; padding: 16px; }
