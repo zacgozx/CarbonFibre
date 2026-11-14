@@ -8,6 +8,8 @@
    the requests of plugins you let use the internet. The page itself still can't reach the network. */
 "use strict";
 const fs = require("node:fs/promises");
+const dns = require("node:dns").promises;
+const netmod = require("node:net");
 const path = require("node:path");
 const { Worker } = require("node:worker_threads");
 const { app, net } = require("electron");
@@ -210,11 +212,31 @@ async function setNetwork(id, on) {
   return !!on;
 }
 const FORBIDDEN_HEADERS = /^(host|content-length|connection|transfer-encoding|keep-alive|upgrade|te|trailer|proxy-.*)$/i;
+/* Addresses no plugin needs: link-local (169.254.x.x, fe80::, where cloud machines answer with their
+   credentials), "this network" 0.x, multicast and reserved ranges. Checked on the address the name
+   resolves to, and again after every redirect, so a public name or a redirect can't lead there.
+   Plugins may still reach this computer and the local network (local AI servers, LanguageTool). */
+function blockedIp(ip) {
+  let a = String(ip).toLowerCase().replace(/^\[|\]$/g, "");
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a);
+  if (mapped) a = mapped[1];
+  if (netmod.isIPv4(a)) {
+    const o = a.split(".").map(Number);
+    return o[0] === 0 || (o[0] === 169 && o[1] === 254) || o[0] >= 224;
+  }
+  return a === "::" || /^fe[89ab]/.test(a) || /^ff/.test(a);
+}
+async function checkTarget(u) {
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only http and https addresses can be requested");
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  const ips = netmod.isIP(host) ? [host] : (await dns.lookup(host, { all: true, verbatim: true })).map((x) => x.address);
+  if (!ips.length || ips.some(blockedIp)) throw new Error("Blocked address: " + u.hostname + " (link-local and reserved addresses can't be reached by plugins)");
+}
+const MAX_REDIRECTS = 5;
 async function request(id, opts) {
   if (!(await networkAllowed(id))) throw new Error("This plugin isn't allowed to use the internet. Allow it in Plugins, Installed.");
   opts = opts || {};
   const u = new URL(String(opts.url || ""));
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only http and https addresses can be requested");
   const method = String(opts.method || "GET").toUpperCase();
   if (!/^[A-Z]{1,16}$/.test(method)) throw new Error("Not a request method: " + method);
   const headers = {};
@@ -225,17 +247,47 @@ async function request(id, opts) {
     body = typeof opts.body === "string" ? opts.body : Buffer.from(opts.body.buffer ? new Uint8Array(opts.body.buffer, opts.body.byteOffset || 0, opts.body.byteLength) : opts.body);
     if (body.length > MAX_BODY) throw new Error("Request body too large");
   }
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), REQUEST_TIMEOUT);
-  try {
-    const res = await net.fetch(u.href, { method, headers, body, redirect: "follow", signal: ctl.signal, credentials: "omit", cache: "no-store" });
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length > MAX_RESPONSE) throw new Error("Response too large");
-    const h = {};
-    res.headers.forEach((v, k) => { h[k] = v; });
-    return { status: res.status, headers: h, url: res.url || u.href, body: new Uint8Array(buf) };
-  } catch (e) {
-    throw new Error(e && e.name === "AbortError" ? "The request took too long" : "The request failed: " + ((e && e.message) || e));
-  } finally { clearTimeout(timer); }
+  await checkTarget(u);
+  return send(u, method, headers, body);
+}
+/* one request through Chromium's network stack (the system's proxy and certificates). A redirect isn't
+   followed blindly: its address is checked by checkTarget and then requested afresh (Chromium only
+   lets a redirect be followed synchronously, before a name could be looked up). */
+function send(u, method, headers, body, hops) {
+  hops = hops || 0;
+  return new Promise((resolve, reject) => {
+    let done = false, moved = false;          /* moved: this request was dropped for a redirect */
+    const finish = (fn, v) => { if (done) return; done = true; clearTimeout(timer); fn(v); };
+    const fail = (msg) => { try { req.abort(); } catch (e) { /* already closed */ } finish(reject, new Error(msg)); };
+    const req = net.request({ method, url: u.href, redirect: "manual", useSessionCookies: false, cache: "no-store" });
+    const timer = setTimeout(() => fail("The request took too long"), REQUEST_TIMEOUT);
+    Object.keys(headers).forEach((k) => { try { req.setHeader(k, headers[k]); } catch (e) { /* a header Chromium sets itself */ } });
+    req.on("redirect", (status, _method, url) => {
+      let next;
+      try { next = new URL(url); } catch (e) { fail("A redirect to a bad address"); return; }
+      if (hops >= MAX_REDIRECTS) { fail("Too many redirects"); return; }
+      moved = true;
+      try { req.abort(); } catch (e) { /* closed */ }
+      const toGet = status === 303 || ((status === 301 || status === 302) && method === "POST");
+      checkTarget(next)
+        .then(() => send(next, toGet ? "GET" : method, headers, toGet ? undefined : body, hops + 1))
+        .then((r) => finish(resolve, r), (e) => finish(reject, e));
+    });
+    req.on("response", (res) => {
+      const chunks = [];
+      let size = 0;
+      res.on("data", (c) => { size += c.length; if (size > MAX_RESPONSE) fail("Response too large"); else chunks.push(c); });
+      res.on("end", () => {
+        const h = {};
+        Object.keys(res.headers || {}).forEach((k) => { const v = res.headers[k]; h[k.toLowerCase()] = Array.isArray(v) ? v.join(", ") : String(v); });
+        finish(resolve, { status: res.statusCode, headers: h, url: u.href, body: new Uint8Array(Buffer.concat(chunks)) });
+      });
+      res.on("error", (e) => fail("The request failed: " + ((e && e.message) || e)));
+    });
+    req.on("error", (e) => { if (!done && !moved) fail("The request failed: " + ((e && e.message) || e)); });
+    if (body != null) req.write(body);
+    req.end();
+  });
 }
 
 async function styles(id) { return readText(path.join(dirOf(id), "styles.css")); }
@@ -253,16 +305,25 @@ function inPluginDir(id, rel) {
 }
 const pluginFs = {
   async read(id, rel) { const t = await readText(inPluginDir(id, rel)); if (t == null) throw new Error("No such file: " + rel); return t; },
-  async write(id, rel, text) { if (String(text).length > MAX_DATA) throw new Error("File too large"); await writeText(inPluginDir(id, rel), String(text)); },
+  async write(id, rel, text) { if (String(text).length > MAX_DATA) throw new Error("File too large"); await writeText(writable(id, rel), String(text)); },
   async exists(id, rel) { try { await fs.stat(inPluginDir(id, rel)); return true; } catch (e) { return false; } },
   async list(id, rel) {
     const f = inPluginDir(id, rel), out = { files: [], folders: [] };
     try { for (const d of await fs.readdir(f, { withFileTypes: true })) (d.isDirectory() ? out.folders : out.files).push(d.name); } catch (e) {}
     return out;
   },
-  async mkdir(id, rel) { await fs.mkdir(inPluginDir(id, rel), { recursive: true }); },
-  async remove(id, rel) { const f = inPluginDir(id, rel); if (f === dirOf(id)) throw new Error("Can't remove the plugin's folder"); await fs.rm(f, { recursive: true, force: true }); }
+  async mkdir(id, rel) { await fs.mkdir(writable(id, rel), { recursive: true }); },
+  async remove(id, rel) { const f = writable(id, rel); if (f === dirOf(id)) throw new Error("Can't remove the plugin's folder"); await fs.rm(f, { recursive: true, force: true }); }
 };
+/* A plugin's code and description are installed by the app, never written from the page: otherwise a
+   plugin (they all share one page) could rewrite its own or another plugin's code for next start,
+   skipping the check every plugin gets before it runs. Its settings go through saveData. */
+const PROTECTED = new Set(["main.js", "manifest.json", "styles.css", "compat.json", "data.json"]);
+function writable(id, rel) {
+  const f = inPluginDir(id, rel);
+  if (path.dirname(f) === dirOf(id) && PROTECTED.has(path.basename(f).toLowerCase())) throw new Error("A plugin can't change " + path.basename(f) + " from here");
+  return f;
+}
 
 /* the code the page loads: main.js wrapped as a CommonJS module and handed to the plugin host */
 async function wrappedCode(id) {

@@ -5,15 +5,24 @@
 
 /* ---------------- utils ---------------- */
 
-function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
+/* text for HTML: safe in element content AND inside quoted attributes, so a note title like
+   Plan" onmouseover=... can never end an attribute early. Anything that isn't a string is shown as text. */
+function esc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function escAttr(s) { return esc(s); }
 function isDelim(raw) { return /^```/.test(raw); }
 
+/* Links in notes open web pages and email only. Any other scheme (javascript:, data:, file:, smb:,
+   or an app's own handler like ms-msdt:) could run code or start a program on the computer when a
+   shared note is clicked, so it isn't made a link at all. Tabs, newlines and other control
+   characters are dropped first, as browsers drop them, so "java\tscript:" can't slip through. */
+const LINK_SCHEMES = ["http:", "https:", "mailto:"];
 function normalizeUrl(u) {
-  u = (u || "").trim();
+  u = String(u || "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
   if (!u) return "";
-  if (/^(javascript|data|vbscript):/i.test(u)) return "";
-  if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(u);
+  if (scheme && scheme[1].indexOf(".") === -1) return LINK_SCHEMES.indexOf(scheme[1].toLowerCase() + ":") !== -1 ? u : "";   /* example.com:8080 is a host, not a scheme */
   if (u.charAt(0) === "#" || u.charAt(0) === "/") return u;
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u)) return "mailto:" + u;
   return "https://" + u;
@@ -86,7 +95,9 @@ function tokenHtml(t, raw) {
     const u = t.extra || "";
     if (raw) return t.bare ? '<span class="xl">' + x + "</span>"
       : mk("[") + '<span class="xl">' + x + "</span>" + mk("](") + '<span class="mk-url">' + esc(u) + "</span>" + mk(")");
-    return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(normalizeUrl(u)) +
+    const href = normalizeUrl(u);
+    if (!href) return '<span class="xl xl-off" title="' + escAttr(u) + ' (not opened: only web and email links are)">' + x + "</span>";
+    return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(href) +
       '" title="' + escAttr(u) + '">' + x + "</a>";
   }
   return x;

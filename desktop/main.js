@@ -52,9 +52,10 @@ function openExternalChecked(url) {
     message: "Open this link in your browser?", detail: shown }).then((r) => { if (r.response === 0) shell.openExternal(url); });
 }
 
+/* only the app's own page, in its main window's top frame, may ask the main process for anything */
 function fromApp(e) {
-  const url = (e.senderFrame && e.senderFrame.url) || "";
-  return url.startsWith(ORIGIN + "/");
+  const f = e.senderFrame;
+  return !!(win && !win.isDestroyed() && e.sender === win.webContents && f && f === e.sender.mainFrame && String(f.url).startsWith(ORIGIN + "/index.html"));
 }
 
 function createWindow() {
@@ -87,10 +88,11 @@ function createWindow() {
     return { action: "deny" };
   });
   wc.on("will-navigate", (e, url) => {
-    if (url.startsWith(ORIGIN + "/")) return;
+    if (url === ORIGIN + "/index.html" || url === ORIGIN + "/") return;   /* reload; nothing else of the app's own files */
     e.preventDefault();
     openExternalChecked(url);
   });
+  wc.on("will-redirect", (e, url) => { if (!url.startsWith(ORIGIN + "/index.html")) e.preventDefault(); });
   /* the page asks before leaving while folder writes are still going (Electron would otherwise just refuse to close) */
   wc.on("will-prevent-unload", (e) => {
     const choice = dialog.showMessageBoxSync(win, {
@@ -196,7 +198,7 @@ plugHandle("askNetwork", async (e, id) => {
   const r = await dialog.showMessageBox(BrowserWindow.fromWebContents(e.sender), {
     type: "question", buttons: ["Allow", "Don't allow"], defaultId: 1, cancelId: 1, noLink: true,
     message: "Let \u201c" + name + "\u201d use the internet?",
-    detail: "It can then send and receive data from any website, including the text of your notes. Plugins share one page, so a plugin you allow should be one you trust.\n\nYou can take this back any time in Plugins, Installed." });
+    detail: "It can then send and receive data from any website, and from services on this computer and your local network, including the text of your notes. Plugins share one page, so a plugin you allow should be one you trust.\n\nYou can take this back any time in Plugins, Installed." });
   return plugins.setNetwork(id, r.response === 0);
 });
 plugHandle("revokeNetwork", (_e, id) => plugins.setNetwork(String(id), false));
@@ -291,12 +293,16 @@ app.whenReady().then(() => {
   });
 
   /* what the app uses: folders, clipboard, timer notifications. Everything else is refused. */
+  /* reading the clipboard without a paste (the sketch board's paste button) is allowed only while no
+     plugin is switched on: plugins share the page, and one could otherwise read what you copied
+     (a password, say) at any moment. Ctrl+V / Cmd+V pastes work either way. */
   const allowed = new Set(["fileSystem", "clipboard-read", "clipboard-sanitized-write", "notifications"]);
+  const ok = (permission) => allowed.has(permission) && !(permission === "clipboard-read" && pluginsOn);
   session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => {
-    cb(allowed.has(permission) && wc.getURL().startsWith(ORIGIN + "/"));
+    cb(ok(permission) && wc.getURL().startsWith(ORIGIN + "/"));
   });
   session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => {
-    return allowed.has(permission) && String(origin || "").startsWith(ORIGIN);
+    return ok(permission) && String(origin || "").startsWith(ORIGIN);
   });
 
   plugins.anyEnabled().then((on) => { pluginsOn = on; }).catch(() => {});
@@ -309,4 +315,6 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
 app.on("web-contents-created", (_e, wc) => {
   wc.on("will-attach-webview", (e) => e.preventDefault());
+  /* no window (the prompt included) opens other windows; the main window's handler replaces this one */
+  wc.setWindowOpenHandler(() => ({ action: "deny" }));
 });

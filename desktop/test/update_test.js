@@ -54,6 +54,12 @@ async function main() {
   try { await u.install(); } catch (e) { err = e.message; }
   check("a download that doesn't match the release's SHA-256 is refused", /SHA-256/.test(err) && fs.readFileSync(target, "utf8").includes("old") && quit === 0, err);
 
+  digest = "";                                          /* a release that lists no SHA-256 */
+  await u.check();
+  err = "";
+  try { await u.install(); } catch (e) { err = e.message; }
+  check("a release that lists no SHA-256 isn't installed", /SHA-256/.test(err) && quit === 0, err);
+
   digest = "sha256:" + crypto.createHash("sha256").update(fresh).digest("hex");
   st = await u.check();
   await u.install();

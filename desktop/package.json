@@ -101,7 +101,15 @@
     "appImage": {
       "artifactName": "CarbonFibre-linux-${arch}.${ext}"
     },
-    "publish": null
+    "publish": null,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false,
+      "enableCookieEncryption": true
+    }
   },
   "devDependencies": {
     "electron": "^45.3.2",

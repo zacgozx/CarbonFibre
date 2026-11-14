@@ -1,5 +1,5 @@
 </style>
-<script>try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
+<script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
 </head>
 <body>
 

@@ -6,7 +6,29 @@
    ============================================================ */
 const TB_KEY = "carbonfibre-taskboard";
 let tb = { tasks: [], filter: "all", pinned: false, pinnedPane: 0, seq: 1, snowBase: "" };                      /* no ServiceNow address until you set one (board menu) */
-try { const tbStored = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (tbStored && Array.isArray(tbStored.tasks)) tb = Object.assign(tb, tbStored); } catch (e) {}
+/* A board read from storage or from a vault's .carbonfibre/taskboard.json (which anyone who shares the
+   folder can edit) is checked field by field: names that become class names or links are kept to the
+   known values, text stays text, and the ServiceNow address must be a plain https address. */
+function tbClean(v) {
+  const str = function (x, n) { return String(x == null ? "" : x).slice(0, n || 500); };
+  const num = function (x) { const k = Number(x); return isFinite(k) && k >= 0 ? k : 0; };
+  const lanes = ["open", "run", "held", "done"], whats = ["added", "started", "done", "waiting", "paused", "reopened", "moved"];
+  const out = {};
+  out.tasks = (Array.isArray(v.tasks) ? v.tasks : []).filter(function (t) { return t && typeof t === "object"; }).map(function (t) {
+    const id = str(t.id, 80);
+    return { uid: str(t.uid, 60).replace(/[^\w-]/g, "") || "t" + Math.random().toString(36).slice(2), id: id, type: tbType(id), name: str(t.name, 500),
+      noteId: t.noteId == null ? null : typeof t.noteId === "number" ? t.noteId : str(t.noteId, 1000), mins: num(t.mins), est: num(t.est), state: lanes.indexOf(t.state) !== -1 ? t.state : "open",
+      clearedAt: t.clearedAt == null ? null : num(t.clearedAt), startedAt: t.startedAt == null ? undefined : num(t.startedAt) };
+  });
+  out.events = (Array.isArray(v.events) ? v.events : []).filter(function (e) { return e && whats.indexOf(e.what) !== -1; }).slice(-400).map(function (e) {
+    return { at: num(e.at), uid: str(e.uid, 60).replace(/[^\w-]/g, ""), id: str(e.id, 80), name: str(e.name, 500), type: tbType(e.id), what: e.what };
+  });
+  ["filter", "snowStyle", "view", "notesMode"].forEach(function (k) { if (typeof v[k] === "string") out[k] = str(v[k], 40).replace(/[^\w-]/g, ""); });
+  if (typeof v.pinned === "boolean") out.pinned = v.pinned;
+  ["pinnedPane", "seq", "savedAt"].forEach(function (k) { if (v[k] != null) out[k] = Math.floor(num(v[k])); });
+  out.snowBase = typeof v.snowBase === "string" && /^https:\/\/[^\s/"'<>]+$/i.test(v.snowBase) ? v.snowBase : "";
+  return out;
+}
 let tbSaveTimer = null; const tbPending = {};
 function tbSave() {                                  /* on every change, debounced; never on clock ticks */
   if (tbSaveTimer) clearTimeout(tbSaveTimer);
@@ -31,8 +53,9 @@ function tbLoadVault() {
     .then(function (fh) { return fh.getFile(); })
     .then(function (f) { return f.text(); })
     .then(function (txt) {
-      const v = JSON.parse(txt);
-      if (v && Array.isArray(v.tasks) && (v.savedAt || 0) > (tb.savedAt || 0)) {
+      const raw = JSON.parse(txt);
+      const v = raw && typeof raw === "object" && Array.isArray(raw.tasks) ? tbClean(raw) : null;
+      if (v && (v.savedAt || 0) > (tb.savedAt || 0)) {
         Object.keys(v).forEach(function (k) { tb[k] = v[k]; });
         storeSet(TB_KEY, JSON.stringify(tb));
         if (typeof tbRenderAll === "function") tbRenderAll();
@@ -48,6 +71,9 @@ function tbType(id) {
   for (let i = 0; i < TB_PREFIXES.length; i++) if (u.indexOf(TB_PREFIXES[i]) === 0) return TB_PREFIXES[i].toLowerCase();
   return "other";
 }
+/* the saved board, read once tbType (above) exists: tbClean uses it */
+try { const tbStored = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (tbStored && Array.isArray(tbStored.tasks)) tb = Object.assign(tb, tbClean(tbStored)); }
+catch (e) { console.error("CarbonFibre: couldn't read the saved task board", e); }
 /* A ticket link uses no API: it opens the record in ServiceNow in a new tab, through the
    login you already have. Next Experience shows classic records under /now/nav/ui/classic. */
 const TB_TABLES = { inc: "incident", chg: "change_request", ctask: "change_task", prb: "problem", ptask: "problem_task",
@@ -58,7 +84,7 @@ const TB_TABLES = { inc: "incident", chg: "change_request", ctask: "change_task"
 const TB_LINK_STYLES = { direct: "table form: <table>.do?sysparm_query=number=<ticket>", search: "exact-number search", next: "Next Experience path" };
 function tbTicketUrl(t) {
   const base = String(tb.snowBase || "").replace(/\/+$/, "");
-  if (!base || !t || !t.id || t.id === "TASK") return "";
+  if (!/^https:\/\/[^\s/"'<>]+$/i.test(base) || !t || !t.id || t.id === "TASK") return "";   /* an https address only (see tbClean) */
   const table = TB_TABLES[t.type], style = TB_LINK_STYLES[tb.snowStyle] ? tb.snowStyle : "direct", num = encodeURIComponent(t.id);
   /* an unknown prefix has no table to name, so it always uses the exact-number search */
   if (style === "search" || !table) return base + "/text_search_exact_match.do?sysparm_search=" + num;

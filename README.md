@@ -8,6 +8,7 @@ publishes the app only.
 | `public/` | The app (`index.html`) and `robots.txt` | Yes |
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
+| `SECURITY.md` | What protects your notes, the limits, and how to report a problem | No |
 | `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron), which also runs Obsidian community plugins (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
 | `.github/workflows/desktop.yml` | Tests and builds the desktop app on every push that changes it (not docs or tests alone) and publishes it as a GitHub Release (the website's **Get the app** and the app's updates use it) | — |
@@ -57,6 +58,15 @@ disabled with the reason. Switch any time from the bottom-left of the window.
 - **Only its own code runs.** The policy allows the page's two script blocks by their SHA-256 hash
   (`build.py` fills these in). An injected `<script>`, an `onerror=` handler or a `javascript:` link is
   refused by the browser even if a bug let one into the page. `cf-tests/csp_test.py` checks both halves.
+- **Text stays text.** Everything a note, folder, sheet or task board can contain is escaped for both element
+  text and attributes, so a title like `Plan" onmouseover=...` can't add markup. A task board read from a
+  vault (`.carbonfibre/taskboard.json`, which anyone sharing the folder can edit) is cleaned field by field.
+  `cf-tests/security_test.py` plants hostile text everywhere and checks nothing becomes markup.
+- **Links open web pages and email only.** `http:`, `https:` and `mailto:` become links; `javascript:`,
+  `data:`, `file:`, `smb:` and app handlers (such as `ms-msdt:`) are shown as text, so clicking a link in a
+  shared note can't start a program. Links don't send the page's address (`no-referrer`).
+- **It won't run framed.** Shown inside another site's frame, the app hides itself, so it can't be used for
+  clickjacking (GitHub Pages can't send a `frame-ancestors` header).
 - **Folder access is per folder.** The browser asks before CarbonFibre can read or write a folder, and only
   that folder. Depending on the browser and your answer, it may ask again after a restart.
 - **One origin per GitHub account.** Every Pages site under `https://YOU.github.io/` shares one browser
@@ -69,7 +79,7 @@ disabled with the reason. Switch any time from the bottom-left of the window.
   lock there only for installed plugin code and for code plugins build from strings; injected `<script>`
   tags and `onerror=` handlers stay blocked. While any plugin is on, links opened from the page ask before
   your browser opens them. The desktop app itself talks to GitHub only: the plugin catalog, the plugins
-  you check or install, and its own updates (checked against each release's SHA-256).
+  you check or install, and its own updates (checked against each release's SHA-256). See `SECURITY.md`.
 
 ## Good to know
 

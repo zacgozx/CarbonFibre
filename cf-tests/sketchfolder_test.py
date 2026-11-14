@@ -38,7 +38,10 @@ with sync_playwright() as p:
     E("() => sketchLibClose(); newSketchFile('')"); pg.wait_for_timeout(150)
     check("'New drawing' without a folder saves nothing to the browser", E("() => sketchFiles.length") == 0 and E("() => !document.getElementById('sklWin').hidden"))
     print("CHOOSING A FOLDER")
-    pg.locator("#sklWin [data-skchoose]").first.click(); pg.wait_for_timeout(600)
+    pg.locator("#sklWin [data-skchoose]").first.click()
+    for _ in range(25):             # the folder scan and the move finish in either order: wait for both (up to 5 s)
+        pg.wait_for_timeout(200)
+        if E("() => ['Old one', 'Quick box'].every(n => sketchFiles.some(f => f.path === n))"): break
     paths = sorted(E("() => sketchFiles.map(f => f.path)"))
     check("its drawings, subfolders included, become the library", "network/splunk/cluster" in paths and "Quick box" in paths, str(paths))
     check("drawings that were in browser storage are moved into it (asked once)", "Old one" in paths and E("() => __get(__mine, 'Old one.excalidraw')") is not None)

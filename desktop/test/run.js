@@ -120,7 +120,11 @@ async function netCheck(w) {
   const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (c) => { body += c; });
-    req.on("end", () => { res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ method: req.method, path: req.url, body, agent: req.headers["x-test"] || "" })); });
+    req.on("end", () => {
+      if (req.url === "/to-metadata") { res.writeHead(302, { location: "http://169.254.169.254/latest/meta-data/" }); res.end(); return; }
+      if (req.url === "/to-local") { res.writeHead(302, { location: "/landed" }); res.end(); return; }
+      res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ method: req.method, path: req.url, body, agent: req.headers["x-test"] || "" }));
+    });
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const url = "http://127.0.0.1:" + server.address().port;
@@ -141,6 +145,11 @@ async function netCheck(w) {
     out.ru = await window.cfNetFix.ru(U + "/ru");
     out.f = await window.cfNetFix.f(U);
     out.pageFetch = await err(fetch(U + "/page"));
+    out.metadata = await err(window.cfNetFix.f("http://169.254.169.254"));
+    out.viaRedirect = await err(cfDesktop.plugins.request("cf-netfix", { url: U + "/to-metadata" }));
+    out.okRedirect = await cfDesktop.plugins.request("cf-netfix", { url: U + "/to-local" }).then((r) => JSON.parse(new TextDecoder().decode(r.body)).path, (e) => "ERR " + e.message);
+    out.writeCode = await err(cfDesktop.plugins.fs("write", "cf-netfix", "main.js", "evil()"));
+    out.writeOther = await err(cfDesktop.plugins.fs("write", "cf-netfix", "cache/notes.json", "{}"));
     PluginManager.open("installed");
     out.row = (document.querySelector('.cfp-row[data-id="cf-netfix"] .cfp-net') || {}).textContent || "";
     PluginManager.close();
@@ -155,6 +164,11 @@ async function netCheck(w) {
   check("internet: requestUrl sends method, body and headers, and reads JSON", r.ru && r.ru.method === "POST" && r.ru.body === "hi" && r.ru.agent === "yes" && r.ru.path === "/ru", JSON.stringify(r.ru));
   check("internet: the plugin's fetch() works", r.f && r.f.path === "/f", JSON.stringify(r.f));
   check("internet: the page's own fetch is still blocked", r.pageFetch !== "no error", r.pageFetch);
+  check("internet: link-local addresses (cloud metadata) are refused", /Blocked address/.test(r.metadata), r.metadata);
+  check("internet: ...also when a redirect points there", /Blocked address/.test(r.viaRedirect), r.viaRedirect);
+  check("internet: ordinary redirects are still followed", r.okRedirect === "/landed", r.okRedirect);
+  check("plugins can't rewrite plugin code from the page", /can't change main\.js/.test(r.writeCode), r.writeCode);
+  check("...but can still write their own files", r.writeOther === "no error", r.writeOther);
   check("internet: Installed lists it with a way to take it away", /Can use the internet/.test(r.row) && /Take away/.test(r.row), r.row);
   check("internet: taking it away stops its requests", /isn't allowed|Failed to fetch/.test(r.after), r.after);
   server.close();

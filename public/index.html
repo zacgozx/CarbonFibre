@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hPochfJ6HvVE71fhMldYB760B4x53pGVqkjWkpedGdU=' 'sha256-CniermD/j1eO2Kt9fuJn2Uzo9pf6sryUwI46GqmNKJE='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2PHw+sQBc7Q7IllGu4cRECFI1/MAqhNDYK3iJHQpW+E=' 'sha256-mT/LqV8nRyod1k5mCBwuT0TX5jXGEXpxeu0VS/Z4DcE='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -746,6 +747,7 @@ a.xl:hover { border-bottom-color: var(--blu); }
 .find-rep { flex: 1; min-width: 0; }
 .find-r1, .find-rall { height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--txt); font: 600 12px var(--sans); cursor: pointer; }
 .find-r1:hover, .find-rall:hover { border-color: var(--acc); color: var(--acc-text); }
+.xl.xl-off { border-bottom-style: dotted; color: var(--dim); cursor: not-allowed; }   /* a link to something other than the web or email: shown, not opened */
 /* ---- the sketch library: window, folder tree and thumbnails (also the board's Files tab) ---- */
 .skl-win { position: fixed; inset: 0; z-index: 180; background: rgba(10, 12, 16, .45); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .skl-win[hidden] { display: none; }
@@ -2526,7 +2528,7 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
 .cfp-net svg { flex-shrink: 0; }
 .cfp-btn.cfp-small { min-height: 24px; padding: 0 8px; font-size: 12px; }
 </style>
-<script>try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
+<script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
 </head>
 <body>
 
@@ -6802,15 +6804,24 @@ const PluginManager = {
 
 /* ---------------- utils ---------------- */
 
-function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
+/* text for HTML: safe in element content AND inside quoted attributes, so a note title like
+   Plan" onmouseover=... can never end an attribute early. Anything that isn't a string is shown as text. */
+function esc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function escAttr(s) { return esc(s); }
 function isDelim(raw) { return /^```/.test(raw); }
 
+/* Links in notes open web pages and email only. Any other scheme (javascript:, data:, file:, smb:,
+   or an app's own handler like ms-msdt:) could run code or start a program on the computer when a
+   shared note is clicked, so it isn't made a link at all. Tabs, newlines and other control
+   characters are dropped first, as browsers drop them, so "java\tscript:" can't slip through. */
+const LINK_SCHEMES = ["http:", "https:", "mailto:"];
 function normalizeUrl(u) {
-  u = (u || "").trim();
+  u = String(u || "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
   if (!u) return "";
-  if (/^(javascript|data|vbscript):/i.test(u)) return "";
-  if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(u);
+  if (scheme && scheme[1].indexOf(".") === -1) return LINK_SCHEMES.indexOf(scheme[1].toLowerCase() + ":") !== -1 ? u : "";   /* example.com:8080 is a host, not a scheme */
   if (u.charAt(0) === "#" || u.charAt(0) === "/") return u;
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u)) return "mailto:" + u;
   return "https://" + u;
@@ -6883,7 +6894,9 @@ function tokenHtml(t, raw) {
     const u = t.extra || "";
     if (raw) return t.bare ? '<span class="xl">' + x + "</span>"
       : mk("[") + '<span class="xl">' + x + "</span>" + mk("](") + '<span class="mk-url">' + esc(u) + "</span>" + mk(")");
-    return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(normalizeUrl(u)) +
+    const href = normalizeUrl(u);
+    if (!href) return '<span class="xl xl-off" title="' + escAttr(u) + ' (not opened: only web and email links are)">' + x + "</span>";
+    return '<a class="xl" data-extlink="' + escAttr(u) + '" href="' + escAttr(href) +
       '" title="' + escAttr(u) + '">' + x + "</a>";
   }
   return x;
@@ -20352,7 +20365,29 @@ function sheetIntoNote(g) {
    ============================================================ */
 const TB_KEY = "carbonfibre-taskboard";
 let tb = { tasks: [], filter: "all", pinned: false, pinnedPane: 0, seq: 1, snowBase: "" };                      /* no ServiceNow address until you set one (board menu) */
-try { const tbStored = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (tbStored && Array.isArray(tbStored.tasks)) tb = Object.assign(tb, tbStored); } catch (e) {}
+/* A board read from storage or from a vault's .carbonfibre/taskboard.json (which anyone who shares the
+   folder can edit) is checked field by field: names that become class names or links are kept to the
+   known values, text stays text, and the ServiceNow address must be a plain https address. */
+function tbClean(v) {
+  const str = function (x, n) { return String(x == null ? "" : x).slice(0, n || 500); };
+  const num = function (x) { const k = Number(x); return isFinite(k) && k >= 0 ? k : 0; };
+  const lanes = ["open", "run", "held", "done"], whats = ["added", "started", "done", "waiting", "paused", "reopened", "moved"];
+  const out = {};
+  out.tasks = (Array.isArray(v.tasks) ? v.tasks : []).filter(function (t) { return t && typeof t === "object"; }).map(function (t) {
+    const id = str(t.id, 80);
+    return { uid: str(t.uid, 60).replace(/[^\w-]/g, "") || "t" + Math.random().toString(36).slice(2), id: id, type: tbType(id), name: str(t.name, 500),
+      noteId: t.noteId == null ? null : typeof t.noteId === "number" ? t.noteId : str(t.noteId, 1000), mins: num(t.mins), est: num(t.est), state: lanes.indexOf(t.state) !== -1 ? t.state : "open",
+      clearedAt: t.clearedAt == null ? null : num(t.clearedAt), startedAt: t.startedAt == null ? undefined : num(t.startedAt) };
+  });
+  out.events = (Array.isArray(v.events) ? v.events : []).filter(function (e) { return e && whats.indexOf(e.what) !== -1; }).slice(-400).map(function (e) {
+    return { at: num(e.at), uid: str(e.uid, 60).replace(/[^\w-]/g, ""), id: str(e.id, 80), name: str(e.name, 500), type: tbType(e.id), what: e.what };
+  });
+  ["filter", "snowStyle", "view", "notesMode"].forEach(function (k) { if (typeof v[k] === "string") out[k] = str(v[k], 40).replace(/[^\w-]/g, ""); });
+  if (typeof v.pinned === "boolean") out.pinned = v.pinned;
+  ["pinnedPane", "seq", "savedAt"].forEach(function (k) { if (v[k] != null) out[k] = Math.floor(num(v[k])); });
+  out.snowBase = typeof v.snowBase === "string" && /^https:\/\/[^\s/"'<>]+$/i.test(v.snowBase) ? v.snowBase : "";
+  return out;
+}
 let tbSaveTimer = null; const tbPending = {};
 function tbSave() {                                  /* on every change, debounced; never on clock ticks */
   if (tbSaveTimer) clearTimeout(tbSaveTimer);
@@ -20377,8 +20412,9 @@ function tbLoadVault() {
     .then(function (fh) { return fh.getFile(); })
     .then(function (f) { return f.text(); })
     .then(function (txt) {
-      const v = JSON.parse(txt);
-      if (v && Array.isArray(v.tasks) && (v.savedAt || 0) > (tb.savedAt || 0)) {
+      const raw = JSON.parse(txt);
+      const v = raw && typeof raw === "object" && Array.isArray(raw.tasks) ? tbClean(raw) : null;
+      if (v && (v.savedAt || 0) > (tb.savedAt || 0)) {
         Object.keys(v).forEach(function (k) { tb[k] = v[k]; });
         storeSet(TB_KEY, JSON.stringify(tb));
         if (typeof tbRenderAll === "function") tbRenderAll();
@@ -20394,6 +20430,9 @@ function tbType(id) {
   for (let i = 0; i < TB_PREFIXES.length; i++) if (u.indexOf(TB_PREFIXES[i]) === 0) return TB_PREFIXES[i].toLowerCase();
   return "other";
 }
+/* the saved board, read once tbType (above) exists: tbClean uses it */
+try { const tbStored = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (tbStored && Array.isArray(tbStored.tasks)) tb = Object.assign(tb, tbClean(tbStored)); }
+catch (e) { console.error("CarbonFibre: couldn't read the saved task board", e); }
 /* A ticket link uses no API: it opens the record in ServiceNow in a new tab, through the
    login you already have. Next Experience shows classic records under /now/nav/ui/classic. */
 const TB_TABLES = { inc: "incident", chg: "change_request", ctask: "change_task", prb: "problem", ptask: "problem_task",
@@ -20404,7 +20443,7 @@ const TB_TABLES = { inc: "incident", chg: "change_request", ctask: "change_task"
 const TB_LINK_STYLES = { direct: "table form: <table>.do?sysparm_query=number=<ticket>", search: "exact-number search", next: "Next Experience path" };
 function tbTicketUrl(t) {
   const base = String(tb.snowBase || "").replace(/\/+$/, "");
-  if (!base || !t || !t.id || t.id === "TASK") return "";
+  if (!/^https:\/\/[^\s/"'<>]+$/i.test(base) || !t || !t.id || t.id === "TASK") return "";   /* an https address only (see tbClean) */
   const table = TB_TABLES[t.type], style = TB_LINK_STYLES[tb.snowStyle] ? tb.snowStyle : "direct", num = encodeURIComponent(t.id);
   /* an unknown prefix has no table to name, so it always uses the exact-number search */
   if (style === "search" || !table) return base + "/text_search_exact_match.do?sysparm_search=" + num;

@@ -5,7 +5,8 @@
      CarbonFibre-linux-x86_64.AppImage / -arm64.AppImage
    The app checks the latest release a little after it starts and every few hours. A newer one is shown in
    the page's status bar; Update asks first (the system's dialog, so the page and plugins can't start an
-   update on their own), downloads the file, checks its size and SHA-256 against what GitHub lists, then:
+   update on their own), downloads the file, checks its size and SHA-256 against what GitHub lists (and
+   refuses a release that lists none), then:
      macOS    unzips the new .app beside the old one, quits, and a small script swaps them and reopens it
      Windows  runs the installer silently over the installed copy, which reopens the app when it's done
      Linux    replaces the AppImage file and starts the new one
@@ -96,6 +97,7 @@ class Updater {
   async download() {
     const a = this.asset;
     if (!a || !(a.size > 0) || a.size > MAX_FILE) throw new Error("This release has no file for this computer");
+    if (!a.sha256) throw new Error("This release doesn't list a SHA-256 for its file, so the download can't be checked");
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "carbonfibre-update-"));
     const file = path.join(dir, path.basename(new URL(a.url).pathname));
     const res = await get(a.url);
@@ -117,7 +119,7 @@ class Updater {
       }
     } finally { await new Promise((r) => out.end(r)); }
     if (got !== a.size) throw new Error("The download was cut short");
-    if (a.sha256 && hash.digest("hex") !== a.sha256) throw new Error("The download doesn't match the release (SHA-256)");
+    if (hash.digest("hex") !== a.sha256) throw new Error("The download doesn't match the release (SHA-256)");
     return file;
   }
 

@@ -94,6 +94,12 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
 - **Plugins and your notes.** A plugin you switch on can read and change your notes, as in Obsidian.
   It can only send them somewhere if you let it use the internet; otherwise the network is blocked, and
   while plugins are on, links ask before opening.
+- **Hardening.** Only the app's own page, in the main window's top frame, can call the main process. Plugin
+  requests can't reach link-local or reserved addresses (cloud metadata at 169.254.169.254 included), checked
+  after DNS and again on every redirect. Plugins can't rewrite any plugin's `main.js`, `manifest.json` or
+  `styles.css` from the page. While a plugin is on, the page can't read the clipboard without a paste. Updates
+  must match the SHA-256 the release lists. Builds switch off Electron's run-as-Node mode, `NODE_OPTIONS` and
+  `--inspect` (Electron fuses), so the app can't be used to run other code.
 
 - **Notes live in a folder, always.** The desktop app has no "browser storage" option: on first start it asks
   for a folder (pick one or make one), and doesn't go further until it has one. Notes an older version kept
