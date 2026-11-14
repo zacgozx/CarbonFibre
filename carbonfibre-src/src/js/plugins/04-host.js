@@ -670,9 +670,11 @@ const PluginHost = {
 
   /* ---- rendering: code blocks and post processors ---- */
   rerenderTimer: 0,
+  /* a timer, not requestAnimationFrame: a window that isn't painting (minimised, hidden, not shown
+     yet) would otherwise never draw plugin blocks until it was looked at */
   rerenderSoon() {
     if (PluginHost.rerenderTimer) return;
-    PluginHost.rerenderTimer = requestAnimationFrame(function () {
+    PluginHost.rerenderTimer = setTimeout(function () {
       PluginHost.rerenderTimer = 0;
       panes.forEach(function (p) {
         if (p.type !== "note" || !p.lines) return;
@@ -680,7 +682,7 @@ const PluginHost = {
         if (p.rerenderLines) p.rerenderLines();
         if (p.mode === "split" && p.renderPreview) p.renderPreview();
       });
-    });
+    }, 16);
   },
   /* called from computeFenceMeta: fenced blocks a plugin renders become one card */
   markBlocks(ls, meta) {
@@ -709,14 +711,14 @@ const PluginHost = {
     const isBlock = fenceInfo && fenceInfo.plug;
     if (!isBlock && (!PluginHost.post.length || (fenceInfo && (fenceInfo.fence || fenceInfo.plugHidden)))) return;
     const given = PluginHost.pendingSource;
-    requestAnimationFrame(function () {
+    setTimeout(function () {                           /* once the line is in the page (see rerenderSoon) */
       if (!div.isConnected) return;
       const pane = panes.find(function (p) { return p.root.contains(div); });
       const n = pane && pane.type === "note" && pane.note();
       const source = given !== null ? given : n ? PluginApp.notePath(n) : "";
       if (isBlock) PluginHost.fillBlock(div, fenceInfo, idx, source, pane);
       else PluginHost.postProcess(div, source, idx);
-    });
+    }, 0);
   },
   context(el, source, lineStart, lineEnd) {
     const file = PluginApp.app.vault.getFileByPath(source), cache = file ? PluginApp.app.metadataCache.getFileCache(file) : null;
