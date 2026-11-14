@@ -323,7 +323,9 @@ const SECRET_RE = /^[\w.:@/-]{1,200}$/;
 async function secretsAll() {
   const o = await readJson(path.join(app.getPath("userData"), "secrets.json")) || {};
   const out = {};
-  if (!safeStorage.isEncryptionAvailable()) return out;
+  /* the keychain is only touched once a plugin has saved a secret: on macOS the first touch asks for
+     the login password ("CarbonFibre Safe Storage"), which shouldn't happen just for starting plugins */
+  if (!Object.keys(o).length || !safeStorage.isEncryptionAvailable()) return out;
   for (const k of Object.keys(o)) { try { out[k] = safeStorage.decryptString(Buffer.from(String(o[k]), "base64")); } catch (e) { /* from another machine */ } }
   return out;
 }
