@@ -13,6 +13,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const fsp = require("node:fs/promises");
 const plugins = require("./plugins/store");
+const themes = require("./plugins/themes");
 const { Updater, RELEASES } = require("./updater");
 
 const ORIGIN = "app://carbonfibre";
@@ -254,6 +255,14 @@ plugHandle("askVaultPath", async (e, name) => {
   }
   return plugins.setVaultPath(r.filePaths[0]);
 });
+/* Obsidian themes (plugins/themes.js): CSS only */
+plugHandle("themeCatalog", (_e, refresh) => themes.catalog(!!refresh));
+plugHandle("themeList", () => themes.list());
+plugHandle("themeInstall", (_e, name) => themes.install(String(name)));
+plugHandle("themeImport", (_e, name, css, manifest) => themes.place(String(name), String(css || ""), manifest == null ? null : String(manifest)));
+plugHandle("themeUninstall", (_e, name) => themes.uninstall(String(name)));
+plugHandle("themeUse", (_e, name) => themes.setActive(name == null || name === "" ? null : String(name)));
+plugHandle("themeCss", (_e, name) => themes.css(name == null || name === "" ? null : String(name)));
 plugHandle("secrets", (_e, op, name, value) => op === "all" ? plugins.secretsAll() : op === "set" ? plugins.secretSet(String(name), value == null ? "" : String(value)) : null);
 plugHandle("request", (_e, id, opts) => plugins.request(String(id), opts));
 plugHandle("styles", (_e, id) => plugins.styles(String(id)));

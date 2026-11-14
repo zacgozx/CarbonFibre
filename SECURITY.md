@@ -18,6 +18,8 @@
   plugins. While any plugin has Node.js, the window runs without the sandbox and every plugin in it could
   reach Node.js (so could a script injected into the page, though the page's script lock blocks those).
   That is how Obsidian runs every plugin; here it happens only once you allow it. Install plugins you trust.
+- **Themes are CSS only.** An installed Obsidian theme can restyle the page but can't run code, and the
+  page's policy still blocks anything it tries to load from the web (fonts, images, other stylesheets).
 - **Builds aren't signed** (no Apple or Microsoft certificate). Downloads are checked against the SHA-256
   GitHub lists for the release, so they are only as trustworthy as the GitHub account that publishes them:
   use two-factor authentication on it.

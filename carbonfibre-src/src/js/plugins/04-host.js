@@ -810,10 +810,14 @@ const PluginHost = {
         open: function () { PluginManager.open("installed"); }, close: function () { PluginManager.close(); },
         openTabById: function (id) { PluginManager.openSettings(id); }, activeTab: null, pluginTabs: []
       },
-      customCss: Object.assign(new PluginEvents(), { theme: "", themes: {}, oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
-        setTheme: function () {}, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
+      customCss: Object.defineProperties(Object.assign(new PluginEvents(), { oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
+        setTheme: function (name) { return ThemeHost.use(name || null); }, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
         readSnippets: function () {}, readThemes: function () {}, requestLoadSnippets: function () {}, requestLoadTheme: function () {}, setCssEnabledStatus: function () {},
-        isThemeInstalled: function () { return false; }, onConfigChange: function () {} }),
+        isThemeInstalled: function (name) { return ThemeHost.installed.some(function (t) { return t.name === name; }); }, onConfigChange: function () {} }), {
+        /* the theme in use and the installed ones, from ThemeHost (06-themes.js) */
+        theme: { get: function () { return ThemeHost.active || ""; }, set: function (v) { ThemeHost.use(v || null); } },
+        themes: { get: function () { const o = {}; ThemeHost.installed.forEach(function (t) { o[t.name] = t.manifest; }); return o; } }
+      }),
       hotkeyManager: { getHotkeys: function () { return []; }, getDefaultHotkeys: function () { return []; }, printHotkeyForCommand: function () { return ""; } },
       viewRegistry: PluginRegistry.views(), embedRegistry: PluginRegistry.embeds(),
       secretStorage: PluginSecrets,
@@ -828,6 +832,7 @@ const PluginHost = {
     window.app = app;
     PluginHost.wire();
     PluginHost.followTheme();
+    ThemeHost.start();
     cfDesktopPlugins().list().then(function (list) {
       PluginHost.installed = list || [];
       let chain = Promise.resolve();

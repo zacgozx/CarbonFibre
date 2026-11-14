@@ -37,6 +37,8 @@ The desktop app runs Obsidian community plugins. Open **Plugins** (the puzzle pi
 - **Community plugins** lists the whole Obsidian catalog, most downloaded first. Each plugin on screen is
   downloaded and checked before you install it: **Works** or **Partly works** (it runs; "What won't work"
   lists what's missing), plus **Internet** or **Node.js** when it will ask for that.
+- **Themes** installs Obsidian community themes (or imports the ones in your vault's `.obsidian/themes`)
+  and switches between them and CarbonFibre's own look. See "Obsidian themes" below.
 - **Installed** has a switch per plugin, its settings page (the gear) and uninstall. **Install from
   folder...** takes a plugin's own folder (holding `manifest.json` and `main.js`); **Import from this
   vault** copies the plugins Obsidian installed in your vault's `.obsidian/plugins`.
@@ -70,6 +72,20 @@ it opens that way only while such a plugin is on. That plugin then gets Node's o
 are in). Plugins you didn't allow still get the page's stand-ins, and **Installed** has **Take away** /
 **Allow...** for each. Plugins share one page, so while one has Node.js, any plugin that tries could reach
 it: allow it only for plugins you'd trust with your computer, as you do in Obsidian.
+
+**Obsidian themes.** A theme is CSS written for Obsidian's page. CarbonFibre doesn't turn into that
+page; it meets the theme halfway (`js/plugins/06-themes.js`, `css/27-obsidian-themes.css`):
+Obsidian's class names go on CarbonFibre's own parts (`.workspace`, `.nav-file-title`, `.workspace-leaf`,
+`.workspace-tab-header`, `.markdown-rendered`, `.status-bar`, `theme-dark` / `theme-light`, ...), and
+Obsidian's variables (`--color-base-00` to `100`, `--accent-h/s/l`, `--background-primary`,
+`--text-normal`, `--interactive-accent`, `--font-text`, `--h1-color`, ...) are mapped onto CarbonFibre's,
+so a theme recolours the whole app and changes its fonts. Theme-settings plugins then work on what the
+theme controls: Style Settings finds the theme's settings, and Minimal Theme Settings' switches (colourful
+headings, contrast, fonts) show. The editor's Obsidian styling (Live Preview decorations, `.cm-*`) and
+layout rules for parts CarbonFibre doesn't have don't apply, and fonts or images a theme loads from the web
+stay blocked. Light or dark follows the moon/sun button. `test/themes_live.js` screenshots a folder of
+themes (checked with Minimal, AnuPpuccin, Things, Blue Topaz, Catppuccin, Primary, Border, Atom, Nord,
+Typewriter).
 
 What they still don't get:
 
@@ -110,6 +126,8 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
 | `updater.js` | Updates: checks the latest GitHub release, and on your yes downloads it, checks its SHA-256, swaps it in and restarts |
 | `build-icons.js`, `build/icon.*` | The app icon: the butterfly the app draws as its logo (`appIconSvg`, dark theme), as `icon.svg`, a 1024 px `icon.png` (macOS, Linux) and `icon.ico` (Windows). `npm run icons` redraws them after the logo changes |
 | `plugins/store.js` | Plugins: the community catalog, downloads (GitHub), installed plugins, their settings files, which may use the internet (`network.json`) or Node.js (`node.json`) and their requests, secrets (`secrets.json`, encrypted), the code the page loads |
+| `plugins/themes.js` | Obsidian themes: the community catalog, downloads (GitHub), installed themes (`themes/<name>/theme.css`) and the one in use (`themes/active.json`). CSS only |
+| `test/themes_live.js` | Not part of `npm test`: applies each theme in a folder and screenshots it dark and light |
 | `plugins/compat.js` | Reads a plugin's code (never runs it) and decides Works / Partly works, what won't work, and whether it will ask for the internet or Node.js |
 | `test/node_test.js` | Node.js per plugin end to end: asked in the dialog, the window reopens with it, the allowed plugin gets real files, another plugin doesn't, taking it away works |
 | `test/live.js` | Not part of `npm test`: runs a folder of real plugins one by one and records what broke (`CF_LIVE_NODE=1` with Node.js allowed) |

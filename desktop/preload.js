@@ -42,6 +42,16 @@ const api = {
     revokeNode: (id) => ipcRenderer.invoke("cf:plug:revokeNode", String(id)),
     vaultPath: (name) => ipcRenderer.invoke("cf:plug:vaultPath", String(name)),
     askVaultPath: (name) => ipcRenderer.invoke("cf:plug:askVaultPath", String(name)),
+    /* Obsidian themes: CSS only (plugins/themes.js) */
+    themes: {
+      catalog: (refresh) => ipcRenderer.invoke("cf:plug:themeCatalog", !!refresh),
+      list: () => ipcRenderer.invoke("cf:plug:themeList"),
+      install: (name) => ipcRenderer.invoke("cf:plug:themeInstall", String(name)),
+      importFiles: (name, css, manifest) => ipcRenderer.invoke("cf:plug:themeImport", String(name), String(css || ""), manifest == null ? null : String(manifest)),
+      uninstall: (name) => ipcRenderer.invoke("cf:plug:themeUninstall", String(name)),
+      use: (name) => ipcRenderer.invoke("cf:plug:themeUse", name == null ? "" : String(name)),
+      css: (name) => ipcRenderer.invoke("cf:plug:themeCss", name == null ? "" : String(name))
+    },
     /* app.secretStorage: "all", or "set" with a name and value (empty removes it) */
     secrets: (op, name, value) => ipcRenderer.invoke("cf:plug:secrets", String(op), name == null ? "" : String(name), value == null ? "" : String(value)),
     /* the notes folder's files for app://carbonfibre/vault/ addresses: the app asks, the page reads */

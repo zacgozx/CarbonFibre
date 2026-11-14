@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-PSTjbF+sOmJpEALcCr+qx85km++IgcUO1o5jvJfohlU='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-dq53KAcQVnoBPxJ5fN67gzM7jROO4E+KZGLcGkIGUG4='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2297,27 +2297,37 @@ input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
 
 #graphMode[hidden] { display: none; }
 /* ---------- Obsidian plugins: the Plugins window, the plugin panel, and Obsidian's own UI classes ----------
-   Obsidian's variable names point at CarbonFibre's colours, so plugin stylesheets follow both themes. */
-body.cf-plugins-on {
+   Obsidian's variable names point at CarbonFibre's colours, so plugin stylesheets follow light and dark. */
+/* Obsidian's names for colours and fonts point at CarbonFibre's (no theme in use; with one,
+   css/27-obsidian-themes.css maps the other way round) */
+body.cf-plugins-on:not(.cf-obs-theme) {
   --background-primary: var(--bg); --background-primary-alt: var(--panel); --background-secondary: var(--panel); --background-secondary-alt: var(--bg);
   --background-modifier-border: var(--line); --background-modifier-border-hover: var(--dim); --background-modifier-border-focus: var(--acc);
   --background-modifier-hover: var(--acc-soft); --background-modifier-active-hover: var(--acc-soft); --background-modifier-form-field: var(--bg);
   --background-modifier-error: var(--danger); --background-modifier-success: #3f8f5f; --background-modifier-cover: rgba(var(--scrim-rgb), .55);
   --text-normal: var(--txt); --text-muted: var(--dim); --text-faint: var(--dim); --text-accent: var(--acc-text); --text-accent-hover: var(--acc-text);
-  --text-on-accent: #fff; --text-error: var(--danger); --text-success: #3f8f5f; --text-warning: var(--ora); --text-highlight-bg: var(--ora-soft); --text-selection: var(--blu-soft);
-  --interactive-normal: var(--panel); --interactive-hover: var(--acc-soft); --interactive-accent: var(--acc); --interactive-accent-hover: var(--acc);
-  --interactive-accent-hsl: 351, 43%, 42%; --color-accent: var(--acc); --color-accent-1: var(--acc); --color-accent-2: var(--acc);
-  --color-red: #e06c6c; --color-orange: var(--ora); --color-yellow: #d9b44a; --color-green: #5fae7b; --color-cyan: #5fb3b3; --color-blue: var(--blu); --color-purple: #a586d9; --color-pink: #d97aa6;
-  --color-base-00: var(--bg); --color-base-10: var(--bg); --color-base-20: var(--panel); --color-base-25: var(--panel); --color-base-30: var(--line); --color-base-35: var(--line);
+  --text-on-accent: #fff; --text-error: var(--danger); --text-success: #3f8f5f; --text-warning: var(--ora); --text-highlight-bg: var(--ora-soft);
+  --text-selection: var(--blu-soft); --interactive-normal: var(--panel); --interactive-hover: var(--acc-soft); --interactive-accent: var(--acc);
+  --interactive-accent-hover: var(--acc); --interactive-accent-hsl: 351, 43%, 42%; --color-accent: var(--acc); --color-accent-1: var(--acc);
+  --color-accent-2: var(--acc); --color-red: #e06c6c; --color-orange: var(--ora); --color-yellow: #d9b44a; --color-green: #5fae7b;
+  --color-cyan: #5fb3b3; --color-blue: var(--blu); --color-purple: #a586d9; --color-pink: #d97aa6; --color-base-00: var(--bg);
+  --color-base-10: var(--bg); --color-base-20: var(--panel); --color-base-25: var(--panel); --color-base-30: var(--line); --color-base-35: var(--line);
   --color-base-40: var(--dim); --color-base-50: var(--dim); --color-base-60: var(--dim); --color-base-70: var(--txt); --color-base-100: var(--txt);
-  --font-interface: var(--sans); --font-text: var(--sans); --font-monospace: var(--mono, Consolas, monospace); --font-ui-smaller: 11px; --font-ui-small: 12.5px; --font-ui-medium: 14px; --font-ui-large: 16px;
-  --font-text-size: 15px; --font-normal: 400; --font-medium: 500; --font-semibold: 600; --font-bold: 700; --line-height-normal: 1.5; --line-height-tight: 1.3;
-  --size-2-1: 2px; --size-2-2: 4px; --size-2-3: 6px; --size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px; --size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px; --size-4-12: 48px;
-  --radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px; --icon-size: 18px; --icon-s: 16px; --icon-xs: 14px; --icon-m: 18px; --icon-l: 18px; --icon-stroke: 2px;
-  --input-height: 30px; --checkbox-size: 15px; --h1-size: 1.6em; --h2-size: 1.4em; --h3-size: 1.2em; --h4-size: 1.1em; --h5-size: 1em; --h6-size: .9em;
-  --tag-color: var(--acc-text); --tag-background: var(--acc-soft); --link-color: var(--blu); --link-external-color: var(--blu); --code-background: var(--panel); --code-normal: var(--ora);
-  --blockquote-border-color: var(--acc); --hr-color: var(--line); --divider-color: var(--line); --table-border-color: var(--line); --shadow-s: 0 2px 8px rgba(var(--shd-rgb), .2); --shadow-l: 0 12px 40px rgba(var(--shd-rgb), .35);
-  --modal-background: var(--panel); --modal-border-color: var(--line); --nav-item-color: var(--dim); --nav-item-color-hover: var(--txt); --status-bar-text-color: var(--dim);
+  --font-interface: var(--sans); --font-text: var(--sans); --font-monospace: var(--mono, Consolas, monospace); --tag-color: var(--acc-text);
+  --tag-background: var(--acc-soft); --link-color: var(--blu); --link-external-color: var(--blu); --code-background: var(--panel);
+  --code-normal: var(--ora); --blockquote-border-color: var(--acc); --hr-color: var(--line); --divider-color: var(--line);
+  --table-border-color: var(--line); --modal-background: var(--panel); --modal-border-color: var(--line); --nav-item-color: var(--dim);
+  --nav-item-color-hover: var(--txt); --status-bar-text-color: var(--dim);
+}
+/* Obsidian's sizes, at no specificity so a theme's own win */
+:where(body.cf-plugins-on) {
+  --font-ui-smaller: 11px; --font-ui-small: 12.5px; --font-ui-medium: 14px; --font-ui-large: 16px; --font-text-size: 15px; --font-normal: 400;
+  --font-medium: 500; --font-semibold: 600; --font-bold: 700; --line-height-normal: 1.5; --line-height-tight: 1.3; --size-2-1: 2px; --size-2-2: 4px;
+  --size-2-3: 6px; --size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px; --size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px;
+  --size-4-12: 48px; --radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px; --icon-size: 18px; --icon-s: 16px; --icon-xs: 14px;
+  --icon-m: 18px; --icon-l: 18px; --icon-stroke: 2px; --input-height: 30px; --checkbox-size: 15px; --h1-size: 1.6em; --h2-size: 1.4em;
+  --h3-size: 1.2em; --h4-size: 1.1em; --h5-size: 1em; --h6-size: .9em; --shadow-s: 0 2px 8px rgba(var(--shd-rgb), .2);
+  --shadow-l: 0 12px 40px rgba(var(--shd-rgb), .35);
 }
 
 /* the activity bar button and plugin ribbon buttons */
@@ -2521,6 +2531,105 @@ button.mod-warning { background: var(--danger); border-color: var(--danger); col
 .cfp-settings .setting-item.mod-clickable { cursor: pointer; }
 .cfp-settings .cfp-slider-value { min-width: 2.5em; text-align: right; }
 .cfp-settings .setting-item[hidden], .cfp-settings .setting-group[hidden] { display: none; }
+/* ============================================================
+   Obsidian themes (desktop app): Obsidian's variable names, mapped onto CarbonFibre's.
+   Only while a theme is in use (body.cf-obs-theme, js/plugins/06-themes.js).
+   1. The --cf-* names keep CarbonFibre's own colours, resolved where they're defined (the root).
+   2. Obsidian's names default to them, at zero specificity (:where), so any rule in a theme wins:
+      its base colours (--color-base-00 ... 100, --accent-h/s/l) flow into the semantic names
+      (--background-primary, --text-normal, ...) the way they do in Obsidian.
+   3. CarbonFibre's names then read Obsidian's, so the theme's colours reach every part of the app.
+   ============================================================ */
+:root {
+  --cf-bg: var(--bg); --cf-panel: var(--panel); --cf-txt: var(--txt); --cf-dim: var(--dim); --cf-line: var(--line);
+  --cf-chrome: var(--chrome); --cf-chrome-hi: var(--chrome-hi); --cf-sans: var(--sans); --cf-mono: var(--mono);
+}
+:where(body.cf-obs-theme) {
+  --color-base-00: var(--cf-bg); --color-base-05: var(--cf-chrome); --color-base-10: var(--cf-chrome); --color-base-20: var(--cf-panel);
+  --color-base-25: var(--cf-chrome-hi); --color-base-30: var(--cf-line);
+  --color-base-35: color-mix(in srgb, var(--cf-txt) 22%, var(--cf-bg)); --color-base-40: color-mix(in srgb, var(--cf-txt) 30%, var(--cf-bg));
+  --color-base-50: color-mix(in srgb, var(--cf-txt) 45%, var(--cf-bg)); --color-base-60: color-mix(in srgb, var(--cf-txt) 58%, var(--cf-bg));
+  --color-base-70: var(--cf-dim); --color-base-100: var(--cf-txt);
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --color-accent-1: hsl(calc(var(--accent-h) - 1), var(--accent-s), calc(var(--accent-l) + 4%));
+  --color-accent-2: hsl(calc(var(--accent-h) - 3), var(--accent-s), calc(var(--accent-l) + 10%));
+  --color-red: #e5534b; --color-orange: #d6a64f; --color-yellow: #e0c35a; --color-green: #4fa36c; --color-cyan: #45a9b8; --color-blue: #5b8def; --color-purple: #a782e8; --color-pink: #d873a8;
+  --background-primary: var(--color-base-00); --background-primary-alt: var(--color-base-10);
+  --background-secondary: var(--color-base-20); --background-secondary-alt: var(--color-base-05);
+  --background-modifier-border: var(--color-base-30); --background-modifier-border-hover: var(--color-base-35); --background-modifier-border-focus: var(--color-base-40);
+  --background-modifier-hover: color-mix(in srgb, var(--color-base-100) 7%, transparent);
+  --background-modifier-active-hover: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  --background-modifier-form-field: var(--color-base-25); --background-modifier-error: var(--color-red); --background-modifier-success: var(--color-green);
+  --text-normal: var(--color-base-100); --text-muted: var(--color-base-70); --text-faint: var(--color-base-50); --text-on-accent: #ffffff;
+  --text-accent: var(--color-accent); --text-accent-hover: var(--color-accent-2); --text-error: var(--color-red); --text-success: var(--color-green);
+  --text-selection: color-mix(in srgb, var(--color-accent) 25%, transparent); --text-highlight-bg: rgba(255, 208, 0, 0.4);
+  --interactive-normal: var(--color-base-25); --interactive-hover: var(--color-base-30); --interactive-accent: var(--color-accent); --interactive-accent-hover: var(--color-accent-1);
+  --titlebar-background: var(--background-secondary-alt); --ribbon-background: var(--background-secondary);
+  --status-bar-background: var(--background-secondary); --status-bar-text-color: var(--text-muted);
+  --tab-container-background: var(--background-secondary); --tab-background-active: var(--background-primary);
+  --nav-item-color: var(--text-muted); --nav-item-color-active: var(--text-normal);
+  --link-color: var(--text-accent); --link-external-color: var(--text-accent); --link-unresolved-color: var(--text-accent);
+  --blockquote-border-color: var(--interactive-accent); --code-background: var(--background-primary-alt); --code-normal: var(--text-normal);
+  --table-header-background: var(--background-secondary); --hr-color: var(--background-modifier-border); --list-marker-color: var(--text-faint);
+  --tag-color: var(--text-accent); --tag-background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  --h1-color: var(--text-normal); --h2-color: var(--text-normal); --h3-color: var(--text-normal); --h4-color: var(--text-normal); --h5-color: var(--text-normal); --h6-color: var(--text-muted);
+  --h1-font: inherit; --h2-font: inherit; --h3-font: inherit; --h4-font: inherit; --h5-font: inherit; --h6-font: inherit;
+  --h1-weight: 700; --h2-weight: 700; --h3-weight: 700; --h4-weight: 700; --h5-weight: 700; --h6-weight: 700;
+  --modal-background: var(--background-primary); --modal-border-color: var(--background-modifier-border); --divider-color: var(--background-modifier-border);
+  --table-border-color: var(--background-modifier-border); --background-modifier-cover: rgba(0, 0, 0, 0.55); --text-warning: var(--color-orange);
+  --nav-item-color-hover: var(--text-normal); --nav-item-background-hover: var(--background-modifier-hover); --nav-item-background-active: var(--background-modifier-hover);
+  --interactive-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l); --color-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l);
+  --icon-color: var(--text-muted); --icon-color-hover: var(--text-normal); --icon-color-active: var(--text-accent); --icon-color-focused: var(--text-normal);
+  --scrollbar-thumb-bg: color-mix(in srgb, var(--text-normal) 15%, transparent); --checkbox-color: var(--interactive-accent); --checkbox-border-color: var(--text-faint);
+  --ribbon-width: 48px; --header-height: 40px; --border-width: 1px; --tab-radius: 6px; --nav-item-size: 13px; --bold-weight: 700; --code-size: 0.9em;
+  --font-interface: var(--font-interface-override, var(--font-interface-theme, var(--cf-sans)));
+  --font-text: var(--font-text-override, var(--font-text-theme, var(--cf-sans)));
+  --font-monospace: var(--font-monospace-override, var(--font-monospace-theme, var(--cf-mono)));
+}
+:where(body.cf-obs-theme.theme-dark) { --accent-h: 220; --accent-s: 82%; --accent-l: 65%; }
+:where(body.cf-obs-theme.theme-light) { --accent-h: 221; --accent-s: 83%; --accent-l: 53%; }
+body.cf-obs-theme {
+  --bg: var(--background-primary); --panel: var(--background-secondary); --txt: var(--text-normal); --dim: var(--text-muted); --line: var(--background-modifier-border);
+  --chrome: var(--background-secondary-alt); --chrome-hi: var(--interactive-normal);
+  --acc: var(--interactive-accent); --acc-text: var(--text-accent); --acc-soft: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  --ora: var(--acc-text); --ora-soft: var(--acc-soft); --blu: var(--acc-text); --blu-soft: var(--acc-soft);
+  --sel: var(--text-selection); --sel-soft: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  --focus: var(--interactive-accent); --mark: var(--text-accent); --tab-edge: var(--interactive-accent);
+  --sb-bg: var(--status-bar-background); --sb-fg: var(--status-bar-text-color); --sb-hover: var(--background-modifier-hover);
+  --nav-bg: var(--background-secondary); --nav-rail: var(--background-secondary); --nav-line: var(--background-modifier-border);
+  --h1c: var(--h1-color); --h2c: var(--h2-color); --h3c: var(--h3-color); --h4c: var(--h4-color); --h5c: var(--h5-color); --h6c: var(--h6-color); --h1rule: var(--hr-color);
+  --bulletc: var(--list-marker-color); --quote-edge: var(--blockquote-border-color); --thead-bg: var(--table-header-background);
+  --c0a0a0a: var(--background-secondary-alt); --c0f0f0f: var(--background-secondary-alt); --c101010: color-mix(in srgb, var(--text-normal) 0%, var(--background-primary));
+  --c101114: color-mix(in srgb, var(--text-normal) 1%, var(--background-primary)); --c111111: color-mix(in srgb, var(--text-normal) 0%, var(--background-primary)); --c131313: color-mix(in srgb, var(--text-normal) 1%, var(--background-primary));
+  --c141414: color-mix(in srgb, var(--text-normal) 2%, var(--background-primary)); --c141518: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c171717: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary));
+  --c171819: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c17181b: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary)); --c17181c: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary));
+  --c181818: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c1a1a1a: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary)); --c1b1c20: color-mix(in srgb, var(--text-normal) 6%, var(--background-primary));
+  --c1c1c1c: color-mix(in srgb, var(--text-normal) 5%, var(--background-primary)); --c1e1e1e: color-mix(in srgb, var(--text-normal) 6%, var(--background-primary)); --c1f1f1f: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));
+  --c232323: color-mix(in srgb, var(--text-normal) 8%, var(--background-primary)); --c262626: color-mix(in srgb, var(--text-normal) 9%, var(--background-primary)); --c2a2a2a: color-mix(in srgb, var(--text-normal) 11%, var(--background-primary));
+  --c2f2f2f: color-mix(in srgb, var(--text-normal) 13%, var(--background-primary)); --c333333: color-mix(in srgb, var(--text-normal) 15%, var(--background-primary)); --c35373b: color-mix(in srgb, var(--text-normal) 17%, var(--background-primary));
+  --c3a3a3a: color-mix(in srgb, var(--text-normal) 18%, var(--background-primary)); --c4a4a4a: color-mix(in srgb, var(--text-normal) 24%, var(--background-primary)); --c4a4c52: color-mix(in srgb, var(--text-normal) 26%, var(--background-primary));
+  --c4a5a8a: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary)); --c4f4f4f: color-mix(in srgb, var(--text-normal) 26%, var(--background-primary)); --c555555: color-mix(in srgb, var(--text-normal) 29%, var(--background-primary));
+  --c565656: color-mix(in srgb, var(--text-normal) 30%, var(--background-primary)); --c5a5a5a: color-mix(in srgb, var(--text-normal) 32%, var(--background-primary)); --c5c5c5c: color-mix(in srgb, var(--text-normal) 33%, var(--background-primary));
+  --c5c5e63: color-mix(in srgb, var(--text-normal) 35%, var(--background-primary)); --c5e5e5e: color-mix(in srgb, var(--text-normal) 34%, var(--background-primary)); --c5f5f5f: color-mix(in srgb, var(--text-normal) 34%, var(--background-primary));
+  --c6a6a6a: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary)); --c6a6c71: color-mix(in srgb, var(--text-normal) 42%, var(--background-primary)); --c6b6b6b: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary));
+  --c6e6e6e: color-mix(in srgb, var(--text-normal) 42%, var(--background-primary)); --c7a7a7a: color-mix(in srgb, var(--text-normal) 48%, var(--background-primary)); --c7f8fb8: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --c8a8a8a: color-mix(in srgb, var(--text-normal) 55%, var(--background-primary)); --c8f8f8f: color-mix(in srgb, var(--text-normal) 58%, var(--background-primary)); --c9a9a9a: color-mix(in srgb, var(--text-normal) 63%, var(--background-primary));
+  --cb5b5b5: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary)); --cbdbdbd: color-mix(in srgb, var(--text-normal) 80%, var(--background-primary)); --cffffff: color-mix(in srgb, var(--text-normal) 100%, var(--background-primary));
+  --c5e3038: color-mix(in srgb, var(--text-normal) 25%, var(--background-primary));
+  background: var(--background-primary); color: var(--text-normal); font-family: var(--font-interface);
+}
+body.cf-obs-theme .editor, body.cf-obs-theme .split-src, body.cf-obs-theme .split-prev { font-family: var(--font-text); }
+body.cf-obs-theme code, body.cf-obs-theme pre, body.cf-obs-theme .ln-code { font-family: var(--font-monospace); }
+body.cf-obs-theme .ln-h1 { font-family: var(--h1-font); font-weight: var(--h1-weight); }
+body.cf-obs-theme .ln-h2 { font-family: var(--h2-font); font-weight: var(--h2-weight); }
+body.cf-obs-theme .ln-h3 { font-family: var(--h3-font); font-weight: var(--h3-weight); }
+body.cf-obs-theme .ln-h4 { font-family: var(--h4-font); font-weight: var(--h4-weight); }
+body.cf-obs-theme .ln-h5 { font-family: var(--h5-font); font-weight: var(--h5-weight); }
+body.cf-obs-theme .ln-h6 { font-family: var(--h6-font); font-weight: var(--h6-weight); }
+body.cf-obs-theme .side, body.cf-obs-theme .activity { background: var(--background-secondary); }
+body.cf-obs-theme .mo-head { background: var(--titlebar-background); }
+body.cf-obs-theme .statusbar { background: var(--status-bar-background); color: var(--status-bar-text-color); }
+body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
 </style>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
@@ -3695,7 +3804,7 @@ class PluginSliderComponent extends PluginValueComponent {
     containerEl.appendChild(this.sliderEl);
     this.changeCbs = [];
     this.instant = true;
-    const fire = function () { const v = this.getValue(); this.sliderEl.title = String(v); this.changeCbs.forEach(function (cb) { try { cb(v); } catch (e) { console.error(e); } }); }.bind(this);
+    const fire = function () { const v = this.getValue(); this.sliderEl.title = this.getValuePretty(); this.changeCbs.forEach(function (cb) { try { cb(v); } catch (e) { console.error(e); } }); }.bind(this);
     this.sliderEl.addEventListener("input", function () { if (this.instant) fire(); }.bind(this));
     this.sliderEl.addEventListener("change", function () { if (!this.instant) fire(); }.bind(this));
   }
@@ -3703,9 +3812,11 @@ class PluginSliderComponent extends PluginValueComponent {
   setInstant(on) { this.instant = !!on; return this; }
   setDynamicTooltip() { return this; }
   showTooltip() {}
-  getValuePretty() { return String(this.getValue()); }
+  /* Obsidian 1.10: how the value reads in its tooltip (e.g. "14 px") */
+  setDisplayFormat(fn) { this.format = typeof fn === "function" ? fn : null; this.sliderEl.title = this.getValuePretty(); return this; }
+  getValuePretty() { const v = this.getValue(); try { return this.format ? String(this.format(v)) : String(v); } catch (e) { return String(v); } }
   getValue() { return Number(this.sliderEl.value); }
-  setValue(v) { this.sliderEl.value = v; this.sliderEl.title = String(v); return this; }
+  setValue(v) { this.sliderEl.value = v; this.sliderEl.title = this.getValuePretty(); return this; }
   onChange(cb) { this.changeCbs.push(cb); return this; }
 }
 class PluginButtonComponent extends PluginBaseComponent {
@@ -5210,7 +5321,7 @@ class PluginVault extends PluginEvents {
       promptDelete: true, trashOption: "system", showInlineTitle: true, foldIndent: true, autoPairBrackets: true, autoPairMarkdown: true, vimMode: false };
   }
   getName() { return state.dirHandle ? state.dirHandle.name : "CarbonFibre"; }
-  getConfig(k) { return this.config[k]; }
+  getConfig(k) { return k === "cssTheme" ? ThemeHost.active || "" : k === "theme" ? (document.documentElement.getAttribute("data-theme") === "light" ? "moonstone" : "obsidian") : this.config[k]; }
   setConfig(k, v) { this.config[k] = v; }
   getRoot() { return PluginApp.folder(""); }
   getMarkdownFiles() { return PluginApp.files(); }
@@ -6530,10 +6641,14 @@ const PluginHost = {
         open: function () { PluginManager.open("installed"); }, close: function () { PluginManager.close(); },
         openTabById: function (id) { PluginManager.openSettings(id); }, activeTab: null, pluginTabs: []
       },
-      customCss: Object.assign(new PluginEvents(), { theme: "", themes: {}, oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
-        setTheme: function () {}, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
+      customCss: Object.defineProperties(Object.assign(new PluginEvents(), { oldThemes: [], snippets: [], enabledSnippets: new Set(), extraStyleEls: [],
+        setTheme: function (name) { return ThemeHost.use(name || null); }, getSnippetPath: function () { return ""; }, getSnippetsFolder: function () { return ".obsidian/snippets"; }, getThemeFolder: function () { return ".obsidian/themes"; },
         readSnippets: function () {}, readThemes: function () {}, requestLoadSnippets: function () {}, requestLoadTheme: function () {}, setCssEnabledStatus: function () {},
-        isThemeInstalled: function () { return false; }, onConfigChange: function () {} }),
+        isThemeInstalled: function (name) { return ThemeHost.installed.some(function (t) { return t.name === name; }); }, onConfigChange: function () {} }), {
+        /* the theme in use and the installed ones, from ThemeHost (06-themes.js) */
+        theme: { get: function () { return ThemeHost.active || ""; }, set: function (v) { ThemeHost.use(v || null); } },
+        themes: { get: function () { const o = {}; ThemeHost.installed.forEach(function (t) { o[t.name] = t.manifest; }); return o; } }
+      }),
       hotkeyManager: { getHotkeys: function () { return []; }, getDefaultHotkeys: function () { return []; }, printHotkeyForCommand: function () { return ""; } },
       viewRegistry: PluginRegistry.views(), embedRegistry: PluginRegistry.embeds(),
       secretStorage: PluginSecrets,
@@ -6548,6 +6663,7 @@ const PluginHost = {
     window.app = app;
     PluginHost.wire();
     PluginHost.followTheme();
+    ThemeHost.start();
     cfDesktopPlugins().list().then(function (list) {
       PluginHost.installed = list || [];
       let chain = Promise.resolve();
@@ -7021,6 +7137,7 @@ const PluginManager = {
           '<div class="cfp-tabs" role="tablist">' +
             '<button class="cfp-tab" role="tab" data-cfptab="installed">Installed</button>' +
             '<button class="cfp-tab" role="tab" data-cfptab="browse">Community plugins</button>' +
+            '<button class="cfp-tab" role="tab" data-cfptab="themes">Themes</button>' +
           "</div>" +
           '<button class="cfp-x" data-cfpclose title="Close (Esc)" aria-label="Close">' + PluginIcons.svg("x", 16) + "</button></div>" +
         '<p class="cfp-lede"></p>' +
@@ -7034,6 +7151,12 @@ const PluginManager = {
     w.addEventListener("change", PluginManager.onChange);
     w.addEventListener("input", function (e) {
       if (e.target.id === "cfpSearch") { PluginManager.query = e.target.value; PluginManager.shown = 40; PluginManager.renderList(); }
+      if (e.target.id === "cfpThemeSearch") {
+        const at = e.target.selectionStart;
+        ThemeHost.query = e.target.value; ThemeHost.shown = 40; PluginManager.render();
+        const s = document.getElementById("cfpThemeSearch");
+        if (s) { s.focus(); s.setSelectionRange(at, at); }
+      }
     });
   },
   open(tab) {
@@ -7090,7 +7213,9 @@ const PluginManager = {
         '<div class="cfp-toolbar cfp-greyed"><button class="cfp-btn" disabled>Install from folder…</button><button class="cfp-btn" disabled>Import from this vault</button></div>';
       return;
     }
-    if (PluginManager.tab === "installed") PluginManager.renderInstalled(body); else PluginManager.renderBrowse(body);
+    if (PluginManager.tab === "installed") PluginManager.renderInstalled(body);
+    else if (PluginManager.tab === "themes") ThemeHost.render(body);
+    else PluginManager.renderBrowse(body);
   },
 
   renderInstalled(body) {
@@ -7244,6 +7369,7 @@ const PluginManager = {
     if (!a || a.disabled) return;
     const act = a.dataset.cfpact, row = a.closest(".cfp-row"), id = row && row.dataset.id;
     if (act === "toggle") return;
+    if (/^theme/.test(act)) { e.preventDefault(); ThemeHost.onClick(act, row); return; }
     if (act === "neton" || act === "netoff" || act === "nodeon" || act === "nodeoff") {
       const d = cfDesktopPlugins();
       const run = { neton: d.askNetwork, netoff: d.revokeNetwork, nodeon: d.askNode, nodeoff: d.revokeNode }[act];
@@ -7348,6 +7474,202 @@ const PluginManager = {
     const tab = PluginHost.settingTabs.get(id);
     if (tab) { try { tab.hide(); } catch (e) { console.error(e); } tab.containerEl.remove(); }
     if (PluginApp.app) PluginApp.app.setting.activeTab = null;
+  }
+};
+/* ============================================================
+   Obsidian plugins 6/6: Obsidian themes (desktop app). A theme is CSS written for Obsidian's page,
+   so CarbonFibre meets it halfway instead of becoming that page:
+   - ObsidianDom puts Obsidian's class names on CarbonFibre's own parts (the note list is
+     .nav-file-title, panes are .workspace-leaf, previews .markdown-rendered, ...), so theme rules
+     and plugins that look for them find something. Only names: nothing is rebuilt.
+   - css/27-obsidian-themes.css maps Obsidian's variables (--background-primary, --text-normal,
+     --interactive-accent, --font-text, --h1-color, ...) onto CarbonFibre's, defaulting to
+     CarbonFibre's own colours, so a theme that sets them recolours the whole app.
+   - ThemeHost installs themes (the community catalog, or a vault's .obsidian/themes), applies the
+     one in use as a <style> after CarbonFibre's own, and answers app.customCss for plugins such as
+     Style Settings and Minimal Theme Settings. Themes are CSS only; the page's policy still blocks
+     scripts and every request a theme might make (fonts and images from the web don't load).
+   ============================================================ */
+const ObsidianDom = {
+  on: false,
+  STATIC: [
+    ["#workarea", "workspace mod-root"], ["#side", "workspace-split mod-left-split mod-sidedock"], ["#activity", "workspace-ribbon side-dock-ribbon mod-left"],
+    ["#notesList", "nav-files-container"], ["#statusbar", "status-bar"], ["#cmdPal .cmdpal-box", "prompt"], [".mo-body", "app-container horizontal-main-container"]
+  ],
+  /* parts drawn again and again: tagged as they appear */
+  LIVE: [
+    [".side-item", "nav-file tree-item"], [".side-item-row", "nav-file-title tree-item-self is-clickable"], [".side-item-title", "nav-file-title-content tree-item-inner"],
+    [".fold-head", "nav-folder-title tree-item-self is-clickable"], [".fold-name", "nav-folder-title-content tree-item-inner"], [".fold-body", "nav-folder-children tree-item-children"],
+    [".pane-col", "workspace-leaf"], [".tab", "workspace-tab-header"], [".tab-lbl", "workspace-tab-header-inner-title"],
+    [".editor", "view-content markdown-source-view"], [".split-prev", "markdown-preview-view markdown-rendered"], [".act-btn", "side-dock-ribbon-action clickable-icon"],
+    [".status-bar-item, .sb-item", "status-bar-item"]
+  ],
+  tag(root) {
+    ObsidianDom.LIVE.forEach(function (r) {
+      const add = r[1].split(" ");
+      if (root.matches && root.matches(r[0])) root.classList.add.apply(root.classList, add);
+      if (root.querySelectorAll) root.querySelectorAll(r[0]).forEach(function (el) { el.classList.add.apply(el.classList, add); });
+    });
+    ObsidianDom.state(root);
+  },
+  /* Obsidian's state classes, following CarbonFibre's */
+  state(root) {
+    const sync = function (el) {
+      if (el.classList.contains("side-item") || el.classList.contains("tab")) {
+        const on = el.classList.contains("on"), row = el.classList.contains("side-item") ? el.querySelector(".side-item-row") : null;
+        if (el.classList.contains("is-active") !== on) el.classList.toggle("is-active", on);
+        if (row && row.classList.contains("is-active") !== on) row.classList.toggle("is-active", on);   /* Obsidian marks the title: .nav-file-title.is-active */
+      }
+      if (el.classList.contains("fold-head")) { const c = el.classList.contains("collapsed"); if (el.classList.contains("is-collapsed") !== c) el.classList.toggle("is-collapsed", c); }
+    };
+    if (root.classList) sync(root);
+    if (root.querySelectorAll) root.querySelectorAll(".side-item, .tab, .fold-head").forEach(sync);
+  },
+  start() {
+    if (ObsidianDom.on) return;
+    ObsidianDom.on = true;
+    ObsidianDom.STATIC.forEach(function (r) { const el = document.querySelector(r[0]); if (el) el.classList.add.apply(el.classList, r[1].split(" ")); });
+    ObsidianDom.tag(document.body);
+    new MutationObserver(function (records) {
+      records.forEach(function (m) {
+        if (m.type === "attributes") ObsidianDom.state(m.target);
+        else m.addedNodes.forEach(function (n) { if (n.nodeType === 1) ObsidianDom.tag(n); });
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  }
+};
+
+const ThemeHost = {
+  active: null,                                        /* the name of the theme in use, or null */
+  installed: [],
+  catalog: null, catalogError: "", query: "", shown: 40, busy: new Set(),
+  api() { const d = cfDesktopPlugins(); return d && d.themes ? d.themes : null; },
+  clean(e) { return String((e && e.message) || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""); },
+
+  /* at start (desktop): the theme in use, if any */
+  start() {
+    const t = ThemeHost.api();
+    if (!t) return Promise.resolve();
+    ObsidianDom.start();                                /* .theme-dark / .theme-light: PluginHost.followTheme */
+    return Promise.all([t.list(), t.css(null)]).then(function (r) {
+      ThemeHost.installed = r[0] || [];
+      ThemeHost.apply(r[1]);
+    }).catch(function (e) { console.error("CarbonFibre themes:", e); });
+  },
+  apply(t) {
+    let st = document.getElementById("cfObsidianTheme");
+    if (!t || !t.css) {
+      if (st) st.remove();
+      document.body.classList.remove("cf-obs-theme");
+      ThemeHost.active = null;
+    } else {
+      if (!st) { st = document.createElement("style"); st.id = "cfObsidianTheme"; }
+      st.textContent = t.css;
+      document.head.appendChild(st);                    /* last, after CarbonFibre's own sheets and plugins' */
+      document.body.classList.add("cf-obs-theme");
+      ThemeHost.active = t.name;
+    }
+    if (typeof PluginApp !== "undefined" && PluginApp.app && PluginApp.app.customCss) PluginApp.app.customCss.trigger("css-change");
+    if (typeof PluginApp !== "undefined" && PluginApp.app && PluginApp.app.workspace) PluginApp.app.workspace.trigger("css-change");
+    if (typeof SimpleGraph !== "undefined" && state.graphOpen) openGraph();
+  },
+  use(name) {
+    const t = ThemeHost.api();
+    if (!t) return Promise.resolve();
+    return t.use(name || null).then(function () { return name ? t.css(name) : null; }).then(ThemeHost.apply)
+      .then(function () { return ThemeHost.refreshList(); }).catch(function (e) { pushToastLike("Couldn’t use that theme: " + ThemeHost.clean(e)); });
+  },
+  refreshList() { const t = ThemeHost.api(); return t ? t.list().then(function (l) { ThemeHost.installed = l || []; if (PluginManager.tab === "themes") PluginManager.refresh(); }) : Promise.resolve(); },
+  install(name) {
+    const t = ThemeHost.api();
+    ThemeHost.busy.add(name);
+    PluginManager.refresh();
+    return t.install(name).then(function () { return ThemeHost.use(name); }).then(function () { pushToastLike(name + " is installed and in use."); })
+      .catch(function (e) { pushToastLike("Couldn’t install " + name + ": " + ThemeHost.clean(e)); })
+      .then(function () { ThemeHost.busy.delete(name); return ThemeHost.refreshList(); });
+  },
+  remove(name) {
+    return Dialogs.confirm("Remove the theme " + name + "?").then(function (ok) {
+      if (!ok) return null;
+      return ThemeHost.api().uninstall(name).then(function () { if (ThemeHost.active === name) ThemeHost.apply(null); return ThemeHost.refreshList(); });
+    });
+  },
+  /* themes Obsidian installed in this vault: .obsidian/themes/<name>/theme.css (or <name>.css, older) */
+  fromVault() {
+    if (state.backend !== "folder" || !state.dirHandle) { pushToastLike("Open your vault folder first."); return; }
+    const read = function (dir, name) { return dir.getFileHandle(name).then(function (h) { return h.getFile(); }).then(function (f) { return f.text(); }).catch(function () { return null; }); };
+    state.dirHandle.getDirectoryHandle(".obsidian").then(function (o) { return o.getDirectoryHandle("themes"); }).then(function (tdir) {
+      const found = [];
+      return (async function () { for await (const e of tdir.values()) found.push(e); })().then(function () { return { tdir: tdir, found: found }; });
+    }).then(function (r) {
+      let done = 0, chain = Promise.resolve();
+      r.found.forEach(function (e) {
+        chain = chain.then(function () {
+          if (e.kind === "directory") return Promise.all([read(e, "theme.css"), read(e, "manifest.json")]).then(function (f) { return f[0] ? ThemeHost.api().importFiles(e.name, f[0], f[1]).then(function () { done++; }) : null; });
+          if (/\.css$/i.test(e.name)) return read(r.tdir, e.name).then(function (css) { return css ? ThemeHost.api().importFiles(e.name.replace(/\.css$/i, ""), css, null).then(function () { done++; }) : null; });
+          return null;
+        }).catch(function (er) { console.error(er); });
+      });
+      return chain.then(function () {
+        pushToastLike(done ? "Imported " + done + " theme" + (done === 1 ? "" : "s") + " from this vault." : "This vault’s .obsidian/themes folder has no themes.");
+        return ThemeHost.refreshList();
+      });
+    }).catch(function () { pushToastLike("This vault has no .obsidian/themes folder."); });
+  },
+  loadCatalog(refresh) {
+    ThemeHost.catalogError = "";
+    return ThemeHost.api().catalog(refresh).then(function (list) { ThemeHost.catalog = list; })
+      .catch(function (e) { ThemeHost.catalogError = ThemeHost.clean(e); }).then(function () { PluginManager.refresh(); });
+  },
+
+  /* the Themes tab of the Plugins window */
+  render(body) {
+    const have = new Set(ThemeHost.installed.map(function (t) { return t.name; }));
+    let h = '<div class="cfp-toolbar"><input id="cfpThemeSearch" class="cfp-search" type="search" placeholder="Search community themes" autocomplete="off" spellcheck="false" value="' + escAttr(ThemeHost.query) + '">' +
+      '<button class="cfp-btn" data-cfpact="themevault"' + (state.backend === "folder" ? "" : ' disabled title="Open a vault folder first (bottom left)"') + ">Import from this vault’s .obsidian/themes</button>" +
+      (ThemeHost.active ? '<button class="cfp-btn" data-cfpact="themenone">Use CarbonFibre’s own look</button>' : "") + "</div>";
+    h += '<p class="cfp-dim cfp-theme-note">A theme recolours CarbonFibre and changes its fonts. Obsidian’s editor styling (Live Preview decorations) doesn’t apply, and fonts or images a theme loads from the web stay blocked. Light or dark follows the moon/sun button.</p>';
+    if (ThemeHost.installed.length) {
+      h += '<h3 class="cfp-sub">Installed</h3><div class="cfp-list">' + ThemeHost.installed.map(function (t) {
+        const on = t.name === ThemeHost.active;
+        return '<div class="cfp-row" data-theme-name="' + escAttr(t.name) + '"><div class="cfp-main"><div class="cfp-name">' + esc(t.manifest.name) +
+          ' <span class="cfp-ver">' + esc(t.manifest.version) + "</span>" + (on ? ' <span class="cfp-badge cfp-ok">In use</span>' : "") + "</div>" +
+          (t.manifest.author ? '<div class="cfp-by">by ' + esc(t.manifest.author) + "</div>" : "") + "</div>" +
+          '<div class="cfp-side">' + (on ? "" : '<button class="cfp-btn cfp-primary" data-cfpact="themeuse">Use</button>') +
+          '<button class="cfp-icon" data-cfpact="themeremove" title="Remove" aria-label="Remove ' + escAttr(t.name) + '">' + PluginIcons.svg("trash", 16) + "</button></div></div>";
+      }).join("") + "</div>";
+    }
+    h += '<h3 class="cfp-sub">Community themes</h3><div class="cfp-list" id="cfpThemeList">';
+    if (!ThemeHost.catalog) {
+      h += ThemeHost.catalogError ? '<div class="cfp-empty"><p>Couldn’t load the theme catalog: ' + esc(ThemeHost.catalogError) + '</p><button class="cfp-btn" data-cfpact="themeretry">Try again</button></div>'
+        : '<div class="cfp-empty"><p>Loading the theme catalog…</p></div>';
+      if (!ThemeHost.catalogError) ThemeHost.loadCatalog(false);
+    } else {
+      const words = ThemeHost.query.toLowerCase().split(/\s+/).filter(Boolean);
+      const all = ThemeHost.catalog.filter(function (t) { const s = (t.name + " " + t.author).toLowerCase(); return words.every(function (w) { return s.indexOf(w) !== -1; }); });
+      h += all.slice(0, ThemeHost.shown).map(function (t) {
+        const busy = ThemeHost.busy.has(t.name);
+        return '<div class="cfp-row" data-theme-name="' + escAttr(t.name) + '" data-repo="' + escAttr(t.repo) + '"><div class="cfp-main"><div class="cfp-name">' + esc(t.name) + "</div>" +
+          '<div class="cfp-by">by ' + esc(t.author) + " · " + esc(t.modes.join(" and ") || "dark and light") + ' · <a href="#" data-cfpact="repo">GitHub</a></div></div><div class="cfp-side">' +
+          (have.has(t.name) ? '<span class="cfp-have">' + PluginIcons.svg("check", 14) + " Installed</span>"
+            : '<button class="cfp-btn cfp-primary" data-cfpact="themeinstall"' + (busy ? " disabled" : "") + ">" + (busy ? "Installing…" : "Install") + "</button>") + "</div></div>";
+      }).join("") + (all.length > ThemeHost.shown ? '<button class="cfp-btn cfp-more" data-cfpact="thememore">Show more (' + (all.length - ThemeHost.shown) + " left)</button>" : "") +
+        (!all.length ? '<div class="cfp-empty"><p>No theme matches.</p></div>' : "");
+    }
+    body.innerHTML = h + "</div>";
+  },
+  /* clicks in the Themes tab; true when handled */
+  onClick(act, row) {
+    const name = row && row.dataset.themeName;
+    if (act === "themeuse") ThemeHost.use(name);
+    else if (act === "themenone") ThemeHost.use(null);
+    else if (act === "themeinstall") ThemeHost.install(name);
+    else if (act === "themeremove") ThemeHost.remove(name);
+    else if (act === "themevault") ThemeHost.fromVault();
+    else if (act === "themeretry") ThemeHost.loadCatalog(true);
+    else if (act === "thememore") { ThemeHost.shown += 40; PluginManager.refresh(); }
+    else return false;
+    return true;
   }
 };
 /* ============================================================

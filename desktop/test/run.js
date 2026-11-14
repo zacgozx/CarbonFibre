@@ -111,6 +111,7 @@ app.on("browser-window-created", (_e, w) => {
     try { await netCheck(w); } catch (e) { check("internet run", false, e.stack); }
     try { await defsCheck(w); } catch (e) { check("1.13 settings run", false, e.stack); }
     try { await extrasCheck(w); } catch (e) { check("Obsidian extras run", false, e.stack); }
+    try { await themeCheck(w); } catch (e) { check("themes run", false, e.stack); }
     webCheck();
   });
 });
@@ -235,6 +236,54 @@ module.exports = P;
   check("vault images show (getResourcePath)", /^app:\/\/carbonfibre\/vault\/dot\.png\?/.test(r.url) && r.img === 1, r.url + " " + r.img);
   check("...and nothing outside the notes folder is served", r.outside === "refused", r.outside);
   check("the file explorer is there for plugins, with its items", r.explorer);
+}
+
+/* Obsidian themes: CSS installed from files, Obsidian's classes on CarbonFibre's parts, Obsidian's
+   variables reaching CarbonFibre's colours, and app.customCss for theme-settings plugins */
+async function themeCheck(w) {
+  const css = ".theme-dark { --color-base-00: rgb(10, 20, 30); --accent-h: 120; --accent-s: 50%; --accent-l: 40%; --h1-color: rgb(200, 10, 10); } " +
+    ".theme-light { --color-base-00: rgb(250, 240, 230); } body { --font-text-theme: Georgia, serif; } .nav-file-title.is-active { outline: 3px solid rgb(1, 2, 3); }";
+  const r = await w.webContents.executeJavaScript(`(async () => {
+    const out = {}, wait = (ms) => new Promise((x) => setTimeout(x, ms)), d = cfDesktop.plugins.themes;
+    setTheme("dark");
+    const plain = getComputedStyle(document.body).backgroundColor;
+    await d.importFiles("Fixture Theme", ${JSON.stringify(css)}, JSON.stringify({ name: "Fixture Theme", version: "1.2.3", author: "Someone" }));
+    out.listed = (await d.list()).map((t) => t.name + "@" + t.manifest.version);
+    setTheme("dark");
+    renderSidebar(); await wait(50);
+    out.classes = ["#workarea.workspace", "#side.mod-left-split", ".side-item.nav-file", ".side-item-row.nav-file-title", ".pane-col.workspace-leaf", ".tab.workspace-tab-header", "#activity.workspace-ribbon", "body.theme-dark"]
+      .filter((s) => !document.querySelector(s));
+    await ThemeHost.use("Fixture Theme");
+    await wait(100);
+    const cs = (s, p) => getComputedStyle(document.querySelector(s))[p];
+    out.bg = cs("body", "backgroundColor");
+    out.acc = getComputedStyle(document.body).getPropertyValue("--acc").trim();
+    out.h1 = document.querySelector(".ln-h1") ? cs(".ln-h1", "color") : "no heading";
+    out.font = cs(".editor", "fontFamily");
+    out.activeRow = document.querySelector(".side-item.on .nav-file-title") ? getComputedStyle(document.querySelector(".side-item.on .nav-file-title")).outlineColor : "none on";
+    out.custom = [PluginApp.app.customCss.theme, Object.keys(PluginApp.app.customCss.themes).join(","), PluginApp.app.vault.getConfig("cssTheme")];
+    setTheme("light"); await wait(50);
+    out.light = cs("body", "backgroundColor");
+    setTheme("dark");
+    PluginManager.open("themes"); await wait(50);
+    out.tab = (document.querySelector('.cfp-row[data-theme-name="Fixture Theme"]') || {}).textContent || "";
+    PluginManager.close();
+    await ThemeHost.use(null); await wait(50);
+    out.off = [document.body.classList.contains("cf-obs-theme"), !!document.getElementById("cfObsidianTheme"), getComputedStyle(document.body).backgroundColor === plain];
+    await d.uninstall("Fixture Theme");
+    out.gone = (await d.list()).length;
+    return out;
+  })()`);
+  check("themes: a theme's files install and list", JSON.stringify(r.listed) === JSON.stringify(["Fixture Theme@1.2.3"]), JSON.stringify(r.listed));
+  check("themes: Obsidian's class names are on CarbonFibre's parts", !r.classes.length, "missing: " + r.classes.join(" "));
+  check("themes: the theme's base colours reach CarbonFibre (background, accent, headings)", r.bg === "rgb(10, 20, 30)" && /hsl\(120|rgb\(51, 153, 51\)/.test(r.acc) && r.h1 === "rgb(200, 10, 10)", JSON.stringify([r.bg, r.acc, r.h1]));
+  check("themes: its fonts too", /Georgia/.test(r.font), r.font);
+  check("themes: its rules for Obsidian's classes apply (active note in the list)", r.activeRow === "rgb(1, 2, 3)", r.activeRow);
+  check("themes: light and dark follow the moon/sun button", r.light === "rgb(250, 240, 230)", r.light);
+  check("themes: app.customCss and the vault config name the theme in use", r.custom[0] === "Fixture Theme" && r.custom[1] === "Fixture Theme" && r.custom[2] === "Fixture Theme", JSON.stringify(r.custom));
+  check("themes: the Themes tab lists it as in use", /Fixture Theme/.test(r.tab) && /In use/.test(r.tab), r.tab);
+  check("themes: CarbonFibre's own look comes back", r.off.every((x, i) => i < 2 ? !x : x), JSON.stringify(r.off));
+  check("themes: removing a theme deletes it", r.gone === 0, String(r.gone));
 }
 
 /* settings pages described with getSettingDefinitions (Obsidian 1.13+): groups, controls bound to a key,

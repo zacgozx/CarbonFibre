@@ -27,6 +27,7 @@ css/23-storage-welcome.css
 css/24-responsive.css
 css/25-theme.css
 css/26-plugins.css
+css/27-obsidian-themes.css
 html/02-body.html
 js/01-start.js
 js/01-dialogs.js
@@ -35,6 +36,7 @@ js/plugins/02-ui.js
 js/plugins/03-app.js
 js/plugins/04-host.js
 js/plugins/05-manager.js
+js/plugins/06-themes.js
 js/02-core.js
 js/03-table-filters.js
 js/04-find.js

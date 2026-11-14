@@ -1,0 +1,99 @@
+/* ============================================================
+   Obsidian themes (desktop app): Obsidian's variable names, mapped onto CarbonFibre's.
+   Only while a theme is in use (body.cf-obs-theme, js/plugins/06-themes.js).
+   1. The --cf-* names keep CarbonFibre's own colours, resolved where they're defined (the root).
+   2. Obsidian's names default to them, at zero specificity (:where), so any rule in a theme wins:
+      its base colours (--color-base-00 ... 100, --accent-h/s/l) flow into the semantic names
+      (--background-primary, --text-normal, ...) the way they do in Obsidian.
+   3. CarbonFibre's names then read Obsidian's, so the theme's colours reach every part of the app.
+   ============================================================ */
+:root {
+  --cf-bg: var(--bg); --cf-panel: var(--panel); --cf-txt: var(--txt); --cf-dim: var(--dim); --cf-line: var(--line);
+  --cf-chrome: var(--chrome); --cf-chrome-hi: var(--chrome-hi); --cf-sans: var(--sans); --cf-mono: var(--mono);
+}
+:where(body.cf-obs-theme) {
+  --color-base-00: var(--cf-bg); --color-base-05: var(--cf-chrome); --color-base-10: var(--cf-chrome); --color-base-20: var(--cf-panel);
+  --color-base-25: var(--cf-chrome-hi); --color-base-30: var(--cf-line);
+  --color-base-35: color-mix(in srgb, var(--cf-txt) 22%, var(--cf-bg)); --color-base-40: color-mix(in srgb, var(--cf-txt) 30%, var(--cf-bg));
+  --color-base-50: color-mix(in srgb, var(--cf-txt) 45%, var(--cf-bg)); --color-base-60: color-mix(in srgb, var(--cf-txt) 58%, var(--cf-bg));
+  --color-base-70: var(--cf-dim); --color-base-100: var(--cf-txt);
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --color-accent-1: hsl(calc(var(--accent-h) - 1), var(--accent-s), calc(var(--accent-l) + 4%));
+  --color-accent-2: hsl(calc(var(--accent-h) - 3), var(--accent-s), calc(var(--accent-l) + 10%));
+  --color-red: #e5534b; --color-orange: #d6a64f; --color-yellow: #e0c35a; --color-green: #4fa36c; --color-cyan: #45a9b8; --color-blue: #5b8def; --color-purple: #a782e8; --color-pink: #d873a8;
+  --background-primary: var(--color-base-00); --background-primary-alt: var(--color-base-10);
+  --background-secondary: var(--color-base-20); --background-secondary-alt: var(--color-base-05);
+  --background-modifier-border: var(--color-base-30); --background-modifier-border-hover: var(--color-base-35); --background-modifier-border-focus: var(--color-base-40);
+  --background-modifier-hover: color-mix(in srgb, var(--color-base-100) 7%, transparent);
+  --background-modifier-active-hover: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  --background-modifier-form-field: var(--color-base-25); --background-modifier-error: var(--color-red); --background-modifier-success: var(--color-green);
+  --text-normal: var(--color-base-100); --text-muted: var(--color-base-70); --text-faint: var(--color-base-50); --text-on-accent: #ffffff;
+  --text-accent: var(--color-accent); --text-accent-hover: var(--color-accent-2); --text-error: var(--color-red); --text-success: var(--color-green);
+  --text-selection: color-mix(in srgb, var(--color-accent) 25%, transparent); --text-highlight-bg: rgba(255, 208, 0, 0.4);
+  --interactive-normal: var(--color-base-25); --interactive-hover: var(--color-base-30); --interactive-accent: var(--color-accent); --interactive-accent-hover: var(--color-accent-1);
+  --titlebar-background: var(--background-secondary-alt); --ribbon-background: var(--background-secondary);
+  --status-bar-background: var(--background-secondary); --status-bar-text-color: var(--text-muted);
+  --tab-container-background: var(--background-secondary); --tab-background-active: var(--background-primary);
+  --nav-item-color: var(--text-muted); --nav-item-color-active: var(--text-normal);
+  --link-color: var(--text-accent); --link-external-color: var(--text-accent); --link-unresolved-color: var(--text-accent);
+  --blockquote-border-color: var(--interactive-accent); --code-background: var(--background-primary-alt); --code-normal: var(--text-normal);
+  --table-header-background: var(--background-secondary); --hr-color: var(--background-modifier-border); --list-marker-color: var(--text-faint);
+  --tag-color: var(--text-accent); --tag-background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  --h1-color: var(--text-normal); --h2-color: var(--text-normal); --h3-color: var(--text-normal); --h4-color: var(--text-normal); --h5-color: var(--text-normal); --h6-color: var(--text-muted);
+  --h1-font: inherit; --h2-font: inherit; --h3-font: inherit; --h4-font: inherit; --h5-font: inherit; --h6-font: inherit;
+  --h1-weight: 700; --h2-weight: 700; --h3-weight: 700; --h4-weight: 700; --h5-weight: 700; --h6-weight: 700;
+  --modal-background: var(--background-primary); --modal-border-color: var(--background-modifier-border); --divider-color: var(--background-modifier-border);
+  --table-border-color: var(--background-modifier-border); --background-modifier-cover: rgba(0, 0, 0, 0.55); --text-warning: var(--color-orange);
+  --nav-item-color-hover: var(--text-normal); --nav-item-background-hover: var(--background-modifier-hover); --nav-item-background-active: var(--background-modifier-hover);
+  --interactive-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l); --color-accent-hsl: var(--accent-h), var(--accent-s), var(--accent-l);
+  --icon-color: var(--text-muted); --icon-color-hover: var(--text-normal); --icon-color-active: var(--text-accent); --icon-color-focused: var(--text-normal);
+  --scrollbar-thumb-bg: color-mix(in srgb, var(--text-normal) 15%, transparent); --checkbox-color: var(--interactive-accent); --checkbox-border-color: var(--text-faint);
+  --ribbon-width: 48px; --header-height: 40px; --border-width: 1px; --tab-radius: 6px; --nav-item-size: 13px; --bold-weight: 700; --code-size: 0.9em;
+  --font-interface: var(--font-interface-override, var(--font-interface-theme, var(--cf-sans)));
+  --font-text: var(--font-text-override, var(--font-text-theme, var(--cf-sans)));
+  --font-monospace: var(--font-monospace-override, var(--font-monospace-theme, var(--cf-mono)));
+}
+:where(body.cf-obs-theme.theme-dark) { --accent-h: 220; --accent-s: 82%; --accent-l: 65%; }
+:where(body.cf-obs-theme.theme-light) { --accent-h: 221; --accent-s: 83%; --accent-l: 53%; }
+body.cf-obs-theme {
+  --bg: var(--background-primary); --panel: var(--background-secondary); --txt: var(--text-normal); --dim: var(--text-muted); --line: var(--background-modifier-border);
+  --chrome: var(--background-secondary-alt); --chrome-hi: var(--interactive-normal);
+  --acc: var(--interactive-accent); --acc-text: var(--text-accent); --acc-soft: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  --ora: var(--acc-text); --ora-soft: var(--acc-soft); --blu: var(--acc-text); --blu-soft: var(--acc-soft);
+  --sel: var(--text-selection); --sel-soft: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  --focus: var(--interactive-accent); --mark: var(--text-accent); --tab-edge: var(--interactive-accent);
+  --sb-bg: var(--status-bar-background); --sb-fg: var(--status-bar-text-color); --sb-hover: var(--background-modifier-hover);
+  --nav-bg: var(--background-secondary); --nav-rail: var(--background-secondary); --nav-line: var(--background-modifier-border);
+  --h1c: var(--h1-color); --h2c: var(--h2-color); --h3c: var(--h3-color); --h4c: var(--h4-color); --h5c: var(--h5-color); --h6c: var(--h6-color); --h1rule: var(--hr-color);
+  --bulletc: var(--list-marker-color); --quote-edge: var(--blockquote-border-color); --thead-bg: var(--table-header-background);
+  --c0a0a0a: var(--background-secondary-alt); --c0f0f0f: var(--background-secondary-alt); --c101010: color-mix(in srgb, var(--text-normal) 0%, var(--background-primary));
+  --c101114: color-mix(in srgb, var(--text-normal) 1%, var(--background-primary)); --c111111: color-mix(in srgb, var(--text-normal) 0%, var(--background-primary)); --c131313: color-mix(in srgb, var(--text-normal) 1%, var(--background-primary));
+  --c141414: color-mix(in srgb, var(--text-normal) 2%, var(--background-primary)); --c141518: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c171717: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary));
+  --c171819: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c17181b: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary)); --c17181c: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary));
+  --c181818: color-mix(in srgb, var(--text-normal) 3%, var(--background-primary)); --c1a1a1a: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary)); --c1b1c20: color-mix(in srgb, var(--text-normal) 6%, var(--background-primary));
+  --c1c1c1c: color-mix(in srgb, var(--text-normal) 5%, var(--background-primary)); --c1e1e1e: color-mix(in srgb, var(--text-normal) 6%, var(--background-primary)); --c1f1f1f: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));
+  --c232323: color-mix(in srgb, var(--text-normal) 8%, var(--background-primary)); --c262626: color-mix(in srgb, var(--text-normal) 9%, var(--background-primary)); --c2a2a2a: color-mix(in srgb, var(--text-normal) 11%, var(--background-primary));
+  --c2f2f2f: color-mix(in srgb, var(--text-normal) 13%, var(--background-primary)); --c333333: color-mix(in srgb, var(--text-normal) 15%, var(--background-primary)); --c35373b: color-mix(in srgb, var(--text-normal) 17%, var(--background-primary));
+  --c3a3a3a: color-mix(in srgb, var(--text-normal) 18%, var(--background-primary)); --c4a4a4a: color-mix(in srgb, var(--text-normal) 24%, var(--background-primary)); --c4a4c52: color-mix(in srgb, var(--text-normal) 26%, var(--background-primary));
+  --c4a5a8a: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary)); --c4f4f4f: color-mix(in srgb, var(--text-normal) 26%, var(--background-primary)); --c555555: color-mix(in srgb, var(--text-normal) 29%, var(--background-primary));
+  --c565656: color-mix(in srgb, var(--text-normal) 30%, var(--background-primary)); --c5a5a5a: color-mix(in srgb, var(--text-normal) 32%, var(--background-primary)); --c5c5c5c: color-mix(in srgb, var(--text-normal) 33%, var(--background-primary));
+  --c5c5e63: color-mix(in srgb, var(--text-normal) 35%, var(--background-primary)); --c5e5e5e: color-mix(in srgb, var(--text-normal) 34%, var(--background-primary)); --c5f5f5f: color-mix(in srgb, var(--text-normal) 34%, var(--background-primary));
+  --c6a6a6a: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary)); --c6a6c71: color-mix(in srgb, var(--text-normal) 42%, var(--background-primary)); --c6b6b6b: color-mix(in srgb, var(--text-normal) 40%, var(--background-primary));
+  --c6e6e6e: color-mix(in srgb, var(--text-normal) 42%, var(--background-primary)); --c7a7a7a: color-mix(in srgb, var(--text-normal) 48%, var(--background-primary)); --c7f8fb8: color-mix(in srgb, var(--text-normal) 64%, var(--background-primary));
+  --c8a8a8a: color-mix(in srgb, var(--text-normal) 55%, var(--background-primary)); --c8f8f8f: color-mix(in srgb, var(--text-normal) 58%, var(--background-primary)); --c9a9a9a: color-mix(in srgb, var(--text-normal) 63%, var(--background-primary));
+  --cb5b5b5: color-mix(in srgb, var(--text-normal) 76%, var(--background-primary)); --cbdbdbd: color-mix(in srgb, var(--text-normal) 80%, var(--background-primary)); --cffffff: color-mix(in srgb, var(--text-normal) 100%, var(--background-primary));
+  --c5e3038: color-mix(in srgb, var(--text-normal) 25%, var(--background-primary));
+  background: var(--background-primary); color: var(--text-normal); font-family: var(--font-interface);
+}
+body.cf-obs-theme .editor, body.cf-obs-theme .split-src, body.cf-obs-theme .split-prev { font-family: var(--font-text); }
+body.cf-obs-theme code, body.cf-obs-theme pre, body.cf-obs-theme .ln-code { font-family: var(--font-monospace); }
+body.cf-obs-theme .ln-h1 { font-family: var(--h1-font); font-weight: var(--h1-weight); }
+body.cf-obs-theme .ln-h2 { font-family: var(--h2-font); font-weight: var(--h2-weight); }
+body.cf-obs-theme .ln-h3 { font-family: var(--h3-font); font-weight: var(--h3-weight); }
+body.cf-obs-theme .ln-h4 { font-family: var(--h4-font); font-weight: var(--h4-weight); }
+body.cf-obs-theme .ln-h5 { font-family: var(--h5-font); font-weight: var(--h5-weight); }
+body.cf-obs-theme .ln-h6 { font-family: var(--h6-font); font-weight: var(--h6-weight); }
+body.cf-obs-theme .side, body.cf-obs-theme .activity { background: var(--background-secondary); }
+body.cf-obs-theme .mo-head { background: var(--titlebar-background); }
+body.cf-obs-theme .statusbar { background: var(--status-bar-background); color: var(--status-bar-text-color); }
+body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }

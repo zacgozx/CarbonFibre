@@ -672,7 +672,7 @@ class PluginSliderComponent extends PluginValueComponent {
     containerEl.appendChild(this.sliderEl);
     this.changeCbs = [];
     this.instant = true;
-    const fire = function () { const v = this.getValue(); this.sliderEl.title = String(v); this.changeCbs.forEach(function (cb) { try { cb(v); } catch (e) { console.error(e); } }); }.bind(this);
+    const fire = function () { const v = this.getValue(); this.sliderEl.title = this.getValuePretty(); this.changeCbs.forEach(function (cb) { try { cb(v); } catch (e) { console.error(e); } }); }.bind(this);
     this.sliderEl.addEventListener("input", function () { if (this.instant) fire(); }.bind(this));
     this.sliderEl.addEventListener("change", function () { if (!this.instant) fire(); }.bind(this));
   }
@@ -680,9 +680,11 @@ class PluginSliderComponent extends PluginValueComponent {
   setInstant(on) { this.instant = !!on; return this; }
   setDynamicTooltip() { return this; }
   showTooltip() {}
-  getValuePretty() { return String(this.getValue()); }
+  /* Obsidian 1.10: how the value reads in its tooltip (e.g. "14 px") */
+  setDisplayFormat(fn) { this.format = typeof fn === "function" ? fn : null; this.sliderEl.title = this.getValuePretty(); return this; }
+  getValuePretty() { const v = this.getValue(); try { return this.format ? String(this.format(v)) : String(v); } catch (e) { return String(v); } }
   getValue() { return Number(this.sliderEl.value); }
-  setValue(v) { this.sliderEl.value = v; this.sliderEl.title = String(v); return this; }
+  setValue(v) { this.sliderEl.value = v; this.sliderEl.title = this.getValuePretty(); return this; }
   onChange(cb) { this.changeCbs.push(cb); return this; }
 }
 class PluginButtonComponent extends PluginBaseComponent {

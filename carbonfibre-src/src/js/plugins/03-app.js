@@ -1250,7 +1250,7 @@ class PluginVault extends PluginEvents {
       promptDelete: true, trashOption: "system", showInlineTitle: true, foldIndent: true, autoPairBrackets: true, autoPairMarkdown: true, vimMode: false };
   }
   getName() { return state.dirHandle ? state.dirHandle.name : "CarbonFibre"; }
-  getConfig(k) { return this.config[k]; }
+  getConfig(k) { return k === "cssTheme" ? ThemeHost.active || "" : k === "theme" ? (document.documentElement.getAttribute("data-theme") === "light" ? "moonstone" : "obsidian") : this.config[k]; }
   setConfig(k, v) { this.config[k] = v; }
   getRoot() { return PluginApp.folder(""); }
   getMarkdownFiles() { return PluginApp.files(); }

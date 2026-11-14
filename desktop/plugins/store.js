@@ -378,4 +378,4 @@ async function wrappedCode(id) {
 }
 
 module.exports = { catalog, check, list, install, installFromDir, place, uninstall, setEnabled, anyEnabled, networkAllowed, setNetwork, request, styles, loadData, saveData, pluginFs, wrappedCode, checkId,
-  setNode, nodeWanted, vaultPath, setVaultPath, secretsAll, secretSet, dirOf };
+  setNode, nodeWanted, vaultPath, setVaultPath, secretsAll, secretSet, dirOf, get };

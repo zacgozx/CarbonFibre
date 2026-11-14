@@ -1,25 +1,35 @@
 /* ---------- Obsidian plugins: the Plugins window, the plugin panel, and Obsidian's own UI classes ----------
-   Obsidian's variable names point at CarbonFibre's colours, so plugin stylesheets follow both themes. */
-body.cf-plugins-on {
+   Obsidian's variable names point at CarbonFibre's colours, so plugin stylesheets follow light and dark. */
+/* Obsidian's names for colours and fonts point at CarbonFibre's (no theme in use; with one,
+   css/27-obsidian-themes.css maps the other way round) */
+body.cf-plugins-on:not(.cf-obs-theme) {
   --background-primary: var(--bg); --background-primary-alt: var(--panel); --background-secondary: var(--panel); --background-secondary-alt: var(--bg);
   --background-modifier-border: var(--line); --background-modifier-border-hover: var(--dim); --background-modifier-border-focus: var(--acc);
   --background-modifier-hover: var(--acc-soft); --background-modifier-active-hover: var(--acc-soft); --background-modifier-form-field: var(--bg);
   --background-modifier-error: var(--danger); --background-modifier-success: #3f8f5f; --background-modifier-cover: rgba(var(--scrim-rgb), .55);
   --text-normal: var(--txt); --text-muted: var(--dim); --text-faint: var(--dim); --text-accent: var(--acc-text); --text-accent-hover: var(--acc-text);
-  --text-on-accent: #fff; --text-error: var(--danger); --text-success: #3f8f5f; --text-warning: var(--ora); --text-highlight-bg: var(--ora-soft); --text-selection: var(--blu-soft);
-  --interactive-normal: var(--panel); --interactive-hover: var(--acc-soft); --interactive-accent: var(--acc); --interactive-accent-hover: var(--acc);
-  --interactive-accent-hsl: 351, 43%, 42%; --color-accent: var(--acc); --color-accent-1: var(--acc); --color-accent-2: var(--acc);
-  --color-red: #e06c6c; --color-orange: var(--ora); --color-yellow: #d9b44a; --color-green: #5fae7b; --color-cyan: #5fb3b3; --color-blue: var(--blu); --color-purple: #a586d9; --color-pink: #d97aa6;
-  --color-base-00: var(--bg); --color-base-10: var(--bg); --color-base-20: var(--panel); --color-base-25: var(--panel); --color-base-30: var(--line); --color-base-35: var(--line);
+  --text-on-accent: #fff; --text-error: var(--danger); --text-success: #3f8f5f; --text-warning: var(--ora); --text-highlight-bg: var(--ora-soft);
+  --text-selection: var(--blu-soft); --interactive-normal: var(--panel); --interactive-hover: var(--acc-soft); --interactive-accent: var(--acc);
+  --interactive-accent-hover: var(--acc); --interactive-accent-hsl: 351, 43%, 42%; --color-accent: var(--acc); --color-accent-1: var(--acc);
+  --color-accent-2: var(--acc); --color-red: #e06c6c; --color-orange: var(--ora); --color-yellow: #d9b44a; --color-green: #5fae7b;
+  --color-cyan: #5fb3b3; --color-blue: var(--blu); --color-purple: #a586d9; --color-pink: #d97aa6; --color-base-00: var(--bg);
+  --color-base-10: var(--bg); --color-base-20: var(--panel); --color-base-25: var(--panel); --color-base-30: var(--line); --color-base-35: var(--line);
   --color-base-40: var(--dim); --color-base-50: var(--dim); --color-base-60: var(--dim); --color-base-70: var(--txt); --color-base-100: var(--txt);
-  --font-interface: var(--sans); --font-text: var(--sans); --font-monospace: var(--mono, Consolas, monospace); --font-ui-smaller: 11px; --font-ui-small: 12.5px; --font-ui-medium: 14px; --font-ui-large: 16px;
-  --font-text-size: 15px; --font-normal: 400; --font-medium: 500; --font-semibold: 600; --font-bold: 700; --line-height-normal: 1.5; --line-height-tight: 1.3;
-  --size-2-1: 2px; --size-2-2: 4px; --size-2-3: 6px; --size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px; --size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px; --size-4-12: 48px;
-  --radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px; --icon-size: 18px; --icon-s: 16px; --icon-xs: 14px; --icon-m: 18px; --icon-l: 18px; --icon-stroke: 2px;
-  --input-height: 30px; --checkbox-size: 15px; --h1-size: 1.6em; --h2-size: 1.4em; --h3-size: 1.2em; --h4-size: 1.1em; --h5-size: 1em; --h6-size: .9em;
-  --tag-color: var(--acc-text); --tag-background: var(--acc-soft); --link-color: var(--blu); --link-external-color: var(--blu); --code-background: var(--panel); --code-normal: var(--ora);
-  --blockquote-border-color: var(--acc); --hr-color: var(--line); --divider-color: var(--line); --table-border-color: var(--line); --shadow-s: 0 2px 8px rgba(var(--shd-rgb), .2); --shadow-l: 0 12px 40px rgba(var(--shd-rgb), .35);
-  --modal-background: var(--panel); --modal-border-color: var(--line); --nav-item-color: var(--dim); --nav-item-color-hover: var(--txt); --status-bar-text-color: var(--dim);
+  --font-interface: var(--sans); --font-text: var(--sans); --font-monospace: var(--mono, Consolas, monospace); --tag-color: var(--acc-text);
+  --tag-background: var(--acc-soft); --link-color: var(--blu); --link-external-color: var(--blu); --code-background: var(--panel);
+  --code-normal: var(--ora); --blockquote-border-color: var(--acc); --hr-color: var(--line); --divider-color: var(--line);
+  --table-border-color: var(--line); --modal-background: var(--panel); --modal-border-color: var(--line); --nav-item-color: var(--dim);
+  --nav-item-color-hover: var(--txt); --status-bar-text-color: var(--dim);
+}
+/* Obsidian's sizes, at no specificity so a theme's own win */
+:where(body.cf-plugins-on) {
+  --font-ui-smaller: 11px; --font-ui-small: 12.5px; --font-ui-medium: 14px; --font-ui-large: 16px; --font-text-size: 15px; --font-normal: 400;
+  --font-medium: 500; --font-semibold: 600; --font-bold: 700; --line-height-normal: 1.5; --line-height-tight: 1.3; --size-2-1: 2px; --size-2-2: 4px;
+  --size-2-3: 6px; --size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px; --size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px;
+  --size-4-12: 48px; --radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px; --icon-size: 18px; --icon-s: 16px; --icon-xs: 14px;
+  --icon-m: 18px; --icon-l: 18px; --icon-stroke: 2px; --input-height: 30px; --checkbox-size: 15px; --h1-size: 1.6em; --h2-size: 1.4em;
+  --h3-size: 1.2em; --h4-size: 1.1em; --h5-size: 1em; --h6-size: .9em; --shadow-s: 0 2px 8px rgba(var(--shd-rgb), .2);
+  --shadow-l: 0 12px 40px rgba(var(--shd-rgb), .35);
 }
 
 /* the activity bar button and plugin ribbon buttons */

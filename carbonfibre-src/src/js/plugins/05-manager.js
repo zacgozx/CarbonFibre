@@ -33,6 +33,7 @@ const PluginManager = {
           '<div class="cfp-tabs" role="tablist">' +
             '<button class="cfp-tab" role="tab" data-cfptab="installed">Installed</button>' +
             '<button class="cfp-tab" role="tab" data-cfptab="browse">Community plugins</button>' +
+            '<button class="cfp-tab" role="tab" data-cfptab="themes">Themes</button>' +
           "</div>" +
           '<button class="cfp-x" data-cfpclose title="Close (Esc)" aria-label="Close">' + PluginIcons.svg("x", 16) + "</button></div>" +
         '<p class="cfp-lede"></p>' +
@@ -46,6 +47,12 @@ const PluginManager = {
     w.addEventListener("change", PluginManager.onChange);
     w.addEventListener("input", function (e) {
       if (e.target.id === "cfpSearch") { PluginManager.query = e.target.value; PluginManager.shown = 40; PluginManager.renderList(); }
+      if (e.target.id === "cfpThemeSearch") {
+        const at = e.target.selectionStart;
+        ThemeHost.query = e.target.value; ThemeHost.shown = 40; PluginManager.render();
+        const s = document.getElementById("cfpThemeSearch");
+        if (s) { s.focus(); s.setSelectionRange(at, at); }
+      }
     });
   },
   open(tab) {
@@ -102,7 +109,9 @@ const PluginManager = {
         '<div class="cfp-toolbar cfp-greyed"><button class="cfp-btn" disabled>Install from folder…</button><button class="cfp-btn" disabled>Import from this vault</button></div>';
       return;
     }
-    if (PluginManager.tab === "installed") PluginManager.renderInstalled(body); else PluginManager.renderBrowse(body);
+    if (PluginManager.tab === "installed") PluginManager.renderInstalled(body);
+    else if (PluginManager.tab === "themes") ThemeHost.render(body);
+    else PluginManager.renderBrowse(body);
   },
 
   renderInstalled(body) {
@@ -256,6 +265,7 @@ const PluginManager = {
     if (!a || a.disabled) return;
     const act = a.dataset.cfpact, row = a.closest(".cfp-row"), id = row && row.dataset.id;
     if (act === "toggle") return;
+    if (/^theme/.test(act)) { e.preventDefault(); ThemeHost.onClick(act, row); return; }
     if (act === "neton" || act === "netoff" || act === "nodeon" || act === "nodeoff") {
       const d = cfDesktopPlugins();
       const run = { neton: d.askNetwork, netoff: d.revokeNetwork, nodeon: d.askNode, nodeoff: d.revokeNode }[act];
