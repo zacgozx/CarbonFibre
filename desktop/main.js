@@ -63,6 +63,7 @@ function createWindow() {
     minHeight: 360,
     show: false,
     title: "CarbonFibre",
+    icon: path.join(__dirname, "build", "icon.png"),   /* the butterfly in the taskbar and window (installed builds also carry it in the .exe / .app) */
     backgroundColor: "#1a1a1f",
     autoHideMenuBar: process.platform !== "darwin",
     webPreferences: {

@@ -15,7 +15,8 @@
     "dist:mac": "node build-page.js && electron-builder --mac --publish never",
     "dist:win": "node build-page.js && electron-builder --win --publish never",
     "dist:linux": "node build-page.js && electron-builder --linux --publish never",
-    "test": "node build-page.js && electron test/run.js"
+    "test": "node build-page.js && electron test/run.js",
+    "icons": "electron build-icons.js"
   },
   "build": {
     "appId": "io.github.carbonfibre.desktop",
@@ -31,7 +32,8 @@
       "prompt.html",
       "prompt.js",
       "plugins/*.js",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "extraResources": [
       {
@@ -56,7 +58,8 @@
             "arm64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.png"
     },
     "win": {
       "target": [
@@ -73,7 +76,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -85,7 +89,8 @@
         "AppImage",
         "deb"
       ],
-      "maintainer": "CarbonFibre"
+      "maintainer": "CarbonFibre",
+      "icon": "build/icon.png"
     },
     "asarUnpack": [
       "plugins/analyze-worker.js",

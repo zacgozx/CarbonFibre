@@ -5,7 +5,8 @@ Nothing in the app changes: it runs in Chromium, so the folder choice works on e
 
 ## Run it
 
-Needs Node 20+ and Python 3.
+Needs Node 20+ and Python 3. Step by step for Windows, macOS and Linux, and fixes for `npm install`
+errors: [INSTALL.md](INSTALL.md).
 
 ```
 cd desktop
@@ -69,6 +70,7 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
 | `preload.js` | Gives the page `window.cfDesktop`: native confirm, choose and prompt. No Node or file access |
 | `prompt.html`, `prompt.js`, `prompt-preload.js` | The text-input dialog (Electron has no `window.prompt`) |
 | `build-page.js` | Runs `carbonfibre-src/build.py` into `page/index.html` |
+| `build-icons.js`, `build/icon.*` | The app icon: the butterfly the app draws as its logo (`appIconSvg`, dark theme), as `icon.svg`, a 1024 px `icon.png` (macOS, Linux) and `icon.ico` (Windows). `npm run icons` redraws them after the logo changes |
 | `plugins/store.js` | Plugins: the community catalog, downloads (GitHub only), installed plugins, their settings files, the code the page loads |
 | `plugins/compat.js` | Reads a plugin's code (never runs it) and decides Works / Partly works / Can't run, with reasons |
 | `test/run.js` | `npm test`: installs `test/fixture-plugin/` in a throwaway data folder and checks the plugin API end to end, then checks the web build keeps plugins off |
