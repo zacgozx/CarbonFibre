@@ -265,7 +265,8 @@ const PluginApi = {
   build() {
     if (PluginApi.module) return PluginApi.module;
     const mac = PluginKeymap.mac, platform = (window.cfDesktop && window.cfDesktop.platform) || "";
-    const offline = function () { return Promise.reject(new Error("CarbonFibre doesn't let plugins reach the network.")); };
+    /* request and requestUrl here are for code that doesn't come from a plugin; plugins get their own (PluginNet) */
+    const offline = function () { return Promise.reject(new Error("Only plugins can use the internet, and only once you allow it")); };
     const m = {
       ConfirmationModal: PluginConfirmationModal, SettingPage: PluginSettingTab,
       Plugin: PluginPlugin, Component: PluginComponent, Events: PluginEvents, Notice: PluginNotice, Modal: PluginModal,
@@ -333,6 +334,94 @@ const PluginApi = {
       }
     });
     return PluginApi.module;
+  }
+};
+
+/* ---- the internet, per plugin (desktop app) ----
+   The page itself can't reach the network (connect-src 'none'). A plugin you allowed sends its
+   requests through the app instead: requestUrl and request from "obsidian", and a plain fetch(),
+   are each plugin's own, carrying its id. The app's main process makes the request only if that
+   plugin was granted access in the app's dialog (desktop/main.js askNetwork), which the page can't
+   answer. Plugins share one page, so this keeps well-behaved plugins to what you allowed; it isn't
+   a wall between plugins. */
+const PluginNet = {
+  modules: new Map(),
+  nameOf(id) { const e = (PluginHost.installed || []).find(function (p) { return p.id === id; }); return (e && e.manifest && e.manifest.name) || id; },
+  clean(e) { return new Error(String((e && e.message) || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "")); },
+  /* Obsidian's RequestUrlParam (or a bare address) -> one request through the app */
+  send(id, req) {
+    const r = typeof req === "string" ? { url: req } : Object.assign({}, req || {});
+    let body = r.body;
+    if (body instanceof ArrayBuffer) body = new Uint8Array(body);
+    else if (ArrayBuffer.isView(body)) body = new Uint8Array(body.buffer, body.byteOffset, body.byteLength);
+    else if (body != null) body = String(body);
+    const d = cfDesktopPlugins();
+    if (!d || !d.request) return Promise.reject(new Error("The internet is only offered to plugins in the desktop app"));
+    return d.request(id, { url: String(r.url || ""), method: r.method, headers: r.headers || {}, contentType: r.contentType, body: body })
+      .catch(function (e) { throw PluginNet.clean(e); });
+  },
+  response(res) {
+    const buf = res.body.buffer.slice(res.body.byteOffset, res.body.byteOffset + res.body.byteLength);
+    let text = null;
+    const readText = function () { if (text === null) text = new TextDecoder().decode(res.body); return text; };
+    return { status: res.status, headers: res.headers, arrayBuffer: buf,
+      get text() { return readText(); }, get json() { return JSON.parse(readText()); } };
+  },
+  requestUrl(id, req) {
+    const throwOn = !(req && typeof req === "object" && req.throw === false);
+    const p = PluginNet.send(id, req).then(function (res) {
+      const out = PluginNet.response(res);
+      if (throwOn && out.status >= 400) { const e = new Error("Request failed, status " + out.status); e.status = out.status; e.headers = out.headers; throw e; }
+      return out;
+    });
+    /* Obsidian's response promise also answers .json, .text and .arrayBuffer directly */
+    p.json = p.then(function (r) { return r.json; });
+    p.text = p.then(function (r) { return r.text; });
+    p.arrayBuffer = p.then(function (r) { return r.arrayBuffer; });
+    [p.json, p.text, p.arrayBuffer].forEach(function (q) { q.catch(function () {}); });   /* unread ones don't report */
+    return p;
+  },
+  request(id, req) { return PluginNet.requestUrl(id, Object.assign({}, typeof req === "string" ? { url: req } : req, { throw: true })).then(function (r) { return r.text; }); },
+  /* a fetch() for one plugin: the same request, answered as a standard Response */
+  fetchFor(id) {
+    return function (input, init) {
+      init = init || {};
+      const isReq = typeof Request !== "undefined" && input instanceof Request;
+      const url = isReq ? input.url : String(input && input.href ? input.href : input);
+      const headers = {};
+      new Headers(init.headers || (isReq ? input.headers : undefined)).forEach(function (v, k) { headers[k] = v; });
+      const method = init.method || (isReq ? input.method : "GET");
+      const bodyP = init.body != null ? Promise.resolve(init.body) : isReq && !/^(GET|HEAD)$/i.test(method) ? input.arrayBuffer() : Promise.resolve(null);
+      return bodyP.then(function (b) {
+        if (b instanceof Blob) return b.arrayBuffer();
+        if (b instanceof URLSearchParams) { if (!headers["content-type"]) headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8"; return String(b); }
+        return b;
+      }).then(function (b) {
+        return PluginNet.send(id, { url: url, method: method, headers: headers, body: b });
+      }).then(function (res) {
+        const st = res.status >= 200 && res.status <= 599 ? res.status : 502;
+        const noBody = st === 204 || st === 205 || st === 304 || /^HEAD$/i.test(method);
+        const out = new Response(noBody ? null : res.body, { status: st, headers: res.headers });
+        try { Object.defineProperty(out, "url", { value: res.url }); } catch (e) { /* read-only here */ }
+        return out;
+      }).catch(function (e) { throw new TypeError("Failed to fetch: " + e.message); });
+    };
+  },
+  /* each plugin's own "obsidian" module: the shared one, with its own request and requestUrl */
+  moduleFor(id) {
+    if (PluginNet.modules.has(id)) return PluginNet.modules.get(id);
+    const base = PluginApi.build();
+    const own = { request: function (r) { return PluginNet.request(id, r); }, requestUrl: function (r) { return PluginNet.requestUrl(id, r); } };
+    const m = new Proxy(base, { get: function (t, k) { return Object.prototype.hasOwnProperty.call(own, k) ? own[k] : base[k]; } });
+    PluginNet.modules.set(id, m);
+    return m;
+  },
+  requireFor(id) { return function (name) { return String(name) === "obsidian" ? PluginNet.moduleFor(id) : PluginHost.require(name); }; },
+  /* switching a plugin on: one that uses the internet asks once (the app's dialog) */
+  askIfNeeded(entry) {
+    const d = cfDesktopPlugins();
+    if (!entry || !entry.compat || !entry.compat.net || entry.network !== null || !d.askNetwork) return Promise.resolve();
+    return d.askNetwork(entry.id).catch(function () { return false; });
   }
 };
 
@@ -468,7 +557,7 @@ const PluginHost = {
       return PluginHost.loadScript(id);
     }).then(function (factory) {
       const module = { exports: {} };
-      factory.call(window, PluginHost.require, module, module.exports, PluginHost.process, window);
+      factory.call(window, PluginNet.requireFor(id), module, module.exports, PluginHost.process, window, PluginNet.fetchFor(id));
       const Cls = module.exports && (module.exports.default || module.exports);
       if (typeof Cls !== "function") throw new Error("main.js doesn't export a plugin");
       const manifest = Object.assign({}, entry.manifest, { id: id, dir: ".obsidian/plugins/" + id });
@@ -500,6 +589,11 @@ const PluginHost = {
   },
   enable(id) {
     return cfDesktopPlugins().setEnabled(id, true).then(function () { return cfDesktopPlugins().list(); }).then(function (list) {
+      PluginHost.installed = list;
+      const entry = list.find(function (p) { return p.id === id; });
+      if (!entry) throw new Error("Not installed: " + id);
+      return PluginNet.askIfNeeded(entry).then(function () { return cfDesktopPlugins().list(); });
+    }).then(function (list) {
       PluginHost.installed = list;
       const entry = list.find(function (p) { return p.id === id; });
       if (!entry) throw new Error("Not installed: " + id);

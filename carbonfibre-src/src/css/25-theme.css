@@ -1,0 +1,102 @@
+/* ============================================================
+   The plain look: neutral greys and one accent, flat surfaces, nothing that glows or moves.
+   Loaded after every other sheet, so it re-points their colours. Light and dark follow the
+   system (or the moon/sun button). Your own accent colour and CSS come after this (Theme...
+   in the command palette); the variables they can set are listed in carbonfibre-src/README.md.
+   ============================================================ */
+:root {
+  --bg: #18181b; --panel: #1e1e22; --txt: #e4e4e7; --dim: #a1a1aa; --line: #2e2e33;
+  --chrome: #141416; --chrome-hi: #26262b;
+  --acc: #5b8def; --acc-soft: rgba(91, 141, 239, 0.18); --acc-text: #8fb3ff; --acc-rgb: 91, 141, 239;
+  --ora: var(--acc-text); --ora-soft: var(--acc-soft); --ora-rgb: var(--acc-rgb);
+  --blu: var(--acc-text); --blu-soft: var(--acc-soft); --blu-rgb: var(--acc-rgb);
+  --sel: rgba(91, 141, 239, 0.24); --sel-soft: rgba(91, 141, 239, 0.12);
+  --focus: var(--acc); --mark: var(--acc-text); --tab-edge: var(--acc);
+  --sb-bg: #141416; --sb-fg: #a1a1aa; --sb-hover: rgba(255, 255, 255, 0.07);
+  --scrim-rgb: 10, 10, 12;
+  --h1c: var(--txt); --h2c: var(--txt); --h1rule: var(--line);
+  --bulletc: var(--dim); --quote-edge: #3f3f46; --quote-bg: rgba(255, 255, 255, 0.03); --thead-bg: rgba(255, 255, 255, 0.05);
+  --c0a0a0a: #141414; --c0f0f0f: #191919; --c101010: #1a1a1a; --c101114: #1b1b1b; --c111111: #1a1a1a; --c131313: #1c1c1c;
+  --c141414: #1d1d1d; --c141518: #1f1f1f; --c171717: #202020; --c171819: #202020; --c17181b: #222222; --c17181c: #222222;
+  --c181818: #202020; --c1a1a1a: #222222; --c1b1c20: #252525; --c1c1c1c: #242424; --c1e1e1e: #262626; --c1f1f1f: #272727;
+  --c232323: #2a2a2a; --c262626: #2c2c2c; --c2a2a2a: #303030; --c2f2f2f: #343434; --c333333: #373737; --c35373b: #3b3b3b;
+  --c3a3a3a: #3d3d3d; --c4a4a4a: #4a4a4a; --c4a4c52: #4e4e4e; --c4a5a8a: #6a6a6a; --c4f4f4f: #4f4f4f; --c555555: #555555;
+  --c565656: #565656; --c5a5a5a: #5a5a5a; --c5c5c5c: #5c5c5c; --c5c5e63: #606060; --c5e5e5e: #5e5e5e; --c5f5f5f: #5f5f5f;
+  --c6a6a6a: #6a6a6a; --c6a6c71: #6e6e6e; --c6b6b6b: #6b6b6b; --c6e6e6e: #6e6e6e; --c7a7a7a: #7a7a7a; --c7f8fb8: #9c9c9c;
+  --c8a8a8a: #8a8a8a; --c8f8f8f: #8f8f8f; --c9a9a9a: #9a9a9a; --cb5b5b5: #b5b5b5; --cbdbdbd: #bdbdbd; --cffffff: #ffffff;
+  --c5e3038: #34466b;   /* was a deep rose accent: now a dim accent blue */
+}
+:root[data-theme="light"] {
+  --bg: #ffffff; --panel: #f7f7f8; --txt: #18181b; --dim: #52525b; --line: #e4e4e7;
+  --chrome: #f4f4f5; --chrome-hi: #e8e8eb;
+  --acc: #2563eb; --acc-soft: #e3ebfd; --acc-text: #1d4ed8; --acc-rgb: 37, 99, 235;
+  --ora: var(--acc-text); --ora-soft: var(--acc-soft); --ora-rgb: var(--acc-rgb);
+  --blu: var(--acc-text); --blu-soft: var(--acc-soft); --blu-rgb: var(--acc-rgb);
+  --focus: var(--acc); --mark: var(--acc-text); --tab-edge: var(--acc);
+  --h1c: var(--txt); --h2c: var(--txt); --h1rule: var(--line); --bulletc: var(--dim);
+  --sel: #dbe6fd; --sel-soft: #eef3fe;
+  --nav-bg: #f4f4f5; --nav-rail: #ededf0; --nav-line: #e4e4e7;
+  --brand-pink: #e8e8eb; --brand-pink-hi: #dcdce0;
+  --sb-bg: #f4f4f5; --sb-fg: #3f3f46; --sb-hover: rgba(0, 0, 0, 0.05);
+  --scrim-rgb: 24, 24, 27;
+  --shd-rgb: 24, 24, 27;
+  --quote-edge: #d4d4d8; --quote-bg: #fafafa; --thead-bg: #f4f4f5;
+  --c0a0a0a: #ffffff; --c0f0f0f: #ffffff; --c101010: #fefefe; --c101114: #fcfcfc; --c111111: #fdfdfd; --c131313: #fcfcfc;
+  --c141414: #fafafa; --c141518: #f9f9f9; --c171717: #f8f8f8; --c171819: #f8f8f8; --c17181b: #f7f7f7; --c17181c: #f7f7f7;
+  --c181818: #f8f8f8; --c1a1a1a: #f2f2f2; --c1b1c20: #f2f2f2; --c1c1c1c: #f2f2f2; --c1e1e1e: #f1f1f1; --c1f1f1f: #f0f0f0;
+  --c232323: #ececec; --c262626: #eaeaea; --c2a2a2a: #e6e6e6; --c2f2f2f: #e2e2e2; --c333333: #dedede; --c35373b: #d9d9d9;
+  --c3a3a3a: #d4d4d4; --c4a4a4a: #6f6f6f; --c4a4c52: #6f6f6f; --c4a5a8a: #d1d1d1; --c4f4f4f: #6f6f6f; --c555555: #6e6e6e;
+  --c565656: #6f6f6f; --c5a5a5a: #6f6f6f; --c5c5c5c: #6f6f6f; --c5c5e63: #6f6f6f; --c5e3038: #b6b6b6; --c5e5e5e: #6f6f6f;
+  --c5f5f5f: #6f6f6f; --c6a6a6a: #888888; --c6a6c71: #868686; --c6b6b6b: #878787; --c6e6e6e: #686868; --c7a7a7a: #787878;
+  --c7f8fb8: #787878; --c8a8a8a: #6a6a6a; --c8f8f8f: #666666; --c9a9a9a: #5e5e5e; --cb5b5b5: #4a4a4a; --cbdbdbd: #444444;
+  --cffffff: #262626;
+}
+.statusbar { border-top: 1px solid var(--line); }
+/* the logo: the butterfly drawn in the page (appIconSvg), sized to its box and still */
+.logo-img svg { display: block; width: 100%; height: 100%; }
+
+/* the task board, dashboard and notes views keep their own --tb-* names: the same plain colours */
+.tb {
+  --tb-carbon: var(--bg); --tb-panel: var(--panel); --tb-raised: #232327; --tb-line: var(--line); --tb-hover: #3f3f46;
+  --tb-ink: var(--txt); --tb-mute: var(--dim); --tb-acc-text: var(--acc-text); --tb-acc-rgb: var(--acc-rgb);
+  --tb-blu: var(--acc-text); --tb-blu-rgb: var(--acc-rgb); --tb-ora: #d6a64f; --tb-flare: #e5534b; --tb-flare-rgb: 229, 83, 75; --tb-ok: #4fa36c;
+  --tb-run-tint: var(--acc-soft); --tb-run-line: var(--acc); --tb-weave: transparent; --tb-wash: var(--bg);
+  --tb-vio: #a1a1aa; --tb-vio-rgb: 161, 161, 170; --tb-primary-ink: #ffffff;
+  --tbd-card: var(--panel); --tbd-cardline: var(--line); --tbl-lane: #161618;
+  background: var(--tb-carbon);
+}
+:root[data-theme="light"] .tb {   /* every name 08-sketch-board.css sets for light, so none of its blues show through */
+  --tb-carbon: var(--bg); --tb-panel: var(--panel); --tb-line: var(--line); --tb-ink: var(--txt); --tb-mute: var(--dim);
+  --tb-acc-text: var(--acc-text); --tb-acc-rgb: var(--acc-rgb); --tb-blu: var(--acc-text); --tb-blu-rgb: var(--acc-rgb);
+  --tb-run-tint: var(--acc-soft); --tb-run-line: var(--acc); --tb-weave: transparent; --tb-wash: var(--bg);
+  --tb-raised: #ffffff; --tb-hover: #d4d4d8; --tb-ora: #a16207; --tb-flare: #b42318; --tb-flare-rgb: 180, 35, 24; --tb-ok: #2f7d4f;
+  --tb-vio: #52525b; --tb-vio-rgb: 82, 82, 91; --tbd-card: #ffffff; --tbl-lane: #fafafa;
+}
+.tb .tb-btn--primary, .tb-qa[data-qa="task"], .tb .tb-qa--primary { background: var(--acc); border-color: var(--acc); color: #ffffff; }
+.tb-lane--open { --lane: #a1a1aa; --lane-ink: var(--txt); --lane-tint: rgba(161, 161, 170, .12); --lane-wash: transparent; }
+.tb-lane--run  { --lane: var(--acc); --lane-ink: var(--acc-text); --lane-tint: var(--acc-soft); --lane-wash: transparent; }
+.tb-lane--held { --lane: #d6a64f; --lane-ink: #e2c07f; --lane-tint: rgba(214, 166, 79, .12); --lane-wash: transparent; }
+.tb-lane--done { --lane: #4fa36c; --lane-ink: #8cc9a1; --lane-tint: rgba(79, 163, 108, .12); --lane-wash: transparent; }
+:root[data-theme="light"] .tb-lane--run  { --lane: var(--acc); --lane-ink: var(--acc-text); --lane-tint: var(--acc-soft); --lane-wash: transparent; }
+:root[data-theme="light"] .tb-lane--open { --lane: #a1a1aa; --lane-ink: #3f3f46; --lane-tint: #f4f4f5; }
+:root[data-theme="light"] .tb-lane--held { --lane: #ca8a04; --lane-ink: #854d0e; --lane-tint: #fef9e7; }
+:root[data-theme="light"] .tb-lane--done { --lane: #2f7d4f; --lane-ink: #1e5b37; --lane-tint: #e8f5ec; }
+:root:not([data-theme="light"]) .tbd-kpi.acc b, :root:not([data-theme="light"]) .tbd-kpi.ok b { text-shadow: none; }
+:root:not([data-theme="light"]) .tb-card--run { box-shadow: none; }
+.tb-top { background: var(--chrome); }
+
+/* ---- the Theme window (js/43-user-theme.js): the Plugins window's frame, smaller ---- */
+.cfp-dialog.cfth-dialog { width: min(560px, 100%); height: auto; max-height: calc(100vh - 32px); }
+.cfth-gap { flex: 1; }
+.cfp-dialog.cfth-dialog .cfp-body { padding-top: 6px; }
+.cfth-h { margin: 14px 0 8px; font-size: 13px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+.cfth-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.cfth-row input[type=color] { width: 44px; height: 32px; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); cursor: pointer; }
+.cfth-swatch { min-width: 70px; color: var(--dim); font: 13px var(--mono, Consolas, monospace); }
+.cfth-css { width: 100%; min-height: 160px; box-sizing: border-box; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--txt);
+  font: 12.5px/1.5 var(--mono, Consolas, monospace); resize: vertical; }
+.cfth-css:focus { outline: none; border-color: var(--acc); }
+.cfth-vars ul { margin: 8px 0; padding-left: 18px; }
+.cfth-vars li { margin: 2px 0; font-size: 13px; }
+.cfth-vars code, .cfth-dialog .cfp-count code { font-size: 12px; }
+#graphMode[hidden] { display: none; }

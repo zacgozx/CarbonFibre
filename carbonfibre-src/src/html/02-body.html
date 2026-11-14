@@ -1,5 +1,5 @@
 </style>
-<script>try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
+<script>try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); var c = localStorage.getItem("carbonfibre-user-css"); if (c) { var s = document.createElement("style"); s.id = "cfUserTheme"; s.textContent = c; document.head.appendChild(s); } } catch (e) {}</script>
 </head>
 <body>
 
@@ -198,9 +198,10 @@
     </div>
     <div class="graph" id="graph">
       <div class="graph-bar">
-        <span>Solar system</span>
+        <span id="graphTitle">Graph</span>
         <span id="graphStats"></span>
-        <span class="graph-hint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
+        <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
+        <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
       </div>
       <div class="graph-body">
         <div class="graph-canvas-wrap"><canvas id="graphCanvas"></canvas></div>
@@ -269,4 +270,4 @@
   </div>
 </footer>
 
-<script>
+<script>

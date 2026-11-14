@@ -32,12 +32,11 @@ function toggleTheme() {
    and redrawn whenever the theme changes. The wings are folded facets in light, mid and
    dark tones with crease lines; the sheet is tilted, ruled, with a folded corner. */
 const APP_ICON_PALETTE = {
-  /* neon night: a dark terminal sheet with cyan rules and a magenta edge, the wings in cyan, magenta and violet */
-  dark:  { tile: "#0b0b14", paper: "#141428", paperEdge: "#ff2a6d", fold: "#26264a", foldShade: 0.40, rule: "#1d3a5c",
-           hi: "#7df9ff", lite: "#05d9e8", mid: "#ff2a6d", deep: "#b026ff", body: "#fcee0a", shadow: 0.45, crease: "#ffffff" },
-  /* neon day: a white sheet, the same hues deepened */
-  light: { tile: "#f1eefb", paper: "#ffffff", paperEdge: "#c8105a", fold: "#e6e0f8", foldShade: 0.14, rule: "#ece6fa",
-           hi: "#7df9ff", lite: "#00a9c4", mid: "#c8105a", deep: "#7b2cbf", body: "#160f2e", shadow: 0.16, crease: "#ffffff" }
+  /* plain: a grey tile and sheet, the wings in shades of the accent blue */
+  dark:  { tile: "#18181b", paper: "#27272a", paperEdge: "#3f3f46", fold: "#3f3f46", foldShade: 0.35, rule: "#3f3f46",
+           hi: "#c7d9ff", lite: "#8fb3ff", mid: "#5b8def", deep: "#3a6bd6", body: "#e4e4e7", shadow: 0.35, crease: "#ffffff" },
+  light: { tile: "#f4f4f5", paper: "#ffffff", paperEdge: "#d4d4d8", fold: "#e4e4e7", foldShade: 0.12, rule: "#ececef",
+           hi: "#c7d9ff", lite: "#8fb3ff", mid: "#2563eb", deep: "#1d4ed8", body: "#18181b", shadow: 0.14, crease: "#ffffff" }
 };
 function appIconSvg(pal) {
   const P = function (pts, fill, extra) { return '<polygon points="' + pts + '" fill="' + fill + '"' + (extra || "") + '/>'; };
@@ -86,7 +85,7 @@ function appIconSvg(pal) {
 }
 function appIconApply() {
   const light = document.documentElement.getAttribute("data-theme") === "light";
-  const svg = appIconSvg(APP_ICON_PALETTE[light ? "light" : "dark"]);
+  const svg = appIconSvg(Object.assign({}, APP_ICON_PALETTE[light ? "light" : "dark"], UserTheme.iconColours(light)));   /* wings in your accent, if you chose one */
   const fav = document.getElementById("appFavicon");
   if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(svg);
   const logo = document.getElementById("appLogo");

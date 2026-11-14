@@ -3,12 +3,14 @@
    folder access work exactly as in Chromium. The page gets no Node access: only the dialog and
    plugin calls in preload.js. Obsidian plugins (plugins/store.js) run inside the page; the page's
    Content-Security-Policy is widened for their code only here in the desktop app, never on the web,
-   and still blocks every network request. */
+   and still blocks every network request. A plugin you allow to use the internet sends its requests
+   through this process instead (plugins/store.js request), and only after you said yes in a dialog here. */
 "use strict";
 const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, session, shell } = require("electron");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const fsp = require("node:fs/promises");
+const os = require("node:os");
 const plugins = require("./plugins/store");
 
 const ORIGIN = "app://carbonfibre";
@@ -181,6 +183,21 @@ plugHandle("importFiles", (_e, id, files) => plugins.place(String(id), {
   styles: files && files.styles != null ? String(files.styles) : null, data: files && files.data != null ? String(files.data) : null }));
 plugHandle("uninstall", (_e, id) => plugins.uninstall(String(id)));
 plugHandle("setEnabled", async (_e, id, on) => { const list = await plugins.setEnabled(String(id), !!on); pluginsOn = list.length > 0; return list; });
+/* the internet, per plugin: only this dialog grants it (the page can't), the page may take it away */
+plugHandle("askNetwork", async (e, id) => {
+  id = String(id);
+  plugins.checkId(id);
+  const entry = (await plugins.list()).find((p) => p.id === id);
+  if (!entry) throw new Error("Not installed: " + id);
+  const name = String(entry.manifest.name || id).slice(0, 80);
+  const r = await dialog.showMessageBox(BrowserWindow.fromWebContents(e.sender), {
+    type: "question", buttons: ["Allow", "Don't allow"], defaultId: 1, cancelId: 1, noLink: true,
+    message: "Let \u201c" + name + "\u201d use the internet?",
+    detail: "It can then send and receive data from any website, including the text of your notes. Plugins share one page, so a plugin you allow should be one you trust.\n\nYou can take this back any time in Plugins, Installed." });
+  return plugins.setNetwork(id, r.response === 0);
+});
+plugHandle("revokeNetwork", (_e, id) => plugins.setNetwork(String(id), false));
+plugHandle("request", (_e, id, opts) => plugins.request(String(id), opts));
 plugHandle("styles", (_e, id) => plugins.styles(String(id)));
 plugHandle("loadData", (_e, id) => plugins.loadData(String(id)));
 plugHandle("saveData", (_e, id, text) => plugins.saveData(String(id), String(text)));
@@ -193,10 +210,56 @@ plugHandle("openRepo", (_e, repo) => {
   if (/^[\w.-]+\/[\w.-]+$/.test(String(repo))) shell.openExternal("https://github.com/" + repo);
 });
 
+/* ---- Update from Git (macOS): pull the repo, build this Mac's app, swap it in, reopen ----
+   The work is desktop/scripts/update-mac.sh in your own copy of the repo, run in Terminal so you can
+   watch it. Only this menu item starts it: the page and plugins have no way to. */
+const updateSettings = () => path.join(app.getPath("userData"), "update-from-git.json");
+async function repoFolder(ask) {
+  let repo = null;
+  try { repo = JSON.parse(await fsp.readFile(updateSettings(), "utf8")).repo; } catch (e) { repo = null; }
+  const ok = async (d) => { try { await fsp.access(path.join(d, ".git")); await fsp.access(path.join(d, "desktop", "scripts", "update-mac.sh")); return true; } catch (e) { return false; } };
+  if (repo && !ask && await ok(repo)) return repo;
+  const r = await dialog.showOpenDialog(win, { title: "Where is your CarbonFibre repo? (the folder you cloned from GitHub)", properties: ["openDirectory"] });
+  if (r.canceled || !r.filePaths.length) return null;
+  if (!(await ok(r.filePaths[0]))) {
+    await dialog.showMessageBox(win, { type: "warning", message: "That isn't the CarbonFibre repo.", detail: "Pick the folder that holds .git and desktop/scripts/update-mac.sh." });
+    return null;
+  }
+  await fsp.mkdir(path.dirname(updateSettings()), { recursive: true });
+  await fsp.writeFile(updateSettings(), JSON.stringify({ repo: r.filePaths[0] }, null, 2));
+  return r.filePaths[0];
+}
+async function updateFromGit(chooseAgain) {
+  const repo = await repoFolder(!!chooseAgain);
+  if (!repo) return;
+  /* the installed .app this is running from (Contents/MacOS/CarbonFibre -> CarbonFibre.app) */
+  const bundle = app.isPackaged ? path.resolve(path.dirname(app.getPath("exe")), "..", "..") : "/Applications/CarbonFibre.app";
+  const go = await dialog.showMessageBox(win, {
+    type: "question", buttons: ["Update", "Cancel"], defaultId: 0, cancelId: 1,
+    message: "Update CarbonFibre from Git?",
+    detail: "Terminal will pull the latest from " + repo + " and build it (a few minutes; longer the first time). " +
+      "When it's built, CarbonFibre closes, the new version replaces " + bundle + ", and it opens again. Keep using it until then."
+  });
+  if (go.response !== 0) return;
+  const q = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+  const cmd = path.join(os.tmpdir(), "carbonfibre-update-" + Date.now() + ".command");
+  await fsp.writeFile(cmd, "#!/bin/bash\nrm -f " + q(cmd) + "\nexec bash " + q(path.join(repo, "desktop", "scripts", "update-mac.sh")) + " " + q(repo) + " " + q(bundle) + "\n", { mode: 0o755 });
+  const err = await shell.openPath(cmd);   /* .command files open in Terminal */
+  if (err) dialog.showMessageBox(win, { type: "error", message: "Couldn't open Terminal.", detail: err });
+}
+
 function buildMenu() {
   const mac = process.platform === "darwin";
   const template = [
-    ...(mac ? [{ role: "appMenu" }] : []),
+    ...(mac ? [{ label: app.name, submenu: [
+      { role: "about" },
+      { label: "Update from Git\u2026", click: () => updateFromGit(false) },
+      { label: "Choose Repo Folder for Updates\u2026", click: () => updateFromGit(true) },
+      { type: "separator" },
+      { role: "services" }, { type: "separator" },
+      { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, { type: "separator" },
+      { role: "quit" }
+    ] }] : []),
     { label: "File", submenu: [mac ? { role: "close" } : { role: "quit" }] },
     { role: "editMenu" },
     {

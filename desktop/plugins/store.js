@@ -2,9 +2,10 @@
    their saved settings. Everything lives in the app's own data folder:
      plugins/<id>/manifest.json, main.js, styles.css, data.json, compat.json
      plugins/enabled.json
+     plugins/network.json      which plugins you let use the internet (id: true / false)
      plugin-cache/catalog.json, plugin-cache/<id>@<version>/...   (checked but not installed)
-   Only this file touches the network, and only GitHub, for the catalog and release files.
-   The page itself still can't reach the network. */
+   Only this file touches the network: GitHub for the catalog and release files, and (request below)
+   the requests of plugins you let use the internet. The page itself still can't reach the network. */
 "use strict";
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -16,6 +17,7 @@ const CATALOG_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-relea
 const STATS_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
 const HOSTS = new Set(["github.com", "raw.githubusercontent.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com", "codeload.github.com"]);
 const MAX_CODE = 40 * 1024 * 1024, MAX_DATA = 20 * 1024 * 1024, CATALOG_AGE = 12 * 3600 * 1000;
+const MAX_RESPONSE = 50 * 1024 * 1024, MAX_BODY = 50 * 1024 * 1024, REQUEST_TIMEOUT = 60 * 1000;
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,100}$/;
 
 const root = () => path.join(app.getPath("userData"), "plugins");
@@ -128,14 +130,14 @@ async function compatOf(id) {
 async function list() {
   let names = [];
   try { names = await fs.readdir(root(), { withFileTypes: true }); } catch (e) { return []; }
-  const enabled = await enabledSet();
+  const enabled = await enabledSet(), net = await networkMap();
   const out = [];
   for (const d of names) {
     if (!d.isDirectory() || !ID_RE.test(d.name)) continue;
     const manifest = await readJson(path.join(root(), d.name, "manifest.json"));
     if (!manifest) continue;
     const compat = await compatOf(d.name);
-    out.push({ id: d.name, manifest, enabled: enabled.has(d.name) && compat.level !== "no", compat,
+    out.push({ id: d.name, manifest, enabled: enabled.has(d.name) && compat.level !== "no", compat, network: net[d.name] === undefined ? null : !!net[d.name],
       hasStyles: (await readText(path.join(root(), d.name, "styles.css"))) != null });
   }
   return out.sort((a, b) => String(a.manifest.name || a.id).localeCompare(String(b.manifest.name || b.id)));
@@ -184,6 +186,7 @@ async function installFromDir(dir) {
 async function uninstall(id) {
   await fs.rm(dirOf(id), { recursive: true, force: true });
   const e = await enabledSet(); e.delete(id); await saveEnabled(e);
+  const n = await networkMap(); delete n[id]; await writeText(path.join(root(), "network.json"), JSON.stringify(n));
 }
 async function setEnabled(id, on) {
   checkId(id);
@@ -193,6 +196,47 @@ async function setEnabled(id, on) {
   return Array.from(e);
 }
 async function anyEnabled() { return (await enabledSet()).size > 0; }
+
+/* ---- the internet, per plugin ----
+   Granting happens only in main.js, behind a dialog the page can't answer; the page may only take
+   access away. A request is made here, by the main process, and only for a plugin that was granted. */
+async function networkMap() { const n = await readJson(path.join(root(), "network.json")); return n && typeof n === "object" && !Array.isArray(n) ? n : {}; }
+async function networkAllowed(id) { checkId(id); return (await networkMap())[id] === true; }
+async function setNetwork(id, on) {
+  checkId(id);
+  const n = await networkMap();
+  n[id] = !!on;
+  await writeText(path.join(root(), "network.json"), JSON.stringify(n));
+  return !!on;
+}
+const FORBIDDEN_HEADERS = /^(host|content-length|connection|transfer-encoding|keep-alive|upgrade|te|trailer|proxy-.*)$/i;
+async function request(id, opts) {
+  if (!(await networkAllowed(id))) throw new Error("This plugin isn't allowed to use the internet. Allow it in Plugins, Installed.");
+  opts = opts || {};
+  const u = new URL(String(opts.url || ""));
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only http and https addresses can be requested");
+  const method = String(opts.method || "GET").toUpperCase();
+  if (!/^[A-Z]{1,16}$/.test(method)) throw new Error("Not a request method: " + method);
+  const headers = {};
+  Object.keys(opts.headers || {}).forEach((k) => { if (!FORBIDDEN_HEADERS.test(k)) headers[k] = String(opts.headers[k]); });
+  if (opts.contentType && !Object.keys(headers).some((k) => /^content-type$/i.test(k))) headers["Content-Type"] = String(opts.contentType);
+  let body;
+  if (opts.body != null && method !== "GET" && method !== "HEAD") {
+    body = typeof opts.body === "string" ? opts.body : Buffer.from(opts.body.buffer ? new Uint8Array(opts.body.buffer, opts.body.byteOffset || 0, opts.body.byteLength) : opts.body);
+    if (body.length > MAX_BODY) throw new Error("Request body too large");
+  }
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), REQUEST_TIMEOUT);
+  try {
+    const res = await net.fetch(u.href, { method, headers, body, redirect: "follow", signal: ctl.signal, credentials: "omit", cache: "no-store" });
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_RESPONSE) throw new Error("Response too large");
+    const h = {};
+    res.headers.forEach((v, k) => { h[k] = v; });
+    return { status: res.status, headers: h, url: res.url || u.href, body: new Uint8Array(buf) };
+  } catch (e) {
+    throw new Error(e && e.name === "AbortError" ? "The request took too long" : "The request failed: " + ((e && e.message) || e));
+  } finally { clearTimeout(timer); }
+}
 
 async function styles(id) { return readText(path.join(dirOf(id), "styles.css")); }
 async function loadData(id) { return readText(path.join(dirOf(id), "data.json")); }
@@ -224,8 +268,9 @@ const pluginFs = {
 async function wrappedCode(id) {
   const code = await readText(path.join(dirOf(id), "main.js"));
   if (code == null) return null;
-  return "window.__cfPluginDefine(" + JSON.stringify(id) + ", function (require, module, exports, process, global) {\n" + code +
+  /* fetch: the plugin's own, through its internet permission (window.fetch stays blocked by the page's policy) */
+  return "window.__cfPluginDefine(" + JSON.stringify(id) + ", function (require, module, exports, process, global, fetch) {\n" + code +
     "\n});\n//# sourceURL=plugin:" + id + "/main.js\n";
 }
 
-module.exports = { catalog, check, list, install, installFromDir, place, uninstall, setEnabled, anyEnabled, styles, loadData, saveData, pluginFs, wrappedCode, checkId };
+module.exports = { catalog, check, list, install, installFromDir, place, uninstall, setEnabled, anyEnabled, networkAllowed, setNetwork, request, styles, loadData, saveData, pluginFs, wrappedCode, checkId };

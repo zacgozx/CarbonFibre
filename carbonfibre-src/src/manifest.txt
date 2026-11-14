@@ -25,7 +25,7 @@ css/21-inspection-round-2-full-heig.css
 css/22-sketch-board-tools-on-top-st.css
 css/23-storage-welcome.css
 css/24-responsive.css
-css/25-cyberpunk.css
+css/25-theme.css
 css/26-plugins.css
 html/02-body.html
 js/01-start.js
@@ -62,6 +62,7 @@ js/11-panes.js
 js/12-notes.js
 js/13-backlinks.js
 js/14-graph.js
+js/14-graph-simple.js
 js/15-search.js
 js/16-storage-ui.js
 js/17-sketch.js
@@ -100,6 +101,7 @@ js/40-mermaid.js
 js/41-mermaid-layout-ranks-follow-th.js
 js/42-mermaid-sketch-elements-groups.js
 js/43-session.js
+js/43-user-theme.js
 js/44-shortcuts.js
 js/44-narrow-layout.js
 js/45-boot.js

@@ -1,12 +1,15 @@
 /* Desktop tests: npm test (builds the page first). Opens the app with a throwaway data folder,
    installs fixture-plugin/, and checks the plugin API end to end; then opens the page without the
-   desktop bridge, as the website runs, and checks plugins stay off there. No network is used. */
+   desktop bridge, as the website runs, and checks plugins stay off there. The only network used is a
+   small server on this machine, for the per-plugin internet permission. */
 "use strict";
 const { app, BrowserWindow, dialog } = require("electron");
 const path = require("node:path"), fs = require("node:fs"), os = require("node:os");
 const ud = fs.mkdtempSync(path.join(os.tmpdir(), "cf-test-"));
 app.setPath("userData", ud);
-dialog.showMessageBox = async () => ({ response: 0 });
+let answers = [];                                     /* the app's dialogs: answered from here, Allow (0) when empty */
+const asked = [];
+dialog.showMessageBox = async (_w, o) => { asked.push((o || _w || {}).message || ""); return { response: answers.length ? answers.shift() : 0 }; };
 require("../main.js");
 const store = require("../plugins/store.js");
 const compat = require("../plugins/compat.js");
@@ -105,9 +108,57 @@ app.on("browser-window-created", (_e, w) => {
       check("vault and workspace events reach the plugin", r.events.includes("open:Alpha.md") && r.events.includes("modify:Alpha.md"), JSON.stringify(r.events));
       check("turning it off removes everything it added", Object.values(r.off).every(Boolean), JSON.stringify(r.off));
     } catch (e) { check("desktop run", false, e.stack); }
+    try { await netCheck(w); } catch (e) { check("internet run", false, e.stack); }
     webCheck();
   });
 });
+
+/* the internet, per plugin: asked when switched on, only the app's dialog grants it, the page can take it
+   away, requests go through the main process, and the page itself still can't reach the network */
+async function netCheck(w) {
+  const http = require("node:http");
+  const server = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (c) => { body += c; });
+    req.on("end", () => { res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ method: req.method, path: req.url, body, agent: req.headers["x-test"] || "" })); });
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const url = "http://127.0.0.1:" + server.address().port;
+  const code = "\"use strict\";\nvar obsidian = require(\"obsidian\");\nclass P extends obsidian.Plugin { onload() { window.cfNetFix = {" +
+    " ru: (u) => obsidian.requestUrl({ url: u, method: \"POST\", body: \"hi\", headers: { \"x-test\": \"yes\" } }).json," +
+    " f: (u) => fetch(u + \"/f\").then((r) => r.json()) }; } }\nmodule.exports = P;\n";
+  const placed = await store.place("cf-netfix", { manifest: JSON.stringify({ id: "cf-netfix", name: "Net fixture", version: "1.0.0" }), main: code, styles: null });
+  check("internet: a plugin using requestUrl and fetch is rated working, marked as using the internet", placed.compat.level === "ok" && placed.compat.net === true, JSON.stringify(placed.compat));
+  asked.length = 0;
+  answers = [0];                                         /* Allow */
+  const r = await w.webContents.executeJavaScript(`(async () => {
+    const out = {}, U = ${JSON.stringify(url)};
+    const err = (p) => p.then(() => "no error", (e) => String(e.message || e));
+    out.before = await err(cfDesktop.plugins.request("cf-netfix", { url: U }));
+    out.pageNoGrant = typeof cfDesktop.plugins.setNetwork === "undefined";
+    await PluginHost.enable("cf-netfix");
+    out.listed = (await cfDesktop.plugins.list()).find(p => p.id === "cf-netfix").network;
+    out.ru = await window.cfNetFix.ru(U + "/ru");
+    out.f = await window.cfNetFix.f(U);
+    out.pageFetch = await err(fetch(U + "/page"));
+    PluginManager.open("installed");
+    out.row = (document.querySelector('.cfp-row[data-id="cf-netfix"] .cfp-net') || {}).textContent || "";
+    PluginManager.close();
+    await cfDesktop.plugins.revokeNetwork("cf-netfix");
+    out.after = await err(window.cfNetFix.f(U));
+    await PluginHost.disable("cf-netfix");
+    return out;
+  })()`);
+  check("internet: refused before it's allowed", /isn't allowed/.test(r.before), r.before);
+  check("internet: the page has no way to grant it", r.pageNoGrant);
+  check("internet: switching it on asks once, in the app's dialog", asked.length === 1 && /Net fixture/.test(asked[0]) && r.listed === true, JSON.stringify(asked) + " " + r.listed);
+  check("internet: requestUrl sends method, body and headers, and reads JSON", r.ru && r.ru.method === "POST" && r.ru.body === "hi" && r.ru.agent === "yes" && r.ru.path === "/ru", JSON.stringify(r.ru));
+  check("internet: the plugin's fetch() works", r.f && r.f.path === "/f", JSON.stringify(r.f));
+  check("internet: the page's own fetch is still blocked", r.pageFetch !== "no error", r.pageFetch);
+  check("internet: Installed lists it with a way to take it away", /Can use the internet/.test(r.row) && /Take away/.test(r.row), r.row);
+  check("internet: taking it away stops its requests", /isn't allowed|Failed to fetch/.test(r.after), r.after);
+  server.close();
+}
 
 /* the page as the website runs it: no desktop bridge, so plugins must stay off and greyed out */
 function webCheck() {

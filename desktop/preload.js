@@ -1,4 +1,5 @@
-/* The only things the page can reach outside itself: native dialogs. No Node, no files. */
+/* The only things the page can reach outside itself: native dialogs, and the plugin calls below
+   (internet requests only for plugins you allowed). No Node, no files. */
 "use strict";
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -21,6 +22,10 @@ contextBridge.exposeInMainWorld("cfDesktop", {
     loadData: (id) => ipcRenderer.invoke("cf:plug:loadData", String(id)),
     saveData: (id, text) => ipcRenderer.invoke("cf:plug:saveData", String(id), String(text)),
     fs: (op, id, rel, text) => ipcRenderer.invoke("cf:plug:fs", String(op), String(id), String(rel || ""), text == null ? undefined : String(text)),
-    openRepo: (repo) => ipcRenderer.invoke("cf:plug:openRepo", String(repo))
+    openRepo: (repo) => ipcRenderer.invoke("cf:plug:openRepo", String(repo)),
+    /* the internet: asking shows the app's own dialog (only you can say yes); taking it away needs no dialog */
+    askNetwork: (id) => ipcRenderer.invoke("cf:plug:askNetwork", String(id)),
+    revokeNetwork: (id) => ipcRenderer.invoke("cf:plug:revokeNetwork", String(id)),
+    request: (id, opts) => ipcRenderer.invoke("cf:plug:request", String(id), opts)
   }
 });

@@ -220,7 +220,7 @@ function parseMermaidMindmap(src) {
     var id = "\u00a7mm" + (++k), n = mmAddNode(g, id, mmText(label), shape);
     while (stack.length && stack[stack.length - 1].depth >= depth) stack.pop();
     if (stack.length) g.edges.push({ a: stack[stack.length - 1].id, b: id, label: "", arrow: false, dashed: false });
-    else n.style = { fill: "#9b3d4b", stroke: "#bf6a78", color: "#ffffff" };   /* the root stands out */
+    else n.style = { fill: "#3a6bd6", stroke: "#5b8def", color: "#ffffff" };   /* the root stands out */
     stack.push({ id: id, depth: depth });
   });
   return mmFinish(g);

@@ -2,17 +2,17 @@
    graph view
    ============================================================ */
 
-var graphCanvas = document.getElementById("graphCanvas");
-var gctx = graphCanvas.getContext("2d");
-var graphSide = document.getElementById("graphSide");
-var graphData = null, graphRaf = null, graphHover = null, graphSel = null;
-var cam = { x: 0, y: 0, k: 1, tk: 1, follow: null, home: false, fit: 1 };
-var MIN_ORBIT = 150;              /* keeps a linkless vault from collapsing onto the sun */
-var gDown = null, gLast = 0;
+const graphCanvas = document.getElementById("graphCanvas");
+const gctx = graphCanvas.getContext("2d");
+const graphSide = document.getElementById("graphSide");
+let graphData = null, graphRaf = null, graphHover = null, graphSel = null;
+const cam = { x: 0, y: 0, k: 1, tk: 1, follow: null, home: false, fit: 1 };
+const MIN_ORBIT = 150;              /* keeps a linkless vault from collapsing onto the sun */
+let gDown = null, gLast = 0;
 
 function sizeCanvas() {
-  var wrap = graphCanvas.parentNode;
-  var dpr = window.devicePixelRatio || 1;
+  const wrap = graphCanvas.parentNode;
+  const dpr = window.devicePixelRatio || 1;
   graphCanvas.width = wrap.clientWidth * dpr;
   graphCanvas.height = wrap.clientHeight * dpr;
   gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -20,21 +20,22 @@ function sizeCanvas() {
 
 /* ---- solar system layout: sun -> planets -> moons, everything else in the belt ---- */
 function planSystem(g) {
-  var nodes = g.nodes, adj = {};
+  const nodes = g.nodes, adj = {};
   g.order = []; g.planets = []; g.belt = 0; g.outer = MIN_ORBIT; g.sun = null; g.adj = adj; g.drawList = null;
   if (!nodes.length) return;      /* empty vault: outer stays at MIN_ORBIT so the camera maths holds */
   nodes.forEach(function (n) { adj[n.id] = []; });
   g.edges.forEach(function (e) { adj[e.a.id].push(e.b); adj[e.b.id].push(e.a); });
 
   /* the note you're editing is the sun whether or not it has links */
-  var focusId = focusedPane ? String(focusedPane.noteId) : null, sun = null;
+  const focusId = focusedPane ? String(focusedPane.noteId) : null;
+  let sun = null;
   nodes.forEach(function (n) { if (String(n.id) === focusId) sun = n; });
   if (!sun) nodes.forEach(function (n) { if (!sun || n.deg > sun.deg) sun = n; });
 
-  var depth = {}, parent = {}, queue = [sun];
+  const depth = {}, parent = {}, queue = [sun];
   depth[sun.id] = 0;
   while (queue.length) {
-    var c = queue.shift();
+    const c = queue.shift();
     adj[c.id].forEach(function (m) {
       if (depth[m.id] === undefined) { depth[m.id] = depth[c.id] + 1; parent[m.id] = c; queue.push(m); }
     });
@@ -43,7 +44,7 @@ function planSystem(g) {
   sun.kind = "sun"; sun.parent = null; sun.r = 0; sun.a = 0; sun.speed = 0; sun.size = 22; sun.moons = 0;
   g.sun = sun; g.order.push(sun);
 
-  var planets = nodes.filter(function (n) { return depth[n.id] === 1; }).sort(function (a, b) { return b.deg - a.deg; });
+  const planets = nodes.filter(function (n) { return depth[n.id] === 1; }).sort(function (a, b) { return b.deg - a.deg; });
   planets.forEach(function (n, i) {
     n.kind = "planet"; n.parent = sun; n.moons = 0;
     n.r = 130 + i * 48;
@@ -55,18 +56,18 @@ function planSystem(g) {
   g.planets = planets;
 
   nodes.filter(function (n) { return depth[n.id] === 2; }).forEach(function (n) {
-    var pl = parent[n.id], j = pl.moons++;
+    const pl = parent[n.id], j = pl.moons++;
     n.kind = "moon"; n.parent = pl; n.moons = 0;
     n.r = pl.size + 14 + j * 11; n.a = j * 1.9; n.speed = 0.9 - j * 0.1; n.size = 3.5;
     g.order.push(n);
   });
 
-  var rocks = nodes.filter(function (n) { return !n.kind; });
-  var belt = 130 + planets.length * 48 + 70;
-  var rings = Math.max(3, Math.ceil(rocks.length / 48));
-  var perRing = Math.ceil(rocks.length / rings);
+  const rocks = nodes.filter(function (n) { return !n.kind; });
+  const belt = 130 + planets.length * 48 + 70;
+  const rings = Math.max(3, Math.ceil(rocks.length / 48));
+  const perRing = Math.ceil(rocks.length / rings);
   rocks.forEach(function (n, i) {
-    var ring = Math.floor(i / perRing), slot = i % perRing;
+    const ring = Math.floor(i / perRing), slot = i % perRing;
     n.kind = "rock"; n.parent = sun; n.moons = 0;
     n.r = belt + ring * 16;
     n.a = (slot / perRing) * Math.PI * 2 + ring * 0.6;
@@ -90,9 +91,10 @@ function stepPositions(dt) {
 }
 
 function fitScale() {
-  var w = graphCanvas.parentNode.clientWidth, h = graphCanvas.parentNode.clientHeight;
-  var need = Math.max(MIN_ORBIT, graphData.outer || 0) + 60;
-  var k = Math.min((w / 2) / need, (h / 2) / (need * TILT + 40));
+  const w = graphCanvas.parentNode.clientWidth, h = graphCanvas.parentNode.clientHeight;
+  const need = Math.max(MIN_ORBIT, graphData.outer || 0) + 60;
+  const tilt = graphData.simple ? 1 : TILT;       /* the simple graph lies flat */
+  const k = Math.min((w / 2) / need, (h / 2) / (need * tilt + 40));
   if (!isFinite(k) || k <= 0) return 1;          /* no canvas yet, or nothing to frame */
   return Math.max(0.25, Math.min(1.5, k));
 }
@@ -100,7 +102,7 @@ function toScreen(wx, wy, w, h) { return [w / 2 + (wx - cam.x) * cam.k, h / 2 + 
 function toWorld(sx, sy, w, h) { return [cam.x + (sx - w / 2) / cam.k, cam.y + (sy - h / 2) / cam.k]; }
 function screenRadius(n) {
   /* bodies on the near side of their orbit sit slightly closer, so draw them larger */
-  var near = n.parent && n.r ? 1 + 0.14 * ((n.y - n.parent.y) / (n.r * TILT)) : 1;
+  const near = n.parent && n.r ? 1 + 0.14 * ((n.y - n.parent.y) / (n.r * TILT)) : 1;
   return Math.max(2, n.size * Math.min(cam.k, 2.2) * near);
 }
 
@@ -111,14 +113,16 @@ function openGraph() {
   graphSel = null; graphHover = null;
   graphSide.classList.remove("show");
   graphData = buildGraph();
-  planSystem(graphData);
+  if (SimpleGraph.on()) SimpleGraph.plan(graphData);   /* dots and lines (js/14-graph-simple.js) */
+  else planSystem(graphData);
+  SimpleGraph.bar(graphData);
   sizeCanvas();
   cam.fit = fitScale();
   cam.x = cam.y = 0; cam.k = cam.tk = cam.fit; cam.follow = null; cam.home = false;
-  buildStars();
+  if (!graphData.simple) buildStars();
   document.getElementById("graphStats").textContent =
     graphData.nodes.length + " notes \u00b7 " + graphData.edges.length + " links" +
-    (graphData.sun ? " \u00b7 sun: " + graphData.sun.title : "");
+    (graphData.sun && !graphData.simple ? " \u00b7 sun: " + graphData.sun.title : "");
   gLast = performance.now();
   if (graphRaf) cancelAnimationFrame(graphRaf);
   tickGraph();
@@ -133,9 +137,9 @@ function closeGraph() {
 
 function tickGraph() {
   if (!state.graphOpen || !graphData) return;
-  var now = performance.now(), dt = Math.min(0.05, (now - gLast) / 1000);
+  const now = performance.now(), dt = Math.min(0.05, (now - gLast) / 1000);
   gLast = now;
-  stepPositions(dt);
+  if (graphData.simple) SimpleGraph.step(graphData); else stepPositions(dt);
   if (cam.follow) { cam.x += (cam.follow.x - cam.x) * 0.15; cam.y += (cam.follow.y - cam.y) * 0.15; }
   else if (cam.home) { cam.x += (0 - cam.x) * 0.1; cam.y += (0 - cam.y) * 0.1; if (Math.abs(cam.x) + Math.abs(cam.y) < 0.5) cam.home = false; }
   cam.k += (cam.tk - cam.k) * 0.12;
@@ -146,21 +150,21 @@ function tickGraph() {
 /* ---- looks: every body gets a stable identity from its title ---- */
 
 function hashStr(s) {
-  var h = 2166136261;
-  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
   return h >>> 0;
 }
 /* planets are tinted along a maroon -> orange -> blue sweep, picked by name */
-var PLANET_HUES = [
+const PLANET_HUES = [
   ["#b0495a", "#5e2634"], ["#c9713f", "#6b3520"], ["#d99a5b", "#7a5230"],
   ["#6e8fe8", "#33477e"], ["#5f9e8f", "#2c4e46"], ["#8a6bb0", "#432f5c"],
   ["#c05f7a", "#5f2c3c"], ["#7fa4c9", "#3b4f66"]
 ];
 function bodyLook(n) {
   if (n.look) return n.look;
-  var h = hashStr(n.title);
+  const h = hashStr(n.title);
   /* low bits of FNV cluster for similar names, so pick the hue from higher ones */
-  var pair = PLANET_HUES[(h >>> 5) % PLANET_HUES.length];
+  const pair = PLANET_HUES[(h >>> 5) % PLANET_HUES.length];
   n.look = {
     lit: pair[0], dark: pair[1],
     tilt: ((h >> 3) % 100) / 100 * Math.PI,
@@ -176,19 +180,19 @@ function bodyLook(n) {
 }
 
 /* ---- starfield: drawn once into an offscreen canvas, panned with parallax ---- */
-var starLayers = null;
-var starInk = null;
+let starLayers = null;
+let starInk = null;
 function buildStars() {
   starLayers = [];
   starInk = GP.star;
-  var specs = [[220, 0.7, 0.14, 0.12], [120, 1.1, 0.26, 0.30], [46, 1.7, 0.5, 0.6]];
+  const specs = [[220, 0.7, 0.14, 0.12], [120, 1.1, 0.26, 0.30], [46, 1.7, 0.5, 0.6]];
   specs.forEach(function (spec) {
-    var c = document.createElement("canvas"), size = 900;
+    const c = document.createElement("canvas"), size = 900;
     c.width = c.height = size;
-    var x = c.getContext("2d");
-    for (var i = 0; i < spec[0]; i++) {
-      var px = Math.random() * size, py = Math.random() * size;
-      var a = spec[2] + Math.random() * spec[2];
+    const x = c.getContext("2d");
+    for (let i = 0; i < spec[0]; i++) {
+      const px = Math.random() * size, py = Math.random() * size;
+      const a = spec[2] + Math.random() * spec[2];
       x.fillStyle = "rgba(" + GP.star + "," + a.toFixed(3) + ")";
       x.beginPath(); x.arc(px, py, spec[1] * (0.6 + Math.random() * 0.7), 0, Math.PI * 2); x.fill();
     }
@@ -196,7 +200,7 @@ function buildStars() {
   });
 }
 function drawStars(w, h) {
-  var neb = gctx.createRadialGradient(w * 0.32, h * 0.28, 0, w * 0.32, h * 0.28, Math.max(w, h) * 0.8);
+  const neb = gctx.createRadialGradient(w * 0.32, h * 0.28, 0, w * 0.32, h * 0.28, Math.max(w, h) * 0.8);
   neb.addColorStop(0, GP.nebula[0]);
   neb.addColorStop(0.5, GP.nebula[1]);
   neb.addColorStop(1, GP.nebula[2]);
@@ -204,18 +208,18 @@ function drawStars(w, h) {
   gctx.fillRect(0, 0, w, h);
   if (!starLayers || starInk !== GP.star) buildStars();   /* rebuilt when the theme changes */
   starLayers.forEach(function (L) {
-    var sz = L.size;
-    var ox = -(cam.x * cam.k * L.depth) % sz, oy = -(cam.y * cam.k * L.depth) % sz;
+    const sz = L.size;
+    let ox = -(cam.x * cam.k * L.depth) % sz, oy = -(cam.y * cam.k * L.depth) % sz;
     if (ox > 0) ox -= sz;
     if (oy > 0) oy -= sz;
-    for (var gx = ox; gx < w; gx += sz)
-      for (var gy = oy; gy < h; gy += sz)
+    for (let gx = ox; gx < w; gx += sz)
+      for (let gy = oy; gy < h; gy += sz)
         gctx.drawImage(L.canvas, gx, gy);
   });
 }
 
 /* ---- orbits are ellipses seen at an angle, so the system reads as 3D ---- */
-var TILT = 0.42;                       /* how far the plane is tipped away from the viewer */
+const TILT = 0.42;                       /* how far the plane is tipped away from the viewer */
 function orbitPath(cx, cy, r, k) {
   gctx.ellipse(cx, cy, r * k, r * k * TILT, 0, 0, Math.PI * 2);
 }
@@ -224,7 +228,7 @@ function orbitPath(cx, cy, r, k) {
    drawing itself is identical in both - only the ink changes.
    Night: a dark sky, pale stars, a warm sun. Day: white paper with a faint peach-pink
    wash, navy stars like a printed chart, and the sun in the brand peach, pink and rose. */
-var GRAPH_NIGHT = {
+const GRAPH_NIGHT = {
   sky: "#08090b",
   nebula: ["rgba(60,40,72,0.20)", "rgba(28,32,54,0.13)", "rgba(8,9,11,0)"],
   star: "226,227,229",
@@ -240,7 +244,7 @@ var GRAPH_NIGHT = {
   labelHot: "#f0e6d6", labelLinked: "#d4917c", label: "#b9bcc4", labelDim: "#7d8087",
   labelHalo: "rgba(8,9,11,0.85)"
 };
-var GRAPH_DAY = {
+const GRAPH_DAY = {
   sky: "#fbfdff",
   nebula: ["rgba(142,195,223,0.20)", "rgba(174,212,232,0.16)", "rgba(255,255,255,0)"],
   star: "15,43,61",
@@ -256,13 +260,14 @@ var GRAPH_DAY = {
   labelHot: "#0f2b3d", labelLinked: "#1a6585", label: "#2c4a5e", labelDim: "#46606f",
   labelHalo: "rgba(255,255,255,0.92)"
 };
-var GP = GRAPH_NIGHT;
+let GP = GRAPH_NIGHT;
 
-var GRAPH_FONT = "Segoe UI, Helvetica Neue, Arial, sans-serif";
+const GRAPH_FONT = "Segoe UI, Helvetica Neue, Arial, sans-serif";
 
 /* One frame of the solar system. Each step below draws one layer, back to front;
    the frame's shared facts (camera, sun position, what is selected) travel in v. */
 function drawGraph(w, h) {
+  if (graphData.simple) { SimpleGraph.draw(w, h); return; }
   GP = isLight() ? GRAPH_DAY : GRAPH_NIGHT;
   gctx.clearRect(0, 0, w, h);
   gctx.fillStyle = GP.sky;
@@ -270,8 +275,8 @@ function drawGraph(w, h) {
   drawStars(w, h);
   if (!graphData.sun) return;
 
-  var hot = graphSel || graphHover;
-  var v = {
+  const hot = graphSel || graphHover;
+  const v = {
     w: w, h: h, k: cam.k, t: performance.now() / 1000,
     sun: toScreen(0, 0, w, h), sr: screenRadius(graphData.sun),
     hot: hot, near: {}
@@ -288,9 +293,9 @@ function drawGraph(w, h) {
 
 /* orbit rings, brighter for the body you are looking at; the belt; moon orbits when close */
 function drawOrbits(v) {
-  var hot = v.hot, sun = v.sun, k = v.k;
+  const hot = v.hot, sun = v.sun, k = v.k;
   graphData.planets.forEach(function (n) {
-    var lit = hot && (n === hot || n.parent === hot || (hot.parent && hot.parent === n));
+    const lit = hot && (n === hot || n.parent === hot || (hot.parent && hot.parent === n));
     gctx.strokeStyle = lit ? GP.orbitLit : GP.orbit;
     gctx.lineWidth = lit ? 1.4 : 1;
     gctx.beginPath(); orbitPath(sun[0], sun[1], n.r, k); gctx.stroke();
@@ -306,7 +311,7 @@ function drawOrbits(v) {
     gctx.strokeStyle = GP.moonOrbit;
     graphData.order.forEach(function (n) {
       if (n.kind !== "moon") return;
-      var pp = toScreen(n.parent.x, n.parent.y, v.w, v.h);
+      const pp = toScreen(n.parent.x, n.parent.y, v.w, v.h);
       gctx.beginPath(); orbitPath(pp[0], pp[1], n.r, k); gctx.stroke();
     });
   }
@@ -314,12 +319,12 @@ function drawOrbits(v) {
 
 /* links of the hovered or selected body, drawn as a curve rather than a chord */
 function drawHotLinks(v) {
-  var hp = toScreen(v.hot.x, v.hot.y, v.w, v.h);
+  const hp = toScreen(v.hot.x, v.hot.y, v.w, v.h);
   gctx.lineWidth = 1.2;
   graphData.adj[v.hot.id].forEach(function (m) {
-    var mp = toScreen(m.x, m.y, v.w, v.h);
-    var mx = (hp[0] + mp[0]) / 2, my = (hp[1] + mp[1]) / 2 - Math.abs(mp[0] - hp[0]) * 0.12;
-    var g = gctx.createLinearGradient(hp[0], hp[1], mp[0], mp[1]);
+    const mp = toScreen(m.x, m.y, v.w, v.h);
+    const mx = (hp[0] + mp[0]) / 2, my = (hp[1] + mp[1]) / 2 - Math.abs(mp[0] - hp[0]) * 0.12;
+    const g = gctx.createLinearGradient(hp[0], hp[1], mp[0], mp[1]);
     g.addColorStop(0, GP.linkNear);
     g.addColorStop(1, GP.linkFar);
     gctx.strokeStyle = g;
@@ -330,15 +335,15 @@ function drawHotLinks(v) {
 
 /* the sun: corona, breathing glow, a few flares, then the core */
 function drawSun(v) {
-  var sun = v.sun, sr = v.sr, t = v.t;
-  var pulse = 1 + Math.sin(t * 0.9) * 0.05;
+  const sun = v.sun, sr = v.sr, t = v.t;
+  const pulse = 1 + Math.sin(t * 0.9) * 0.05;
   gctx.fillStyle = radial(sun[0], sun[1], sr * 0.5, sun[0], sun[1], sr * 5 * pulse, [[0, GP.corona[0]], [0.35, GP.corona[1]], [1, GP.corona[2]]]);
   disc(sun[0], sun[1], sr * 5 * pulse);
   gctx.strokeStyle = GP.flare;
   gctx.lineWidth = 1.4;
-  for (var f = 0; f < 5; f++) {
-    var fa = t * 0.25 + f * 1.257;
-    var fl = sr * (1.25 + 0.28 * Math.sin(t * 1.7 + f));
+  for (let f = 0; f < 5; f++) {
+    const fa = t * 0.25 + f * 1.257;
+    const fl = sr * (1.25 + 0.28 * Math.sin(t * 1.7 + f));
     gctx.beginPath();
     gctx.moveTo(sun[0] + Math.cos(fa) * sr, sun[1] + Math.sin(fa) * sr);
     gctx.lineTo(sun[0] + Math.cos(fa) * fl, sun[1] + Math.sin(fa) * fl);
@@ -353,24 +358,24 @@ function drawSun(v) {
 function drawBodies(v) {
   /* the same bodies every frame, so keep the array and just re-sort it by depth */
   if (!graphData.drawList) graphData.drawList = graphData.order.filter(function (n) { return n.kind !== "sun"; });
-  var list = graphData.drawList;
+  const list = graphData.drawList;
   list.sort(function (a, b) { return a.y - b.y; });
   gctx.textAlign = "center";
   list.forEach(function (n) {
-    var p = toScreen(n.x, n.y, v.w, v.h), r = screenRadius(n);
+    const p = toScreen(n.x, n.y, v.w, v.h), r = screenRadius(n);
     if (p[0] < -60 || p[1] < -60 || p[0] > v.w + 60 || p[1] > v.h + 60) return;   /* off screen */
-    var isHot = n === graphSel || n === graphHover;
-    var linked = !!v.near[n.id];
+    const isHot = n === graphSel || n === graphHover;
+    const linked = !!v.near[n.id];
     /* the far half of an orbit sits behind the sun: fade it back */
-    var depth = n.parent ? 0.72 + 0.28 * ((n.y - n.parent.y) / (n.r || 1) + 1) / 2 : 1;
+    const depth = n.parent ? 0.72 + 0.28 * ((n.y - n.parent.y) / (n.r || 1) + 1) / 2 : 1;
 
     if (n.kind === "rock") drawRock(p, r, depth, isHot || linked);
     else drawPlanet(n, p, r, depth, v);
     if (isHot || linked) drawHalo(p, r);
 
     if (n.kind === "planet" || isHot || linked || v.k >= 1.6) {
-      var label = n.title.length > 24 ? n.title.slice(0, 23) + "\u2026" : n.title;
-      var ink = isHot ? GP.labelHot : linked ? GP.labelLinked : n.kind === "planet" ? GP.label : GP.labelDim;
+      const label = n.title.length > 24 ? n.title.slice(0, 23) + "\u2026" : n.title;
+      const ink = isHot ? GP.labelHot : linked ? GP.labelLinked : n.kind === "planet" ? GP.label : GP.labelDim;
       drawLabel(label, p[0], p[1] + r + 13, isHot ? "600 11px" : "11px", ink, isHot || linked ? 1 : 0.55 + depth * 0.4);
     }
   });
@@ -385,11 +390,11 @@ function drawRock(p, r, depth, lit) {
 
 /* a planet or moon: lit from the sun side, optional ring (back half, disc, front half), bands when close */
 function drawPlanet(n, p, r, depth, v) {
-  var look = bodyLook(n), ringed = look.ring && v.k > 0.5;
-  var ang = Math.atan2(n.y, n.x);                  /* light comes from the sun */
+  const look = bodyLook(n), ringed = look.ring && v.k > 0.5;
+  const ang = Math.atan2(n.y, n.x);                  /* light comes from the sun */
   gctx.globalAlpha = depth;
   if (ringed) drawRingHalf(p, r, look, Math.PI, Math.PI * 2, GP.ringBack);
-  var lx = p[0] - Math.cos(ang) * r * 0.45, ly = p[1] - Math.sin(ang) * r * 0.45;
+  const lx = p[0] - Math.cos(ang) * r * 0.45, ly = p[1] - Math.sin(ang) * r * 0.45;
   gctx.fillStyle = radial(lx, ly, r * 0.08, p[0], p[1], r * 1.15, [[0, look.lit], [0.55, look.lit], [1, look.dark]]);
   disc(p[0], p[1], r);
   if (v.k > 1.1 && n.kind === "planet" && r > 7) {   /* a couple of latitude bands, clipped to the disc */
@@ -397,8 +402,8 @@ function drawPlanet(n, p, r, depth, v) {
     gctx.beginPath(); gctx.arc(p[0], p[1], r, 0, Math.PI * 2); gctx.clip();
     gctx.globalAlpha = depth * 0.20;
     gctx.fillStyle = look.dark;
-    for (var b = 0; b < look.bands; b++) {
-      var by = p[1] - r + (r * 2) * ((b + 1) / (look.bands + 1)) + Math.sin(v.t * 0.2 + look.spin * 4) * 1.5;
+    for (let b = 0; b < look.bands; b++) {
+      const by = p[1] - r + (r * 2) * ((b + 1) / (look.bands + 1)) + Math.sin(v.t * 0.2 + look.spin * 4) * 1.5;
       gctx.fillRect(p[0] - r, by - r * 0.11, r * 2, r * 0.22);
     }
     gctx.restore();
@@ -443,23 +448,23 @@ function drawLabel(text, x, y, weightSize, ink, alpha) {
 /* small drawing helpers */
 function disc(x, y, r) { gctx.beginPath(); gctx.arc(x, y, r, 0, Math.PI * 2); gctx.fill(); }
 function radial(x0, y0, r0, x1, y1, r1, stops) {
-  var g = gctx.createRadialGradient(x0, y0, r0, x1, y1, r1);
+  const g = gctx.createRadialGradient(x0, y0, r0, x1, y1, r1);
   stops.forEach(function (s) { g.addColorStop(s[0], s[1]); });
   return g;
 }
 
 function graphNodeAt(sx, sy) {
   if (!graphData) return null;
-  var w = graphCanvas.parentNode.clientWidth, h = graphCanvas.parentNode.clientHeight;
-  for (var i = graphData.order.length - 1; i >= 0; i--) {
-    var n = graphData.order[i], p = toScreen(n.x, n.y, w, h), r = Math.max(12, screenRadius(n) + 4);
+  const w = graphCanvas.parentNode.clientWidth, h = graphCanvas.parentNode.clientHeight;
+  for (let i = graphData.order.length - 1; i >= 0; i--) {
+    const n = graphData.order[i], p = toScreen(n.x, n.y, w, h), r = Math.max(12, screenRadius(n) + 4);
     if ((sx - p[0]) * (sx - p[0]) + (sy - p[1]) * (sy - p[1]) <= r * r) return n;
   }
   return null;
 }
 function graphNodeByTitle(title) {
-  var t = String(title).toLowerCase();
-  for (var i = 0; i < graphData.nodes.length; i++) if (graphData.nodes[i].title.toLowerCase() === t) return graphData.nodes[i];
+  const t = String(title).toLowerCase();
+  for (let i = 0; i < graphData.nodes.length; i++) if (graphData.nodes[i].title.toLowerCase() === t) return graphData.nodes[i];
   return null;
 }
 
@@ -472,7 +477,7 @@ function graphSelect(n) {
     graphSide.classList.add("show");
     sizeCanvas();
     /* zoom relative to the visible canvas: about 260 world units across its short side */
-    var wrap = graphCanvas.parentNode;
+    const wrap = graphCanvas.parentNode;
     cam.tk = Math.max(cam.k, Math.max(1.5, Math.min(6, Math.min(wrap.clientWidth, wrap.clientHeight) / 260)));
   } else {
     cam.follow = null; cam.home = true;
@@ -484,68 +489,71 @@ function graphSelect(n) {
 }
 
 function renderGraphSide(n) {
-  var note = findNote(n.id);
+  const note = findNote(n.id);
   graphSide.innerHTML = "";
   if (!note) return;
-  var head = document.createElement("div");
+  const head = document.createElement("div");
   head.className = "gs-head";
-  var kind = n.kind === "sun" ? "Sun" : n.kind === "planet" ? "Planet of " + n.parent.title : n.kind === "moon" ? "Moon of " + n.parent.title : "Belt";
+  const kind = n.kind === "note" ? "Note" : n.kind === "sun" ? "Sun" : n.kind === "planet" ? "Planet of " + n.parent.title : n.kind === "moon" ? "Moon of " + n.parent.title : "Belt";
   head.innerHTML = '<div class="gs-title">' + esc(note.title) + '</div>' +
     '<div class="gs-meta">' + esc(kind) + " \u00b7 " + n.deg + (n.deg === 1 ? " link" : " links") + (note.path ? " \u00b7 " + esc(note.path) : "") + "</div>";
-  var actions = document.createElement("div");
+  const actions = document.createElement("div");
   actions.className = "gs-actions";
-  var open = document.createElement("button");
+  const open = document.createElement("button");
   open.className = "new-btn"; open.textContent = "Open note";
   open.addEventListener("click", function () { closeGraph(); openInPane(note.id, focusedPane || panes[0]); renderSidebar(); });
-  var split = document.createElement("button");
+  const split = document.createElement("button");
   split.className = "btn-mini"; split.textContent = "Open in split";
   split.addEventListener("click", function () { closeGraph(); addPane(focusedPane || panes[0], note.id); renderSidebar(); });
-  var back = document.createElement("button");
+  const back = document.createElement("button");
   back.className = "btn-mini"; back.textContent = "Back out";
   back.addEventListener("click", function () { graphSelect(null); });
   actions.appendChild(open); actions.appendChild(split); actions.appendChild(back);
   head.appendChild(actions);
   graphSide.appendChild(head);
 
-  var links = graphData.adj[n.id];
+  const links = graphData.adj[n.id];
   if (links.length) {
-    var lk = document.createElement("div");
+    const lk = document.createElement("div");
     lk.className = "gs-links";
     lk.innerHTML = "Linked: " + links.map(function (m) { return '<span class="wl" data-wikilink="' + escAttr(m.title) + '">' + esc(m.title) + "</span>"; }).join(" ");
     graphSide.appendChild(lk);
   }
 
-  var body = document.createElement("div");
+  const body = document.createElement("div");
   body.className = "gs-body";
   renderMarkdownInto(body, note.content);
   body.addEventListener("mousedown", function (e) {
-    var wl = e.target.closest("[data-wikilink]");
+    const wl = e.target.closest("[data-wikilink]");
     if (!wl) return;
     e.preventDefault();
-    var target = graphNodeByTitle(wl.dataset.wikilink);
+    const target = graphNodeByTitle(wl.dataset.wikilink);
     if (target) graphSelect(target);
   });
   graphSide.appendChild(body);
   graphSide.addEventListener("mousedown", function (e) {
-    var wl = e.target.closest(".gs-links [data-wikilink]");
+    const wl = e.target.closest(".gs-links [data-wikilink]");
     if (!wl) return;
     e.preventDefault();
-    var target = graphNodeByTitle(wl.dataset.wikilink);
+    const target = graphNodeByTitle(wl.dataset.wikilink);
     if (target) graphSelect(target);
   });
 }
 
 /* ---- pointer: click selects, drag pans, wheel zooms about the cursor ---- */
 graphCanvas.addEventListener("mousedown", function (e) {
-  var pt = evLocal(graphCanvas, e), x = pt[0], y = pt[1];
+  const pt = evLocal(graphCanvas, e), x = pt[0], y = pt[1];
   gDown = { node: graphNodeAt(x, y), x: x, y: y, cx: cam.x, cy: cam.y, moved: false };
 });
 graphCanvas.addEventListener("mousemove", function (e) {
-  var pt = evLocal(graphCanvas, e), x = pt[0], y = pt[1];
+  const pt = evLocal(graphCanvas, e), x = pt[0], y = pt[1];
   if (gDown && (e.buttons & 1)) {
-    var dx = x - gDown.x, dy = y - gDown.y;
+    const dx = x - gDown.x, dy = y - gDown.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) gDown.moved = true;
-    if (gDown.moved) {
+    if (gDown.moved && graphData && graphData.simple && gDown.node) {   /* the simple graph: drag the dot itself */
+      const wr = graphCanvas.getBoundingClientRect(), wp = toWorld(x, y, wr.width, wr.height);
+      SimpleGraph.drag(gDown.node, wp[0], wp[1]);
+    } else if (gDown.moved) {
       cam.follow = null; cam.home = false;
       cam.x = gDown.cx - dx / cam.k; cam.y = gDown.cy - dy / cam.k;
     }
@@ -554,17 +562,18 @@ graphCanvas.addEventListener("mousemove", function (e) {
   graphHover = graphNodeAt(x, y);
   graphCanvas.style.cursor = graphHover ? "pointer" : "grab";
 });
-var gPick = null;          /* the note the last click chose, and when */
+let gPick = null;          /* the note the last click chose, and when */
 window.addEventListener("mouseup", function () {
   if (!gDown) return;
-  var d = gDown; gDown = null;
+  const d = gDown; gDown = null;
   if (!d.moved && d.node) { graphSelect(d.node); gPick = { node: d.node, t: performance.now() }; }
+  if (d.moved && d.node && graphData && graphData.simple) SimpleGraph.release(d.node);
 });
 graphCanvas.addEventListener("dblclick", function (e) {
   /* the first click starts the camera moving towards its note, so by the second click
      something else may be under the pointer: open the note the first click chose */
-  var pt = evLocal(graphCanvas, e);
-  var n = gPick && performance.now() - gPick.t < 600 ? gPick.node : graphNodeAt(pt[0], pt[1]);
+  const pt = evLocal(graphCanvas, e);
+  const n = gPick && performance.now() - gPick.t < 600 ? gPick.node : graphNodeAt(pt[0], pt[1]);
   gPick = null;
   if (!n) return;
   closeGraph();
@@ -573,11 +582,11 @@ graphCanvas.addEventListener("dblclick", function (e) {
 });
 graphCanvas.addEventListener("wheel", function (e) {
   e.preventDefault();
-  var rect = graphCanvas.getBoundingClientRect();
-  var w = rect.width, h = rect.height;
-  var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-  var before = toWorld(sx, sy, w, h);
-  var nk = Math.max(0.2, Math.min(6, cam.k * Math.exp(-e.deltaY * 0.0012)));
+  const rect = graphCanvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const before = toWorld(sx, sy, w, h);
+  const nk = Math.max(0.2, Math.min(6, cam.k * Math.exp(-e.deltaY * 0.0012)));
   cam.k = cam.tk = nk;
   if (!cam.follow) {
     /* keep the world point under the cursor fixed */

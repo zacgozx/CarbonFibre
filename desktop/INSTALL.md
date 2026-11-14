@@ -114,6 +114,21 @@ npm run dist:linux
 
 Output in `desktop/dist/`: an `.AppImage` (runs anywhere) and a `.deb` (Ubuntu, Debian).
 
+## Updating on a Mac
+
+Installed apps don't change when the repo does. On a Mac that has the repo cloned (and Git, Node and
+Python from step 1), CarbonFibre updates itself from Git:
+
+- **In the app:** CarbonFibre menu > **Update from Git...** The first time it asks where the repo is.
+- **Or in Finder:** double-click `desktop/Update CarbonFibre.command`.
+
+Terminal opens and runs `desktop/scripts/update-mac.sh`. It does a `git pull`, builds the app for this
+Mac (the same build as `npm run dist:mac`, for this Mac only, which is quicker), closes CarbonFibre,
+puts the new version where the old one was, and opens it again. Built on your Mac, it opens without
+the "Open Anyway" step. If anything fails, the version you have stays.
+
+If `git pull` stops because you changed files in the repo on that Mac, commit them or `git stash` first.
+
 ## Opening it the first time
 
 None of the builds are signed (that needs paid certificates), so each system warns once:

@@ -67,9 +67,9 @@ const PluginManager = {
   badge(c) {
     if (!c) return '<span class="cfp-badge cfp-wait">Checking…</span>';
     if (c.error) return '<span class="cfp-badge cfp-wait" title="' + escAttr(c.error) + '">Couldn’t check</span>';
-    return c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
+    return (c.net && c.level !== "no" ? '<span class="cfp-badge cfp-netb" title="Asks to use the internet when you switch it on">Internet</span> ' : "") + (c.level === "ok" ? '<span class="cfp-badge cfp-ok">Works</span>'
       : c.level === "partial" ? '<span class="cfp-badge cfp-part">Partly works</span>'
-      : '<span class="cfp-badge cfp-no">Can’t run here</span>';
+      : '<span class="cfp-badge cfp-no">Can’t run here</span>');
   },
   why(c) {
     if (!c || c.error) return "";
@@ -91,7 +91,7 @@ const PluginManager = {
     const n = PluginHost.installed.length;
     w.querySelector('.cfp-tab[data-cfptab="installed"]').textContent = "Installed" + (n ? " (" + n + ")" : "");
     w.querySelector(".cfp-lede").innerHTML = desk
-      ? "Obsidian community plugins, running inside CarbonFibre. Plugins can’t reach the internet, and ones that need something CarbonFibre doesn’t have are greyed out. A plugin can read and change your notes, so install ones you trust."
+      ? "Obsidian community plugins, running inside CarbonFibre. A plugin that uses the internet asks first, and you can take that back below. Ones that need something CarbonFibre doesn’t have are greyed out. A plugin can read and change your notes, so install ones you trust."
       : "<strong>Plugins run in the CarbonFibre desktop app</strong> (macOS, Windows and Linux). This web version only runs its own code, which keeps your notes safe from injected scripts, so plugins are switched off here.";
     w.classList.toggle("cfp-web", !desk);
     const body = w.querySelector(".cfp-body");
@@ -117,7 +117,7 @@ const PluginManager = {
         '<div class="cfp-main"><div class="cfp-name">' + esc(String(m.name || p.id)) + ' <span class="cfp-ver">' + esc(String(m.version || "")) + "</span> " + PluginManager.badge(c) + "</div>" +
           '<div class="cfp-by">' + (m.author ? "by " + esc(String(m.author)) : "") + "</div>" +
           '<div class="cfp-desc">' + esc(String(m.description || "")) + "</div>" +
-          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + "</div>" +
+          (err ? '<p class="cfp-err">Didn’t start: ' + esc(err) + "</p>" : "") + PluginManager.why(c) + PluginManager.netLine(p) + "</div>" +
         '<div class="cfp-side">' +
           (tab ? '<button class="cfp-icon" data-cfpact="settings" title="Settings" aria-label="Settings for ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("settings", 16) + "</button>" : "") +
           '<button class="cfp-icon" data-cfpact="remove" title="Uninstall" aria-label="Uninstall ' + escAttr(String(m.name || p.id)) + '">' + PluginIcons.svg("trash", 16) + "</button>" +
@@ -128,6 +128,14 @@ const PluginManager = {
     body.innerHTML = h;
   },
 
+  /* a plugin that uses the internet: whether it may, and the button to change that */
+  netLine(p) {
+    if (!p.compat || !p.compat.net) return "";
+    return p.network
+      ? '<p class="cfp-net">' + PluginIcons.svg("globe", 14) + ' Can use the internet <button class="cfp-btn cfp-small" data-cfpact="netoff">Take away</button></p>'
+      : '<p class="cfp-net cfp-dim">' + PluginIcons.svg("globe", 14) + ' ' + (p.network === false ? "Not allowed to use the internet" : "Uses the internet: asks when switched on") +
+        ' <button class="cfp-btn cfp-small" data-cfpact="neton">Allow…</button></p>';
+  },
   renderBrowse(body) {
     body.innerHTML =
       '<div class="cfp-toolbar"><input id="cfpSearch" class="cfp-search" type="search" placeholder="Search community plugins" autocomplete="off" spellcheck="false" value="' + escAttr(PluginManager.query) + '">' +
@@ -238,6 +246,12 @@ const PluginManager = {
     if (!a || a.disabled) return;
     const act = a.dataset.cfpact, row = a.closest(".cfp-row"), id = row && row.dataset.id;
     if (act === "toggle") return;
+    if (act === "neton" || act === "netoff") {
+      const d = cfDesktopPlugins();
+      (act === "neton" ? d.askNetwork(id) : d.revokeNetwork(id)).catch(function () {})
+        .then(function () { return d.list(); }).then(function (l) { PluginHost.installed = l; PluginManager.refresh(); });
+      return;
+    }
     e.preventDefault();
     if (act === "tobrowse") { PluginManager.tab = "browse"; PluginManager.render(); }
     else if (act === "more") { PluginManager.shown += 40; PluginManager.renderList(); }
