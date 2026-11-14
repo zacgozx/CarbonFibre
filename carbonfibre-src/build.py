@@ -14,6 +14,9 @@ def script_hashes(text):
 def build():
     parts = [l.strip() for l in open(os.path.join(SRC, "manifest.txt"), encoding="utf-8") if l.strip() and not l.startswith("#")]
     text = "".join(open(os.path.join(SRC, p), encoding="utf-8", newline="").read() for p in parts)
+    # a Windows checkout (or a stray carriage return) must not change the page: browsers read CR as LF,
+    # so script hashes are only right if the build has plain LF line endings
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     if text.count("__SCRIPT_HASHES__") != 1: sys.exit("build: expected one __SCRIPT_HASHES__ in the CSP")
     if text.count("<script") != len(SCRIPT_RE.findall(text)):   # a stray "<script" (in a comment, say) would skew the hashes
         sys.exit("build: every <script must open a plain <script>...</script> block")
