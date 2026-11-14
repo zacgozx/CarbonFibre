@@ -214,15 +214,20 @@ const HostBridge = {
 
 /* Asking before doing something. Each returns a promise, because VS Code's dialogs answer later. */
 const Dialogs = {
+  /* the desktop app (desktop/) supplies native dialogs as window.cfDesktop; Electron has no window.prompt */
+  desktop: typeof window.cfDesktop === "object" && window.cfDesktop ? window.cfDesktop : null,
   confirm(message) {
+    if (Dialogs.desktop) return Dialogs.desktop.confirm(String(message)).then(Boolean);
     return HostBridge.active ? HostBridge.call("confirm", { message: String(message) }).then(Boolean) : Promise.resolve(window.confirm(message));
   },
   prompt(message, value) {
+    if (Dialogs.desktop) return Dialogs.desktop.prompt(String(message), value == null ? "" : String(value)).then(function (v) { return v == null ? null : String(v); });
     if (HostBridge.active) return HostBridge.call("prompt", { message: String(message), value: value == null ? "" : String(value) }).then(function (v) { return v == null ? null : String(v); });
     return Promise.resolve(window.prompt(message, value == null ? "" : value));
   },
   /* one of a few answers, as buttons in VS Code; in a browser, typed into a prompt */
   choose(message, choices, fallback) {
+    if (Dialogs.desktop) return Dialogs.desktop.choose(String(message), choices.map(String)).then(function (v) { return v || fallback; });
     if (HostBridge.active) return HostBridge.call("choose", { message: String(message), choices: choices }).then(function (v) { return v || fallback; });
     const typed = window.prompt(message + "\n\nType " + choices.join(", ") + ":", fallback);
     const v = String(typed || fallback).trim().toLowerCase();

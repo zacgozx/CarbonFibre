@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'" />
+<title>CarbonFibre</title>
+<style>
+:root { --bg: #202027; --txt: #e4e4e8; --field: #1a1a1f; --line: #3a3a44; --acc: #9b3d4b; --acc-txt: #fff; color-scheme: dark; }
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f6f6f8; --txt: #1d1d22; --field: #fff; --line: #c9c9d1; color-scheme: light; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--txt); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+form { padding: 18px 20px 16px; }
+#msg { margin: 0 0 12px; white-space: pre-wrap; word-break: break-word; }
+input { width: 100%; padding: 7px 9px; font: inherit; color: var(--txt); background: var(--field); border: 1px solid var(--line); border-radius: 5px; outline: none; }
+input:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(155, 61, 75, 0.35); }
+.row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+button { font: inherit; padding: 5px 16px; border-radius: 5px; border: 1px solid var(--line); background: transparent; color: var(--txt); cursor: pointer; }
+button[type="submit"] { background: var(--acc); border-color: var(--acc); color: var(--acc-txt); }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<form id="f">
+  <p id="msg"></p>
+  <input id="val" type="text" autocomplete="off" spellcheck="false" aria-labelledby="msg" />
+  <div class="row">
+    <button type="button" id="cancel">Cancel</button>
+    <button type="submit">OK</button>
+  </div>
+</form>
+<script src="prompt.js"></script>
+</body>
+</html>

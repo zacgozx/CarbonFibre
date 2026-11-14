@@ -9,7 +9,9 @@ publishes the app only.
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
 | `vscode-extension/` | The same app as a VS Code extension, working on a notes folder (see its README) | No |
+| `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron; see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
+| `.github/workflows/desktop.yml` | Builds the desktop installers on a `v*` tag | — |
 
 ## First time
 
