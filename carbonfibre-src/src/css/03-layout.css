@@ -120,7 +120,8 @@ body.resizing * { cursor: col-resize !important; }
 .sheet-head.show { display: flex; }
 /* the Sheets section scrolls on its own once it holds more than a handful, and can be folded away */
 .sheet-list { max-height: min(32vh, 290px); overflow-y: auto; padding: 0 6px 6px; flex-shrink: 0; }
-.sheet-head { cursor: pointer; }
+.sheet-head { cursor: pointer; justify-content: flex-start; gap: 6px; }   /* left-aligned like "Notes"; the + sits at the right */
+.sheet-head #btnNewSheet { margin-left: auto; }
 .sheet-head .sheet-count { margin-left: 6px; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--acc-soft); color: var(--acc-text); font-size: 12px; font-weight: 600; text-align: center; }
 .sheet-head .sheet-count:empty { display: none; }
 .sheet-head .sheet-chev { display: inline-flex; margin-right: 4px; transition: transform .12s; }

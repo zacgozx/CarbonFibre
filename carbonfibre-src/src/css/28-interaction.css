@@ -1,0 +1,24 @@
+/* ---------- how controls answer you: tooltips, press, hover ----------
+   Every button reacts the same way: it sinks slightly while pressed, and one you can't use shows
+   a not-allowed cursor. Clickable cards lift slightly under the pointer. Tooltips: js/44-tooltips.js. */
+.cf-tip {
+  position: fixed; inset: auto; margin: 0; z-index: 10000; max-width: min(340px, calc(100vw - 8px));
+  padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--txt);
+  font: 12.5px/1.4 var(--sans); white-space: normal; overflow-wrap: anywhere; pointer-events: auto;
+  box-shadow: 0 6px 18px rgba(var(--shd-rgb, 0, 0, 0), .28);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.cf-tip[hidden] { display: none; }
+.cf-tip-keys { display: inline-flex; gap: 3px; }
+.cf-tip kbd { font: 500 11px/1 var(--mono); min-width: 18px; padding: 3px 5px; border-radius: 4px; text-align: center;
+  border: 1px solid var(--line); border-bottom-width: 2px; background: var(--bg); color: var(--dim); }
+
+/* press: a small sink while held (scale is its own property, so it doesn't fight transforms already in use) */
+:where(button, [role="button"], .tab, .sb-btn, .act-btn) { transition: scale 110ms ease-out; }
+:where(button, [role="button"], .tab, .sb-btn, .act-btn):not(:disabled, [aria-disabled="true"]):active { scale: .96; }
+:where(button, [role="button"]):is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
+
+/* cards you can click: a slight lift */
+:where(.tbn-card, .tb-card, .tbd-kpi, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
+:where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
+@media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }

@@ -322,7 +322,7 @@ window.addEventListener("keydown", function (e) {
     e.preventDefault();
     fp.setMode(fp.mode === "live" ? "split" : "live");
   }
-  if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); state.graphOpen ? closeGraph() : openGraph(); }
+  if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); openGraph(); }
   if (mod && e.key === "\\") { e.preventDefault(); addPane(fp); }
   if (e.altKey && !mod) {
     /* by key position: Option+L on a Mac types "¬", so e.key is never "l" there */
@@ -344,7 +344,7 @@ window.addEventListener("keydown", function (e) {
       if (t != null) fp.open(t);
     }
   }
-  if (e.key === "Escape" && state.graphOpen) { e.preventDefault(); if (graphSel) graphSelect(null); else closeGraph(); }
+  if (e.key === "Escape" && state.graphOpen && focusedPane === graphPane) { e.preventDefault(); if (graphSel) graphSelect(null); else graphBackToNote(); }
 });
 
 window.addEventListener("beforeunload", function (e) {

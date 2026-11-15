@@ -96,11 +96,14 @@
 mark.fnd { background: rgba(var(--acc-rgb), 0.5); color: inherit; border-radius: 2px; box-shadow: 0 0 0 1px rgba(var(--acc-rgb), 0.6); }
 mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--acc); }
 
+/* a code block: one framed, slightly raised box from its opening ``` to its closing one */
 .ln-codefence {
-  font-family: var(--mono); font-size: 13.5px; background: var(--c131313);
+  font-family: var(--mono); font-size: 13.5px; background: var(--chrome-hi, var(--c131313));
   padding-left: 14px; padding-right: 14px;
   border-left: 1px solid var(--line); border-right: 1px solid var(--line);
 }
+.ln-codefence.ln-fenceopen { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; padding-top: 4px; }
+.ln-codefence.ln-fenceclose { border-bottom: 1px solid var(--line); border-radius: 0 0 8px 8px; padding-bottom: 4px; }
 .ln-fencedelim { color: var(--c555555); }
 /* copy button in the top corner of each code block */
 .ln-codefence.ln-fencedelim { position: relative; }

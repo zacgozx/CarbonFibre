@@ -123,7 +123,10 @@ a.xl:hover { border-bottom-color: var(--blu); }
 /* the filter button on a table header: a 26px target with a visible edge, so a click lands on it
    and not on the header cell beside it */
 .tf-btn { float: right; margin: -4px -6px -4px 6px; width: 26px; height: 26px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 6px; border: 1px solid transparent; cursor: pointer; opacity: 0.7; line-height: 0; }
+  border-radius: 6px; border: 1px solid transparent; cursor: pointer; opacity: 0; line-height: 0; transition: opacity .12s; }
+/* shown while you point at the header row or tab to it; a filter in use always shows */
+.ln-thead:hover .tf-btn, .tf-btn:focus-visible { opacity: 0.7; }
+@media (hover: none) { .tf-btn { opacity: 0.7; } }
 .tf-btn .ico { width: 15px; height: 15px; }
 .ln-thead .tcell:hover .tf-btn { opacity: 1; border-color: var(--line); background: var(--panel); }
 .tf-btn:hover { opacity: 1; background: var(--c1a1a1a); }

@@ -1,0 +1,56 @@
+import os, sys, json
+HERE = os.path.dirname(os.path.abspath(__file__)); CF = os.environ.get("CF_HTML", os.path.join(HERE, "..", "CarbonFibre.html"))
+from playwright.sync_api import sync_playwright
+# The graph is a tab in a pane: switch to a note and back without losing the view, Esc goes back to
+# the note, the tab's x closes it, notes picked in it open in the other pane, it survives a reload,
+# and it goes with its pane.
+ok = True
+def check(label, good, detail=""):
+    global ok; ok &= bool(good); print("  %-66s %s %s" % (label, "ok" if good else "FAIL", detail))
+notes = [{"id": 1, "title": "Alpha", "content": "# Alpha\n\n[[Bravo]] [[Charlie]]"}, {"id": 2, "title": "Bravo", "content": "[[Alpha]]"},
+         {"id": 3, "title": "Charlie", "content": "x"}]
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1400, "height": 820})
+    errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
+    pg.goto("file://" + CF)
+    pg.evaluate("s => { localStorage.clear(); localStorage.setItem('carbonfibre-welcomed', '1'); localStorage.setItem('carbonfibre-v1', s); }", json.dumps({"notes": notes, "seq": 4}))
+    pg.reload(); pg.wait_for_timeout(500)
+    E = lambda js, *a: pg.evaluate(js, *a)
+    E("() => openInPane(1, panes[0])"); pg.wait_for_timeout(150)
+    pg.keyboard.press("Control+g"); pg.wait_for_timeout(300)
+    tabs = lambda: E("() => [...panes[0].tabsEl.querySelectorAll('.tab')].map(t => (t.classList.contains('on') ? '*' : '') + t.textContent.trim())")
+    check("Ctrl+G opens a Graph tab beside the note tabs", E("() => panes[0].type") == "graph" and tabs() == ["*Graph", "Alpha"], str(tabs()))
+    check("it fills the pane, under the tab bar", E("() => { const g = document.getElementById('graph'), r = g.getBoundingClientRect(), bar = panes[0].root.querySelector('.pane-bar').getBoundingClientRect(); return g.parentNode === panes[0].root && r.top >= bar.bottom - 1 && r.width > 300; }"))
+    check("the canvas is drawn at the pane's size", E("() => { const c = document.getElementById('graphCanvas'); return Math.abs(c.width / (devicePixelRatio || 1) - c.parentNode.clientWidth) < 2; }"))
+    check("Live, Source and the breadcrumbs are hidden there", E("() => getComputedStyle(panes[0].root.querySelector('.md-live')).display === 'none' && panes[0].crumbEl.style.display === 'none'"))
+    check("the bar along the top is one line", E("() => document.querySelector('.graph-bar').getBoundingClientRect().height") < 48)
+    E("() => { cam.k = cam.tk = 2.5; cam.x = 40; }")
+    E("() => [...panes[0].tabsEl.querySelectorAll('.tab')].find(t => t.textContent.includes('Alpha')).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))"); pg.wait_for_timeout(200)
+    check("clicking a note tab shows the note and keeps the Graph tab", E("() => panes[0].type") == "note" and tabs() == ["Graph", "*Alpha"] and E("() => state.graphOpen") is False, str(tabs()))
+    E("() => panes[0].tabsEl.querySelector('.tab-graph').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))"); pg.wait_for_timeout(250)
+    check("clicking Graph comes back to the same zoom and place", E("() => panes[0].type") == "graph" and abs(E("() => cam.tk") - 2.5) < 0.01 and abs(E("() => cam.x") - 40) < 3, str(E("() => [cam.tk, cam.x]")))
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    check("Esc goes back to the note and keeps the tab", E("() => panes[0].type") == "note" and "Graph" in tabs())
+    E("() => openGraph()"); pg.wait_for_timeout(200)
+    print("SPLIT")
+    E("() => { addPane(panes[0], 3); panes[0].focusThis(); }"); pg.wait_for_timeout(200)
+    E("() => openGraph()"); pg.wait_for_timeout(200)
+    E("() => openFromGraph(2)"); pg.wait_for_timeout(200)
+    check("a note picked in the graph opens in the other pane; the graph stays", E("() => [panes[0].type, panes[1].type, panes[1].note() && panes[1].note().title]") == ["graph", "note", "Bravo"], str(E("() => [panes[0].type, panes[1].type]")))
+    E("() => openGraph()"); pg.wait_for_timeout(100)
+    check("opening it again doesn't make a second graph", E("() => document.querySelectorAll('.tab-graph').length") == 1)
+    print("RELOAD")
+    pg.wait_for_timeout(500); pg.reload(); pg.wait_for_timeout(900)
+    check("after a reload the Graph tab is back where it was", E("() => !!graphPane && graphPane === panes[0] && panes[0].type === 'graph' && state.graphOpen"), str(E("() => panes.map(q => q.type)")))
+    print("CLOSING")
+    E("() => closePane(panes[0])"); pg.wait_for_timeout(200)
+    check("closing its pane closes the graph safely", E("() => !graphPane && !state.graphOpen && document.getElementById('graph').parentNode.id === 'workarea'") and len(E("() => panes")) == 1)
+    E("() => { openGraph(); }"); pg.wait_for_timeout(200)
+    E("() => graphPane.tabsEl.querySelector('.tab-graph').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 1 }))"); pg.wait_for_timeout(200)
+    check("a middle-click on the tab closes it too", E("() => !graphPane && !document.querySelector('.tab-graph')"))
+    E("() => { tbOpenInPane(panes[0]); }"); pg.wait_for_timeout(200)
+    E("() => [...panes[0].tabsEl.querySelectorAll('.tab')].find(t => t.dataset.id).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))"); pg.wait_for_timeout(200)
+    check("with the board showing, clicking the note tab under it shows the note", E("() => panes[0].type") == "note")
+    check("no errors", not errs, errs[:2])
+    b.close()
+print("ALL PASS" if ok else "FAILURES"); sys.exit(0 if ok else 1)

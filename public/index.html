@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-THfdDU2NJ+sKn0Ht0IdwBONlqYmH2+GHSxyalOirWiw='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-/mnE2P7JIniSpBtGmg5PJIckGY6cx9o/zipvzf/C6zg='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -405,7 +405,8 @@ body.resizing * { cursor: col-resize !important; }
 .sheet-head.show { display: flex; }
 /* the Sheets section scrolls on its own once it holds more than a handful, and can be folded away */
 .sheet-list { max-height: min(32vh, 290px); overflow-y: auto; padding: 0 6px 6px; flex-shrink: 0; }
-.sheet-head { cursor: pointer; }
+.sheet-head { cursor: pointer; justify-content: flex-start; gap: 6px; }   /* left-aligned like "Notes"; the + sits at the right */
+.sheet-head #btnNewSheet { margin-left: auto; }
 .sheet-head .sheet-count { margin-left: 6px; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--acc-soft); color: var(--acc-text); font-size: 12px; font-weight: 600; text-align: center; }
 .sheet-head .sheet-count:empty { display: none; }
 .sheet-head .sheet-chev { display: inline-flex; margin-right: 4px; transition: transform .12s; }
@@ -568,6 +569,8 @@ body.resizing * { cursor: col-resize !important; }
 @keyframes tab-reveal { 0% { box-shadow: inset 0 0 0 2px var(--acc); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
 .tab.tab-reveal { animation: tab-reveal .9s ease-out; }
 @media (prefers-reduced-motion: reduce) { .tab.tab-reveal { animation: none; box-shadow: inset 0 0 0 2px var(--acc); } }
+/* the board and the graph: the note-only buttons (Live, Source, edit as sheet) do nothing there */
+.pane-col:is([data-type="taskboard"], [data-type="graph"]) :is(.md-live, .md-split, .md-sheet) { display: none; }
 /* ---------- lines ---------- */
 .ln { padding: 1px 0; min-height: 1.7em; overflow-wrap: anywhere; white-space: pre-wrap; tab-size: 4; }
 .ln.ln-sel { background: var(--blu-soft); }
@@ -693,7 +696,10 @@ a.xl:hover { border-bottom-color: var(--blu); }
 /* the filter button on a table header: a 26px target with a visible edge, so a click lands on it
    and not on the header cell beside it */
 .tf-btn { float: right; margin: -4px -6px -4px 6px; width: 26px; height: 26px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 6px; border: 1px solid transparent; cursor: pointer; opacity: 0.7; line-height: 0; }
+  border-radius: 6px; border: 1px solid transparent; cursor: pointer; opacity: 0; line-height: 0; transition: opacity .12s; }
+/* shown while you point at the header row or tab to it; a filter in use always shows */
+.ln-thead:hover .tf-btn, .tf-btn:focus-visible { opacity: 0.7; }
+@media (hover: none) { .tf-btn { opacity: 0.7; } }
 .tf-btn .ico { width: 15px; height: 15px; }
 .ln-thead .tcell:hover .tf-btn { opacity: 1; border-color: var(--line); background: var(--panel); }
 .tf-btn:hover { opacity: 1; background: var(--c1a1a1a); }
@@ -851,11 +857,14 @@ a.xl:hover { border-bottom-color: var(--blu); }
 mark.fnd { background: rgba(var(--acc-rgb), 0.5); color: inherit; border-radius: 2px; box-shadow: 0 0 0 1px rgba(var(--acc-rgb), 0.6); }
 mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--acc); }
 
+/* a code block: one framed, slightly raised box from its opening ``` to its closing one */
 .ln-codefence {
-  font-family: var(--mono); font-size: 13.5px; background: var(--c131313);
+  font-family: var(--mono); font-size: 13.5px; background: var(--chrome-hi, var(--c131313));
   padding-left: 14px; padding-right: 14px;
   border-left: 1px solid var(--line); border-right: 1px solid var(--line);
 }
+.ln-codefence.ln-fenceopen { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; padding-top: 4px; }
+.ln-codefence.ln-fenceclose { border-bottom: 1px solid var(--line); border-radius: 0 0 8px 8px; padding-bottom: 4px; }
 .ln-fencedelim { color: var(--c555555); }
 /* copy button in the top corner of each code block */
 .ln-codefence.ln-fencedelim { position: relative; }
@@ -882,7 +891,7 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 }
 .graph.show { display: flex; }
 .graph-bar {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden; container-type: inline-size;
   padding: 8px 14px; border-bottom: 1px solid var(--line);
   font-size: 12px; color: var(--dim);
 }
@@ -904,7 +913,12 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .gs-body { flex: 1; overflow-y: auto; padding: 12px 14px 30px; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
 .gs-body .ln { min-height: 1.6em; }
 
-.graph-close { margin-left: 10px; }
+/* in its pane, under the tab bar, filling the rest of the pane */
+.pane-col > .graph { position: relative; inset: auto; z-index: auto; flex: 1 1 auto; min-height: 0; }
+#graphStats { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#graphRecentre { margin-left: 10px; flex: none; }
+/* a narrow pane: the help line goes, the bar stays on one line */
+@container (max-width: 620px) { .graph-hint { display: none; } #graphRecentre { margin-left: auto; } }
 /* ---------- sketch board ---------- */
 /* ---- task board: CarbonFibre palette. Accent = the task you are on and your day's numbers,
    blue = navigation and selection, red = urgency, green = done, grey = inactive. ---- */
@@ -1064,7 +1078,13 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tb-titlerow { align-items: center;}
 .tb-titlerow h2, .tb-date { flex: none; }
 .tb-date { white-space: nowrap; }
-.tb-pin { flex: none; }
+/* Pin: a small icon beside the title (pressed: filled in the accent) */
+.tb-pin { flex: none; width: 26px; height: 26px; display: inline-grid; place-items: center; padding: 0; border-radius: 6px; border: 1px solid transparent;
+  background: transparent; color: var(--tb-mute); cursor: pointer; }
+.tb-pin .ico { width: 15px; height: 15px; }
+.tb-pin:hover { color: var(--tb-ink); border-color: var(--tb-line); }
+.tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); }
+.tb-pin[aria-pressed="true"] .ico path { fill: currentColor; fill-opacity: .25; }
 /* header: tighter, and the idle "working on" box is one slim line */
 .tb-top { padding: 12px 20px 10px; gap: 10px; }
 .tb-titlerow h2 { font-size: 18px; }
@@ -1080,7 +1100,9 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tb-dash { flex: 1; min-height: 0; overflow: auto; padding: 14px 20px 22px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; align-content: start; align-items: start; }
 .tb-dash[hidden], .tb-board[hidden] { display: none; }   /* their own display would otherwise win over hidden */
 /* figure cards */
-.tbd-kpis { grid-column: span 12; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+/* the five figure cards: as many per row as fit, and the last row stretches so no card sits alone beside a gap */
+.tbd-kpis { grid-column: span 12; display: flex; flex-wrap: wrap; gap: 12px; }
+.tbd-kpis > * { flex: 1 1 170px; min-width: 0; }
 .tbd-kpi { background: var(--tbd-card); border: 1px solid var(--tbd-cardline); border-radius: 10px; padding: 11px 14px 10px; box-shadow: var(--tbd-shadow); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tbd-kpi-l { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--tb-mute); font-weight: 600; }
 .tbd-kpi-l i, .tbd-head h3 i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
@@ -2654,6 +2676,30 @@ body.cf-obs-theme .side, body.cf-obs-theme .activity { background: var(--backgro
 body.cf-obs-theme .mo-head { background: var(--titlebar-background); }
 body.cf-obs-theme .statusbar { background: var(--status-bar-background); color: var(--status-bar-text-color); }
 body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
+/* ---------- how controls answer you: tooltips, press, hover ----------
+   Every button reacts the same way: it sinks slightly while pressed, and one you can't use shows
+   a not-allowed cursor. Clickable cards lift slightly under the pointer. Tooltips: js/44-tooltips.js. */
+.cf-tip {
+  position: fixed; inset: auto; margin: 0; z-index: 10000; max-width: min(340px, calc(100vw - 8px));
+  padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--txt);
+  font: 12.5px/1.4 var(--sans); white-space: normal; overflow-wrap: anywhere; pointer-events: auto;
+  box-shadow: 0 6px 18px rgba(var(--shd-rgb, 0, 0, 0), .28);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.cf-tip[hidden] { display: none; }
+.cf-tip-keys { display: inline-flex; gap: 3px; }
+.cf-tip kbd { font: 500 11px/1 var(--mono); min-width: 18px; padding: 3px 5px; border-radius: 4px; text-align: center;
+  border: 1px solid var(--line); border-bottom-width: 2px; background: var(--bg); color: var(--dim); }
+
+/* press: a small sink while held (scale is its own property, so it doesn't fight transforms already in use) */
+:where(button, [role="button"], .tab, .sb-btn, .act-btn) { transition: scale 110ms ease-out; }
+:where(button, [role="button"], .tab, .sb-btn, .act-btn):not(:disabled, [aria-disabled="true"]):active { scale: .96; }
+:where(button, [role="button"]):is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
+
+/* cards you can click: a slight lift */
+:where(.tbn-card, .tb-card, .tbd-kpi, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
+:where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
+@media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }
 </style>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
@@ -2748,7 +2794,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
         <button class="search-clear" id="searchClear" aria-label="Clear search"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
       </div>
       <div class="search-wrap search-repwrap">
-        <input class="search" id="searchRep" placeholder="Replace in every note (Ctrl+Shift+H)" autocomplete="off" aria-label="Replace with" />
+        <input class="search" id="searchRep" placeholder="Replace with…" title="Replace in every note (Ctrl+Shift+H)" autocomplete="off" aria-label="Replace with" />
         <button class="search-repall" id="searchRepAll" title="Replace every match in every note">Replace all</button>
       </div>
       <div class="search-count" id="searchCount" style="display:none;"></div>
@@ -2858,7 +2904,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
         <span id="graphStats"></span>
         <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
         <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
-        <button class="btn-mini graph-close" id="graphClose" type="button" title="Close the graph (Esc)" aria-label="Close the graph">Close</button>
+        <button class="btn-mini" id="graphRecentre" type="button" title="Fit the whole graph in view">Recentre</button>
       </div>
       <div class="graph-body">
         <div class="graph-canvas-wrap"><canvas id="graphCanvas"></canvas></div>
@@ -2954,7 +3000,8 @@ const ICON = {
   hash: '<path d="M6.2 2.5L5 13.5M11 2.5l-1.2 11M2.8 6h11M2.2 10h11"/>',
   command: '<path d="M4.5 2.5a2 2 0 1 0 2 2v7a2 2 0 1 1-2-2h7a2 2 0 1 1-2 2v-7a2 2 0 1 0 2-2z"/>',
   sort: '<path d="M4.5 2.5v11M2.5 11.5l2 2 2-2M8.5 4h5M8.5 8h3.5M8.5 12h2"/>',
-  check: '<path d="M3.5 8.5l3 3 6-6.5"/>'
+  check: '<path d="M3.5 8.5l3 3 6-6.5"/>',
+  graph: '<circle cx="4" cy="4.7" r="1.5"/><circle cx="12" cy="4.7" r="1.5"/><circle cx="8" cy="11.7" r="1.5"/><path d="M5.5 4.7h5M4.8 6l2.4 4.4M11.2 6l-2.4 4.4"/>'
 };
 const ICO_CACHE = {};
 function ico(name, cls) {
@@ -8519,7 +8566,7 @@ function lineClass(raw, fenceInfo) {
   if (fenceInfo && fenceInfo.fence && fenceInfo.lang === "excalidraw")
     return fenceInfo.fence === "open" ? "ln ln-sketch" : "ln ln-hidden";
   if (fenceInfo && fenceInfo.fence)
-    return "ln ln-codefence" + (fenceInfo.fence !== "in" ? " ln-fencedelim" : "");
+    return "ln ln-codefence" + (fenceInfo.fence === "open" ? " ln-fencedelim ln-fenceopen" : fenceInfo.fence === "close" ? " ln-fencedelim ln-fenceclose" : "");
   if (fenceInfo && fenceInfo.table) {
     const t = fenceInfo.table;
     if (t.role === "delim") return "ln ln-tdelim";
@@ -9982,13 +10029,7 @@ function createPane(index) {
   };
 
   p.open = function (id) {
-    if (p.type === "sketch") skReleasePane(p);          /* otherwise the old drawing stays on screen */
-    else if (p.type === "sheet") {
-      flushSheets();
-      p.type = "note"; p.sheetId = null;
-      if (p.grid) p.grid.root.classList.remove("show");
-    }
-    else if (p.type === "taskboard") { p.type = "note"; if (p.tbRoot) p.tbRoot.classList.remove("show"); }
+    leavePaneContent(p);                                /* a sheet, the board, a drawing or the graph: put away first */
     p.sync();
     p.deactivate();
     if (id != null && !findNote(id)) id = null;
@@ -10080,6 +10121,23 @@ function createPane(index) {
       bt.appendChild(bl); bt.appendChild(bx);
       p.tabsEl.appendChild(bt);
     }
+    if (p.graphTab) {                                   /* the graph: a tab that stays while you switch to a note and back */
+      const gt = document.createElement("div");
+      gt.className = "tab tab-graph" + (p.type === "graph" ? " on" : "");
+      gt.innerHTML = '<span class="tab-lbl">' + ico("graph") + " Graph</span>";
+      const gx = document.createElement("button");
+      gx.className = "tab-x"; gx.innerHTML = ico("x"); gx.title = "Close the graph";
+      gx.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+      gx.addEventListener("click", function (e) { e.stopPropagation(); closeGraph(); });
+      gt.appendChild(gx);
+      gt.addEventListener("mousedown", function (e) {
+        if (e.button === 1) { e.preventDefault(); closeGraph(); return; }
+        if (e.button !== 0) return;
+        focusThis();
+        if (p.type !== "graph") showGraphIn(p);
+      });
+      p.tabsEl.appendChild(gt);
+    }
     if (!p.tabs.length) {
       const e = document.createElement("div");
       e.className = "tabs-empty";
@@ -10106,7 +10164,7 @@ function createPane(index) {
         if (e.button === 1) { e.preventDefault(); p.closeTab(id); return; }
         if (e.button === 2) return;                       /* right-click: the tab's menu */
         focusThis();
-        if (!sameId(id, p.noteId)) p.open(id);
+        if (!sameId(id, p.noteId) || p.type !== "note") p.open(id);   /* the note under the board or graph comes back too */
       });
       /* drag a tab along its bar to reorder it, or onto another pane to move it there */
       t.draggable = true; t.dataset.id = String(id);
@@ -11742,9 +11800,11 @@ function createPane(index) {
   };
 
   PANE_RENDER.taskboard = function () { showNonNote(); };
+  PANE_RENDER.graph = function () { showNonNote(); };
   p.render = function () {
+    p.root.dataset.type = p.type;                       /* CSS hides note-only controls (Live, Source, ...) on the board and graph */
     if (p.tbRoot) p.tbRoot.classList.toggle("show", p.type === "taskboard");
-    if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" ? "none" : "";   /* the note's breadcrumbs don't belong on the board */
+    if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" || p.type === "graph" ? "none" : "";   /* the note's breadcrumbs don't belong there */
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
     const ab = document.getElementById("actBoard");
     if (ab) ab.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
@@ -11814,14 +11874,14 @@ const graphEl = document.getElementById("graph");
 function layoutPanes() {
   Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter")).forEach(function (g) { g.parentNode.removeChild(g); });
   panes.forEach(function (p, i) {
-    workarea.insertBefore(p.root, graphEl);
+    workarea.appendChild(p.root);
     p.root.style.flex = p.width + " 1 0px";
     if (i < panes.length - 1) {
       const g = document.createElement("div");
       g.className = "gutter pane-gutter";
       g.title = "Drag to resize";
       wirePaneGutter(g, i);
-      workarea.insertBefore(g, graphEl);
+      workarea.appendChild(g);
     }
   });
   const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
@@ -12091,8 +12151,19 @@ function addPane(after, noteId) {
   return p;
 }
 
+/* switching a pane away from whatever isn't a note (a sheet, the board, a docked sketch, the graph),
+   before it shows something else. One place, so every way of opening something handles all of them. */
+function leavePaneContent(p) {
+  if (p.type === "sketch" && typeof skReleasePane === "function") skReleasePane(p);
+  else if (p.type === "sheet") { flushSheets(); p.sheetId = null; if (p.grid) p.grid.root.classList.remove("show"); }
+  else if (p.type === "taskboard") { if (p.tbRoot) p.tbRoot.classList.remove("show"); }
+  else if (p.type === "graph") hideGraph();
+  if (p.type !== "note" && p.type !== "sketch") p.type = "note";
+}
+
 function closePane(p) {
   if (panes.length < 2) return;
+  if (p === graphPane) closeGraph();                       /* the graph goes with its pane */
   if (sk && sk.dockedIn === p) { closeSketch(); return; }   /* closeSketch comes back here */
   if (p.type === "sheet") flushSheets();
   p.sync();
@@ -12769,35 +12840,89 @@ function screenRadius(n) {
   return Math.max(2, n.size * Math.min(cam.k, 2.2) * near);
 }
 
-function openGraph() {
-  state.graphOpen = true;
+/* ---- the graph as a tab ----
+   It lives in one pane (graphPane), as a Graph tab beside that pane's note tabs. Clicking a note tab
+   shows the note and keeps the Graph tab; clicking Graph comes back to the same view and zoom. The
+   tab's \u00d7 closes it. Opening it again while it's open shows it (revealPane). */
+let graphPane = null;
+function openGraph(pane) {
+  if (graphPane && panes.indexOf(graphPane) !== -1) {
+    if (graphPane.type !== "graph") showGraphIn(graphPane);
+    revealPane(graphPane);
+    return;
+  }
+  graphPane = pane || focusedPane || panes[0];
+  graphPane.graphTab = true;
+  showGraphIn(graphPane, true);
+}
+/* show the graph in its pane; fresh: lay it out again (first open, or the solar/simple switch) */
+function showGraphIn(p, fresh) {
+  if (p.type !== "graph") { if (p.type === "note") { p.sync(); p.deactivate(); } leavePaneContent(p); }
+  p.type = "graph";
+  p.root.appendChild(graphEl);
   graphEl.classList.add("show");
+  state.graphOpen = true;
   document.getElementById("actGraph").classList.add("on");
+  p.render();
+  p.focusThis();
+  sizeCanvas();
+  if (fresh || !graphData) layOutGraph();
+  gLast = performance.now();
+  if (graphRaf) cancelAnimationFrame(graphRaf);
+  tickGraph();
+  scheduleSession();
+}
+function layOutGraph() {
   graphSel = null; graphHover = null;
   graphSide.classList.remove("show");
   graphData = buildGraph();
   if (SimpleGraph.on()) SimpleGraph.plan(graphData);   /* dots and lines (js/14-graph-simple.js) */
   else planSystem(graphData);
   SimpleGraph.bar(graphData);
-  sizeCanvas();
   cam.fit = fitScale();
   cam.x = cam.y = 0; cam.k = cam.tk = cam.fit; cam.follow = null; cam.home = false;
   if (!graphData.simple) buildStars();
   document.getElementById("graphStats").textContent =
     graphData.nodes.length + " notes \u00b7 " + graphData.edges.length + " links" +
     (graphData.sun && !graphData.simple ? " \u00b7 sun: " + graphData.sun.title : "");
-  gLast = performance.now();
-  if (graphRaf) cancelAnimationFrame(graphRaf);
-  tickGraph();
 }
-
-function closeGraph() {
+/* the pane shows something else: stop drawing, keep the tab and the view */
+function hideGraph() {
   state.graphOpen = false;
   graphEl.classList.remove("show");
-  document.getElementById("actGraph").classList.remove("on");
   if (graphRaf) { cancelAnimationFrame(graphRaf); graphRaf = null; }
 }
-document.getElementById("graphClose").addEventListener("click", function () { closeGraph(); });
+/* back to the pane's note, keeping the Graph tab (Esc) */
+function graphBackToNote() {
+  const p = graphPane;
+  if (!p || p.type !== "graph") return;
+  p.open(p.noteId != null && findNote(p.noteId) ? p.noteId : p.tabs[0]);
+}
+/* the tab's \u00d7: the graph goes; its pane shows its note */
+function closeGraph() {
+  const p = graphPane;
+  graphPane = null;
+  hideGraph();
+  workarea.appendChild(graphEl);
+  document.getElementById("actGraph").classList.remove("on");
+  if (p) {
+    p.graphTab = false;
+    if (p.type === "graph" && panes.indexOf(p) !== -1) p.open(p.noteId != null && findNote(p.noteId) ? p.noteId : p.tabs[0]);
+    else if (p.renderTabs) p.renderTabs();
+  }
+  scheduleSession();
+}
+/* a note picked in the graph: with another pane open, it opens there so the graph stays in view */
+function openFromGraph(id) {
+  const shown = paneShowing("note", id);
+  if (shown) { revealPane(shown); renderSidebar(); return; }
+  const other = graphPane && panes.filter(function (q) { return q !== graphPane; })[0];
+  if (other) openInPane(id, other); else openInPane(id, graphPane || focusedPane || panes[0], { here: true });
+  renderSidebar();
+}
+document.getElementById("graphRecentre").addEventListener("click", function () {
+  cam.follow = null; cam.home = true; cam.tk = cam.fit || cam.tk;
+});
 
 function tickGraph() {
   if (!state.graphOpen || !graphData) return;
@@ -13165,12 +13290,11 @@ function renderGraphSide(n) {
   actions.className = "gs-actions";
   const open = document.createElement("button");
   open.className = "new-btn"; open.textContent = "Open note";
-  open.addEventListener("click", function () { closeGraph(); openInPane(note.id, focusedPane || panes[0]); renderSidebar(); });
+  open.addEventListener("click", function () { openFromGraph(note.id); });
   const split = document.createElement("button");
   split.className = "btn-mini"; split.textContent = "Open in split";
   split.addEventListener("click", function () {
-    closeGraph();
-    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(focusedPane || panes[0], note.id);   /* already open: shown there */
+    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(graphPane || focusedPane || panes[0], note.id);   /* already open: shown there */
     renderSidebar();
   });
   const back = document.createElement("button");
@@ -13244,9 +13368,7 @@ graphCanvas.addEventListener("dblclick", function (e) {
   const n = gPick && performance.now() - gPick.t < 600 ? gPick.node : graphNodeAt(pt[0], pt[1]);
   gPick = null;
   if (!n) return;
-  closeGraph();
-  openInPane(n.id, focusedPane || panes[0]);
-  renderSidebar();
+  openFromGraph(n.id);
 });
 graphCanvas.addEventListener("wheel", function (e) {
   e.preventDefault();
@@ -13263,10 +13385,16 @@ graphCanvas.addEventListener("wheel", function (e) {
     cam.home = false;
   }
 }, { passive: false });
-/* the canvas changes size when the sidebar, a pane, or the reader column does - not only the window */
+/* the canvas changes size when the sidebar, a pane, or the reader column does - not only the window.
+   Coming back from another tab is not a resize: the view you left is kept. */
+let gWrapSeen = false;
 new ResizeObserver(function () {
-  if (!state.graphOpen || !graphData) return;
+  const wrap = graphCanvas.parentNode;
+  if (!state.graphOpen || !graphData || !wrap.clientWidth) { gWrapSeen = false; return; }
   sizeCanvas();
+  const shownAgain = !gWrapSeen;
+  gWrapSeen = true;
+  if (shownAgain) return;
   cam.fit = fitScale();
   if (!graphSel) cam.tk = cam.fit;
 }).observe(graphCanvas.parentNode);
@@ -13291,7 +13419,7 @@ const SimpleGraph = {
   },
   setMode(simple) {
     try { if (simple) localStorage.removeItem(SimpleGraph.KEY); else storeSet(SimpleGraph.KEY, "planets"); } catch (e) { /* storage off */ }
-    if (state.graphOpen) openGraph();
+    if (state.graphOpen && graphPane) showGraphIn(graphPane, true);
   },
 
   /* the top bar: its title, hint and (desktop) the switch */
@@ -13923,7 +14051,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
 /* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
 document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
-document.getElementById("actGraph").addEventListener("click", function () { if (!state.graphOpen) openGraph(); });
+document.getElementById("actGraph").addEventListener("click", function () { openGraph(); });
 
 /* ---------------- search input ---------------- */
 
@@ -21268,6 +21396,7 @@ function openSheetInPane(p, sheetId) {
   if (!sh) return;
   p.sync();
   p.deactivate();
+  if (p.type !== "sheet") leavePaneContent(p);
   if (!p.grid) { p.grid = makeGrid(p); p.root.appendChild(p.grid.root); }
   p.type = "sheet";
   p.sheetId = sheetId;
@@ -21992,7 +22121,9 @@ function tbBuild(p) {
   root.tabIndex = -1;
   root.innerHTML =
     '<header class="tb-top">' +
-      '<div class="tb-titlerow"><h2>Task board</h2><span class="tb-date"></span>' +
+      '<div class="tb-titlerow"><h2>Task board</h2>' +
+        '<button type="button" class="tb-pin" aria-pressed="false" aria-label="Pin the board" title="Pin: open the board whenever CarbonFibre starts"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 1.9l4.5 4.5-1.6.6-2.4 2.4-.4 3-1.2 1.2-2.6-2.6-3.3 3.3M4.3 7.6l1.2-1.2 3-.4 2.4-2.4.6-1.6"/></svg></button>' +
+        '<span class="tb-date"></span>' +
         '<span class="tb-summary"><b class="tb-sTime">0 min</b> logged today \u00b7 <b class="tb-sDone">0</b> done \u00b7 <b class="tb-sOpen">0</b> to do</span>' +
         '<span class="tb-actions">' +
         '<span class="tb-qa-row"><button type="button" class="tb-qa tb-qa--primary" data-qa="task" title="Add a task">+ Task</button>' +
@@ -22001,7 +22132,7 @@ function tbBuild(p) {
           '<button type="button" class="tb-qa" data-qa="chg" title="New note from the Change / downtime template"><span class="tb-long">Change note</span><span class="tb-short">Change</span></button>' +
           '<button type="button" class="tb-qa" data-qa="daily" title="Today\u2019s daily note (Ctrl+Alt+D)"><span class="tb-long">Daily note</span><span class="tb-short">Daily</span></button></span></span>' +
         '<span class="tb-views" role="tablist" aria-label="View"><button type="button" class="tb-view" data-view="dash" role="tab">Dashboard</button><button type="button" class="tb-view" data-view="notes" role="tab">Notes</button><button type="button" class="tb-view" data-view="board" role="tab">Board</button></span>' +
-        '<button type="button" class="tb-ghost tb-pin" aria-pressed="false" title="Open the board whenever CarbonFibre starts">Pin</button></span></div>' +
+        '</span></div>' +
       '<div class="tb-now">' +
         '<div class="tb-now-main"><div class="tb-lbl">Working on</div><h3 class="tb-runname"></h3><div class="tb-meta"></div></div>' +
         '<div class="tb-now-clock"><span class="tb-clock">0:00:00</span><span class="tb-est"></span><div class="tb-bar"><i></i></div></div>' +
@@ -22299,7 +22430,8 @@ function tbRender(p) {
   });
   root.querySelectorAll(".tb-chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.f === tb.filter)); });
   const pin = $(".tb-pin");
-  pin.setAttribute("aria-pressed", String(!!tb.pinned)); pin.textContent = tb.pinned ? "Pinned" : "Pin";
+  pin.setAttribute("aria-pressed", String(!!tb.pinned));
+  pin.title = tb.pinned ? "Pinned: the board opens whenever CarbonFibre starts (click to unpin)" : "Pin: open the board whenever CarbonFibre starts";
   $(".tb-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   $(".tb-sOpen").textContent = tb.tasks.filter(function (t) { return t.state === "open"; }).length;
   $(".tb-sDone").textContent = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === today; }).length;
@@ -22358,9 +22490,8 @@ function tbRenderAll() { panes.forEach(function (q) { if (q.type === "taskboard"
 function tbTickAll() { panes.forEach(function (q) { if (q.type === "taskboard") tbTick(q); }); }
 function tbOpenInPane(p) {
   if (!p) return;
-  if (p.type === "sheet") { flushSheets(); if (p.grid) p.grid.root.classList.remove("show"); }
-  if (p.type === "sketch" && typeof skReleasePane === "function") skReleasePane(p);
   if (p.type === "note") { p.sync(); p.deactivate(); }
+  leavePaneContent(p);
   if (!p.tbRoot) p.tbRoot = tbBuild(p);
   p.type = "taskboard";
   p.render();
@@ -24340,7 +24471,7 @@ function saveSession() {
       folder: state.dirHandle ? state.dirHandle.name : null,
       panes: panes.map(function (p) {
         return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, type: p.type,
-          sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null,
+          sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null, graph: !!p.graphTab,
           scroll: p.type === "note" ? (p.mode === "live" ? p.editorEl.scrollTop : p.srcEl.scrollTop) : 0 };
       }),
       focused: panes.indexOf(focusedPane),
@@ -24361,8 +24492,8 @@ function restoreSession() {
   const wanted = ss.panes.map(function (sp) {
     return { tabs: (sp.tabs || []).filter(function (t) { return findNote(t); }), noteId: sp.noteId,
       mode: sp.mode || "live", width: sp.width || 1, scroll: sp.scroll || 0,
-      type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" ? sp.type : "note",
-      sketchOpen: sp.sketchOpen, sheetId: sp.sheetId };
+      type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" || sp.type === "graph" ? sp.type : "note",
+      sketchOpen: sp.sketchOpen, sheetId: sp.sheetId, graph: !!sp.graph };
   }).filter(function (sp) { return sp.tabs.length; }).slice(0, MAX_PANES);
   if (!wanted.length) return false;
 
@@ -24391,6 +24522,11 @@ function restoreSession() {
       if (p.mode === "live") p.editorEl.scrollTop = sp.scroll; else p.srcEl.scrollTop = sp.scroll;
     });
     wanted.forEach(function (sp, i) { if (sp.type === "taskboard" && panes[i]) tbOpenInPane(panes[i]); });
+    wanted.forEach(function (sp, i) {                  /* the Graph tab, showing or behind the note */
+      if (!sp.graph || !panes[i] || graphPane) return;
+      openGraph(panes[i]);
+      if (sp.type !== "graph") graphBackToNote();
+    });
     wanted.forEach(function (sp, i) {                  /* sheets come back by id */
       if (sp.type !== "sheet" || !sp.sheetId || !panes[i]) return;
       if (findSheet(sp.sheetId)) openSheetInPane(panes[i], sp.sheetId);
@@ -24734,7 +24870,7 @@ window.addEventListener("keydown", function (e) {
     e.preventDefault();
     fp.setMode(fp.mode === "live" ? "split" : "live");
   }
-  if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); state.graphOpen ? closeGraph() : openGraph(); }
+  if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); openGraph(); }
   if (mod && e.key === "\\") { e.preventDefault(); addPane(fp); }
   if (e.altKey && !mod) {
     /* by key position: Option+L on a Mac types "¬", so e.key is never "l" there */
@@ -24756,7 +24892,7 @@ window.addEventListener("keydown", function (e) {
       if (t != null) fp.open(t);
     }
   }
-  if (e.key === "Escape" && state.graphOpen) { e.preventDefault(); if (graphSel) graphSelect(null); else closeGraph(); }
+  if (e.key === "Escape" && state.graphOpen && focusedPane === graphPane) { e.preventDefault(); if (graphSel) graphSelect(null); else graphBackToNote(); }
 });
 
 window.addEventListener("beforeunload", function (e) {
@@ -24934,6 +25070,177 @@ const GetApp = {
   }
 };
 GetApp.init();
+/* ============================================================
+   Tooltips. Every title="..." in the app becomes one of these instead of the browser's slow
+   built-in tooltip:
+   - shows after a short pause on hover, or when you Tab to the control; once one has shown, the
+     next control's shows at once, so you can sweep along a toolbar
+   - a trailing shortcut ("Graph (Ctrl+G)") shows as keys, as Mac keys on a Mac (Cmd, Option)
+   - you can move the pointer onto it without it going (WCAG 1.4.13), Esc closes it (that Esc does
+     nothing else), and it opens beside the left icon bar's icons so it never covers the next one
+   - screen readers: a tooltip that says more than the control's name becomes its description; one
+     that only repeats the name isn't read twice; a control with no name of its own takes it as name
+   The title stays readable and writable from code (el.title); only the attribute goes, which is
+   what makes the browser show its own tooltip. No libraries: the app is one file that works offline.
+   ============================================================ */
+const Tips = {
+  el: null, descBox: null, descIds: new Map(), cur: null, showT: 0, hideT: 0, warmUntil: 0,
+  DELAY: 450, WARM: 800, LINGER: 120,
+  mac: /Mac|iPhone|iPad/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ""),
+  INTERACTIVE: "button, a[href], input, select, textarea, summary, [tabindex], [role=button], [role=tab], [role=menuitem], [role=checkbox], [role=switch]",
+
+  init() {
+    const t = document.createElement("div");
+    t.id = "cfTip"; t.className = "cf-tip"; t.setAttribute("role", "tooltip"); t.hidden = true;
+    if (Object.prototype.hasOwnProperty.call(HTMLElement.prototype, "popover")) t.setAttribute("popover", "manual");   /* top layer: above dialogs too */
+    document.body.appendChild(t);
+    Tips.el = t;
+    const box = document.createElement("div");
+    box.id = "cfTipDescs"; box.hidden = true;
+    document.body.appendChild(box);
+    Tips.descBox = box;
+    Tips.adopt(document.body);
+    new MutationObserver(function (records) {
+      records.forEach(function (m) {
+        if (m.type === "attributes") { if (m.target.hasAttribute && m.target.hasAttribute("title")) Tips.adopt(m.target); }
+        else m.addedNodes.forEach(function (n) { if (n.nodeType === 1) Tips.adopt(n); });
+      });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["title"] });
+
+    document.addEventListener("pointerover", function (e) {
+      if (e.pointerType === "touch") return;
+      if (Tips.el.contains(e.target)) { clearTimeout(Tips.hideT); return; }   /* onto the tooltip itself: it stays */
+      const host = e.target.closest && e.target.closest("[data-tip]");
+      if (host === Tips.cur && host) { clearTimeout(Tips.hideT); return; }
+      if (host) Tips.want(host); else Tips.leave();
+    }, true);
+    document.documentElement.addEventListener("pointerleave", function () { Tips.leave(); });
+    document.addEventListener("focusin", function (e) {
+      const host = e.target.closest && e.target.closest("[data-tip]");
+      if (host && e.target.matches(":focus-visible")) Tips.want(host);
+    });
+    document.addEventListener("focusout", function () { if (Tips.cur && !Tips.cur.matches(":hover")) Tips.hide(); });
+    document.addEventListener("pointerdown", function (e) { if (!Tips.el.contains(e.target)) Tips.hide(); }, true);
+    window.addEventListener("scroll", function () { Tips.hide(); }, true);
+    window.addEventListener("blur", function () { Tips.hide(); });
+    /* Esc: closes the tooltip, and only that, the first time */
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && Tips.shown()) { e.preventDefault(); e.stopImmediatePropagation(); Tips.hide(); }
+      else if (Tips.shown() && e.key !== "Shift") Tips.hide();
+    }, true);
+  },
+
+  /* title -> data-tip, with the accessible name or description it carried */
+  adopt(root) {
+    const list = root.hasAttribute && root.hasAttribute("title") ? [root] : [];
+    if (root.querySelectorAll) Array.prototype.push.apply(list, root.querySelectorAll("[title]"));
+    list.forEach(function (el) {
+      if (el === Tips.el || el.closest("svg") || el.tagName === "IFRAME" || el.closest(".graph-side")) return;
+      const t = el.getAttribute("title");
+      el.removeAttribute("title");
+      Tips.set(el, t);
+    });
+  },
+  set(el, text) {
+    const t = String(text == null ? "" : text);
+    if (!Object.prototype.hasOwnProperty.call(el, "title")) {
+      Object.defineProperty(el, "title", { configurable: true, get: function () { return el.dataset.tip || ""; }, set: function (v) { Tips.set(el, v); } });
+    }
+    const old = el.dataset.tip;
+    if (t) el.dataset.tip = t; else delete el.dataset.tip;
+    if (Tips.cur === el && Tips.shown()) { if (t) Tips.fill(el); else Tips.hide(); }
+    if (!el.matches(Tips.INTERACTIVE)) return;
+    const plain = Tips.parse(t).text, oldPlain = old ? Tips.parse(old).text : "";
+    if (el.getAttribute("aria-label") === oldPlain && el.dataset.tipLabel) el.removeAttribute("aria-label");
+    const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(function (id) { return id && id.indexOf("cfTipD") !== 0; });
+    const name = Tips.nameOf(el);
+    if (!plain) { /* nothing to add */ }
+    else if (!name) { el.setAttribute("aria-label", plain); el.dataset.tipLabel = "1"; }
+    else if (Tips.norm(name) !== Tips.norm(plain) && Tips.norm(name) !== Tips.norm(t)) ids.push(Tips.descId(t));
+    if (ids.length) el.setAttribute("aria-describedby", ids.join(" ")); else el.removeAttribute("aria-describedby");
+  },
+  nameOf(el) {
+    const lb = el.getAttribute("aria-labelledby");
+    if (lb) return lb.split(/\s+/).map(function (id) { const x = document.getElementById(id); return x ? x.textContent : ""; }).join(" ");
+    if (el.getAttribute("aria-label") && !el.dataset.tipLabel) return el.getAttribute("aria-label");
+    let s = el.textContent || "";
+    el.querySelectorAll("img[alt]").forEach(function (i) { s += " " + i.alt; });
+    return s.trim();
+  },
+  norm(s) { return String(s || "").replace(/\s+/g, " ").trim().toLowerCase(); },
+  /* one hidden description per distinct text, shared by every control that says it */
+  descId(text) {
+    if (Tips.descIds.has(text)) return Tips.descIds.get(text);
+    const id = "cfTipD" + (Tips.descIds.size + 1), s = document.createElement("span");
+    s.id = id; s.textContent = text;
+    Tips.descBox.appendChild(s);
+    Tips.descIds.set(text, id);
+    return id;
+  },
+  /* "Graph (Ctrl+G)" -> text "Graph", keys ["Ctrl", "G"] */
+  parse(t) {
+    const m = /\s*\(((?:(?:Ctrl|Alt|Shift|Cmd|Meta|Option)\+)+(?:[^()\s]|[A-Za-z0-9]+)|F\d{1,2}|[A-Z0-9]|Shift\+\d|Del|Esc)\)\s*$/.exec(t);
+    if (!m) return { text: t, keys: [] };
+    const keys = m[1].replace(/\+\+$/, "+Plus").split("+").map(function (k) { return k === "Plus" ? "+" : k; });
+    return { text: t.slice(0, m.index), keys: keys };
+  },
+  keyLabel(k) {
+    if (!Tips.mac) return k;
+    return { Ctrl: "⌘", Cmd: "⌘", Meta: "⌘", Alt: "⌥", Option: "⌥", Shift: "⇧" }[k] || k;
+  },
+  shown() { return !!Tips.el && !Tips.el.hidden; },
+
+  want(host) {
+    clearTimeout(Tips.hideT); clearTimeout(Tips.showT);
+    if (Tips.cur !== host && Tips.shown()) Tips.hide(true);
+    Tips.cur = host;
+    if (performance.now() < Tips.warmUntil) Tips.show(host);
+    else Tips.showT = setTimeout(function () { if (Tips.cur === host && host.isConnected) Tips.show(host); }, Tips.DELAY);
+  },
+  leave() {
+    clearTimeout(Tips.showT);
+    if (!Tips.shown()) { Tips.cur = null; return; }
+    clearTimeout(Tips.hideT);
+    Tips.hideT = setTimeout(function () { Tips.hide(); }, Tips.LINGER);   /* the gap between control and tooltip doesn't close it */
+  },
+  fill(host) {
+    const p = Tips.parse(host.dataset.tip || "");
+    Tips.el.textContent = p.text;
+    if (p.keys.length) {
+      const k = document.createElement("span");
+      k.className = "cf-tip-keys";
+      p.keys.forEach(function (key) { const kb = document.createElement("kbd"); kb.textContent = Tips.keyLabel(key); k.appendChild(kb); });
+      Tips.el.appendChild(k);
+    }
+  },
+  show(host) {
+    if (!host.dataset.tip) return;
+    Tips.fill(host);
+    const t = Tips.el;
+    t.hidden = false;
+    if (t.showPopover && !t.matches(":popover-open")) { try { t.showPopover(); } catch (e) { /* not in the document */ } }
+    const r = host.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight, vw = innerWidth, vh = innerHeight, gap = 6;
+    let x, y;
+    if (host.closest("#activity")) {                    /* the left icon bar: beside the icon, never over the next one */
+      x = r.right + gap + 2; y = r.top + (r.height - h) / 2;
+    } else {
+      x = r.left + (r.width - w) / 2; y = r.bottom + gap;
+      if (y + h > vh - 4) y = r.top - gap - h;          /* no room below: above */
+    }
+    t.style.left = Math.round(Math.max(4, Math.min(vw - w - 4, x))) + "px";
+    t.style.top = Math.round(Math.max(4, Math.min(vh - h - 4, y))) + "px";
+  },
+  hide(keepWarm) {
+    clearTimeout(Tips.showT); clearTimeout(Tips.hideT);
+    if (Tips.shown()) {
+      Tips.warmUntil = performance.now() + Tips.WARM;
+      if (Tips.el.hidePopover && Tips.el.matches(":popover-open")) { try { Tips.el.hidePopover(); } catch (e) { /* closed already */ } }
+      Tips.el.hidden = true;
+    }
+    if (!keepWarm) Tips.cur = null;
+  }
+};
+Tips.init();
 /* ============================================================
    boot
    ============================================================ */

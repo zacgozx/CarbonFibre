@@ -98,3 +98,5 @@
 @keyframes tab-reveal { 0% { box-shadow: inset 0 0 0 2px var(--acc); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
 .tab.tab-reveal { animation: tab-reveal .9s ease-out; }
 @media (prefers-reduced-motion: reduce) { .tab.tab-reveal { animation: none; box-shadow: inset 0 0 0 2px var(--acc); } }
+/* the board and the graph: the note-only buttons (Live, Source, edit as sheet) do nothing there */
+.pane-col:is([data-type="taskboard"], [data-type="graph"]) :is(.md-live, .md-split, .md-sheet) { display: none; }

@@ -13,7 +13,7 @@ function saveSession() {
       folder: state.dirHandle ? state.dirHandle.name : null,
       panes: panes.map(function (p) {
         return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, type: p.type,
-          sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null,
+          sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null, graph: !!p.graphTab,
           scroll: p.type === "note" ? (p.mode === "live" ? p.editorEl.scrollTop : p.srcEl.scrollTop) : 0 };
       }),
       focused: panes.indexOf(focusedPane),
@@ -34,8 +34,8 @@ function restoreSession() {
   const wanted = ss.panes.map(function (sp) {
     return { tabs: (sp.tabs || []).filter(function (t) { return findNote(t); }), noteId: sp.noteId,
       mode: sp.mode || "live", width: sp.width || 1, scroll: sp.scroll || 0,
-      type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" ? sp.type : "note",
-      sketchOpen: sp.sketchOpen, sheetId: sp.sheetId };
+      type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" || sp.type === "graph" ? sp.type : "note",
+      sketchOpen: sp.sketchOpen, sheetId: sp.sheetId, graph: !!sp.graph };
   }).filter(function (sp) { return sp.tabs.length; }).slice(0, MAX_PANES);
   if (!wanted.length) return false;
 
@@ -64,6 +64,11 @@ function restoreSession() {
       if (p.mode === "live") p.editorEl.scrollTop = sp.scroll; else p.srcEl.scrollTop = sp.scroll;
     });
     wanted.forEach(function (sp, i) { if (sp.type === "taskboard" && panes[i]) tbOpenInPane(panes[i]); });
+    wanted.forEach(function (sp, i) {                  /* the Graph tab, showing or behind the note */
+      if (!sp.graph || !panes[i] || graphPane) return;
+      openGraph(panes[i]);
+      if (sp.type !== "graph") graphBackToNote();
+    });
     wanted.forEach(function (sp, i) {                  /* sheets come back by id */
       if (sp.type !== "sheet" || !sp.sheetId || !panes[i]) return;
       if (findSheet(sp.sheetId)) openSheetInPane(panes[i], sp.sheetId);

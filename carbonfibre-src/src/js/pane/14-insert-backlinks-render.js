@@ -107,9 +107,11 @@
   };
 
   PANE_RENDER.taskboard = function () { showNonNote(); };
+  PANE_RENDER.graph = function () { showNonNote(); };
   p.render = function () {
+    p.root.dataset.type = p.type;                       /* CSS hides note-only controls (Live, Source, ...) on the board and graph */
     if (p.tbRoot) p.tbRoot.classList.toggle("show", p.type === "taskboard");
-    if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" ? "none" : "";   /* the note's breadcrumbs don't belong on the board */
+    if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" || p.type === "graph" ? "none" : "";   /* the note's breadcrumbs don't belong there */
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
     const ab = document.getElementById("actBoard");
     if (ab) ab.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));

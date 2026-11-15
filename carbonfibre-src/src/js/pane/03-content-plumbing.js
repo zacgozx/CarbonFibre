@@ -28,13 +28,7 @@
   };
 
   p.open = function (id) {
-    if (p.type === "sketch") skReleasePane(p);          /* otherwise the old drawing stays on screen */
-    else if (p.type === "sheet") {
-      flushSheets();
-      p.type = "note"; p.sheetId = null;
-      if (p.grid) p.grid.root.classList.remove("show");
-    }
-    else if (p.type === "taskboard") { p.type = "note"; if (p.tbRoot) p.tbRoot.classList.remove("show"); }
+    leavePaneContent(p);                                /* a sheet, the board, a drawing or the graph: put away first */
     p.sync();
     p.deactivate();
     if (id != null && !findNote(id)) id = null;
@@ -126,6 +120,23 @@
       bt.appendChild(bl); bt.appendChild(bx);
       p.tabsEl.appendChild(bt);
     }
+    if (p.graphTab) {                                   /* the graph: a tab that stays while you switch to a note and back */
+      const gt = document.createElement("div");
+      gt.className = "tab tab-graph" + (p.type === "graph" ? " on" : "");
+      gt.innerHTML = '<span class="tab-lbl">' + ico("graph") + " Graph</span>";
+      const gx = document.createElement("button");
+      gx.className = "tab-x"; gx.innerHTML = ico("x"); gx.title = "Close the graph";
+      gx.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+      gx.addEventListener("click", function (e) { e.stopPropagation(); closeGraph(); });
+      gt.appendChild(gx);
+      gt.addEventListener("mousedown", function (e) {
+        if (e.button === 1) { e.preventDefault(); closeGraph(); return; }
+        if (e.button !== 0) return;
+        focusThis();
+        if (p.type !== "graph") showGraphIn(p);
+      });
+      p.tabsEl.appendChild(gt);
+    }
     if (!p.tabs.length) {
       const e = document.createElement("div");
       e.className = "tabs-empty";
@@ -152,7 +163,7 @@
         if (e.button === 1) { e.preventDefault(); p.closeTab(id); return; }
         if (e.button === 2) return;                       /* right-click: the tab's menu */
         focusThis();
-        if (!sameId(id, p.noteId)) p.open(id);
+        if (!sameId(id, p.noteId) || p.type !== "note") p.open(id);   /* the note under the board or graph comes back too */
       });
       /* drag a tab along its bar to reorder it, or onto another pane to move it there */
       t.draggable = true; t.dataset.id = String(id);

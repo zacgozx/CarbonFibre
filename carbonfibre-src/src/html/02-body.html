@@ -92,7 +92,7 @@
         <button class="search-clear" id="searchClear" aria-label="Clear search"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
       </div>
       <div class="search-wrap search-repwrap">
-        <input class="search" id="searchRep" placeholder="Replace in every note (Ctrl+Shift+H)" autocomplete="off" aria-label="Replace with" />
+        <input class="search" id="searchRep" placeholder="Replace with…" title="Replace in every note (Ctrl+Shift+H)" autocomplete="off" aria-label="Replace with" />
         <button class="search-repall" id="searchRepAll" title="Replace every match in every note">Replace all</button>
       </div>
       <div class="search-count" id="searchCount" style="display:none;"></div>
@@ -202,7 +202,7 @@
         <span id="graphStats"></span>
         <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
         <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
-        <button class="btn-mini graph-close" id="graphClose" type="button" title="Close the graph (Esc)" aria-label="Close the graph">Close</button>
+        <button class="btn-mini" id="graphRecentre" type="button" title="Fit the whole graph in view">Recentre</button>
       </div>
       <div class="graph-body">
         <div class="graph-canvas-wrap"><canvas id="graphCanvas"></canvas></div>

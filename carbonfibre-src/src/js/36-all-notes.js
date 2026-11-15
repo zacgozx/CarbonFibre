@@ -235,7 +235,9 @@ function tbBuild(p) {
   root.tabIndex = -1;
   root.innerHTML =
     '<header class="tb-top">' +
-      '<div class="tb-titlerow"><h2>Task board</h2><span class="tb-date"></span>' +
+      '<div class="tb-titlerow"><h2>Task board</h2>' +
+        '<button type="button" class="tb-pin" aria-pressed="false" aria-label="Pin the board" title="Pin: open the board whenever CarbonFibre starts"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 1.9l4.5 4.5-1.6.6-2.4 2.4-.4 3-1.2 1.2-2.6-2.6-3.3 3.3M4.3 7.6l1.2-1.2 3-.4 2.4-2.4.6-1.6"/></svg></button>' +
+        '<span class="tb-date"></span>' +
         '<span class="tb-summary"><b class="tb-sTime">0 min</b> logged today \u00b7 <b class="tb-sDone">0</b> done \u00b7 <b class="tb-sOpen">0</b> to do</span>' +
         '<span class="tb-actions">' +
         '<span class="tb-qa-row"><button type="button" class="tb-qa tb-qa--primary" data-qa="task" title="Add a task">+ Task</button>' +
@@ -244,7 +246,7 @@ function tbBuild(p) {
           '<button type="button" class="tb-qa" data-qa="chg" title="New note from the Change / downtime template"><span class="tb-long">Change note</span><span class="tb-short">Change</span></button>' +
           '<button type="button" class="tb-qa" data-qa="daily" title="Today\u2019s daily note (Ctrl+Alt+D)"><span class="tb-long">Daily note</span><span class="tb-short">Daily</span></button></span></span>' +
         '<span class="tb-views" role="tablist" aria-label="View"><button type="button" class="tb-view" data-view="dash" role="tab">Dashboard</button><button type="button" class="tb-view" data-view="notes" role="tab">Notes</button><button type="button" class="tb-view" data-view="board" role="tab">Board</button></span>' +
-        '<button type="button" class="tb-ghost tb-pin" aria-pressed="false" title="Open the board whenever CarbonFibre starts">Pin</button></span></div>' +
+        '</span></div>' +
       '<div class="tb-now">' +
         '<div class="tb-now-main"><div class="tb-lbl">Working on</div><h3 class="tb-runname"></h3><div class="tb-meta"></div></div>' +
         '<div class="tb-now-clock"><span class="tb-clock">0:00:00</span><span class="tb-est"></span><div class="tb-bar"><i></i></div></div>' +
@@ -542,7 +544,8 @@ function tbRender(p) {
   });
   root.querySelectorAll(".tb-chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.f === tb.filter)); });
   const pin = $(".tb-pin");
-  pin.setAttribute("aria-pressed", String(!!tb.pinned)); pin.textContent = tb.pinned ? "Pinned" : "Pin";
+  pin.setAttribute("aria-pressed", String(!!tb.pinned));
+  pin.title = tb.pinned ? "Pinned: the board opens whenever CarbonFibre starts (click to unpin)" : "Pin: open the board whenever CarbonFibre starts";
   $(".tb-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   $(".tb-sOpen").textContent = tb.tasks.filter(function (t) { return t.state === "open"; }).length;
   $(".tb-sDone").textContent = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === today; }).length;
@@ -601,9 +604,8 @@ function tbRenderAll() { panes.forEach(function (q) { if (q.type === "taskboard"
 function tbTickAll() { panes.forEach(function (q) { if (q.type === "taskboard") tbTick(q); }); }
 function tbOpenInPane(p) {
   if (!p) return;
-  if (p.type === "sheet") { flushSheets(); if (p.grid) p.grid.root.classList.remove("show"); }
-  if (p.type === "sketch" && typeof skReleasePane === "function") skReleasePane(p);
   if (p.type === "note") { p.sync(); p.deactivate(); }
+  leavePaneContent(p);
   if (!p.tbRoot) p.tbRoot = tbBuild(p);
   p.type = "taskboard";
   p.render();

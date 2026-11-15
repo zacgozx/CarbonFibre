@@ -210,7 +210,7 @@ function lineClass(raw, fenceInfo) {
   if (fenceInfo && fenceInfo.fence && fenceInfo.lang === "excalidraw")
     return fenceInfo.fence === "open" ? "ln ln-sketch" : "ln ln-hidden";
   if (fenceInfo && fenceInfo.fence)
-    return "ln ln-codefence" + (fenceInfo.fence !== "in" ? " ln-fencedelim" : "");
+    return "ln ln-codefence" + (fenceInfo.fence === "open" ? " ln-fencedelim ln-fenceopen" : fenceInfo.fence === "close" ? " ln-fencedelim ln-fenceclose" : "");
   if (fenceInfo && fenceInfo.table) {
     const t = fenceInfo.table;
     if (t.role === "delim") return "ln ln-tdelim";

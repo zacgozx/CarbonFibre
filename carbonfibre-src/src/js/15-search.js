@@ -457,7 +457,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
 /* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
 document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
-document.getElementById("actGraph").addEventListener("click", function () { if (!state.graphOpen) openGraph(); });
+document.getElementById("actGraph").addEventListener("click", function () { openGraph(); });
 
 /* ---------------- search input ---------------- */
 

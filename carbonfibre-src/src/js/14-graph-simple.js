@@ -18,7 +18,7 @@ const SimpleGraph = {
   },
   setMode(simple) {
     try { if (simple) localStorage.removeItem(SimpleGraph.KEY); else storeSet(SimpleGraph.KEY, "planets"); } catch (e) { /* storage off */ }
-    if (state.graphOpen) openGraph();
+    if (state.graphOpen && graphPane) showGraphIn(graphPane, true);
   },
 
   /* the top bar: its title, hint and (desktop) the switch */

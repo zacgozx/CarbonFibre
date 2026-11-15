@@ -24,6 +24,7 @@ function openSheetInPane(p, sheetId) {
   if (!sh) return;
   p.sync();
   p.deactivate();
+  if (p.type !== "sheet") leavePaneContent(p);
   if (!p.grid) { p.grid = makeGrid(p); p.root.appendChild(p.grid.root); }
   p.type = "sheet";
   p.sheetId = sheetId;

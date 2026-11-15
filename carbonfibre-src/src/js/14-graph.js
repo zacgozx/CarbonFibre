@@ -106,35 +106,89 @@ function screenRadius(n) {
   return Math.max(2, n.size * Math.min(cam.k, 2.2) * near);
 }
 
-function openGraph() {
-  state.graphOpen = true;
+/* ---- the graph as a tab ----
+   It lives in one pane (graphPane), as a Graph tab beside that pane's note tabs. Clicking a note tab
+   shows the note and keeps the Graph tab; clicking Graph comes back to the same view and zoom. The
+   tab's \u00d7 closes it. Opening it again while it's open shows it (revealPane). */
+let graphPane = null;
+function openGraph(pane) {
+  if (graphPane && panes.indexOf(graphPane) !== -1) {
+    if (graphPane.type !== "graph") showGraphIn(graphPane);
+    revealPane(graphPane);
+    return;
+  }
+  graphPane = pane || focusedPane || panes[0];
+  graphPane.graphTab = true;
+  showGraphIn(graphPane, true);
+}
+/* show the graph in its pane; fresh: lay it out again (first open, or the solar/simple switch) */
+function showGraphIn(p, fresh) {
+  if (p.type !== "graph") { if (p.type === "note") { p.sync(); p.deactivate(); } leavePaneContent(p); }
+  p.type = "graph";
+  p.root.appendChild(graphEl);
   graphEl.classList.add("show");
+  state.graphOpen = true;
   document.getElementById("actGraph").classList.add("on");
+  p.render();
+  p.focusThis();
+  sizeCanvas();
+  if (fresh || !graphData) layOutGraph();
+  gLast = performance.now();
+  if (graphRaf) cancelAnimationFrame(graphRaf);
+  tickGraph();
+  scheduleSession();
+}
+function layOutGraph() {
   graphSel = null; graphHover = null;
   graphSide.classList.remove("show");
   graphData = buildGraph();
   if (SimpleGraph.on()) SimpleGraph.plan(graphData);   /* dots and lines (js/14-graph-simple.js) */
   else planSystem(graphData);
   SimpleGraph.bar(graphData);
-  sizeCanvas();
   cam.fit = fitScale();
   cam.x = cam.y = 0; cam.k = cam.tk = cam.fit; cam.follow = null; cam.home = false;
   if (!graphData.simple) buildStars();
   document.getElementById("graphStats").textContent =
     graphData.nodes.length + " notes \u00b7 " + graphData.edges.length + " links" +
     (graphData.sun && !graphData.simple ? " \u00b7 sun: " + graphData.sun.title : "");
-  gLast = performance.now();
-  if (graphRaf) cancelAnimationFrame(graphRaf);
-  tickGraph();
 }
-
-function closeGraph() {
+/* the pane shows something else: stop drawing, keep the tab and the view */
+function hideGraph() {
   state.graphOpen = false;
   graphEl.classList.remove("show");
-  document.getElementById("actGraph").classList.remove("on");
   if (graphRaf) { cancelAnimationFrame(graphRaf); graphRaf = null; }
 }
-document.getElementById("graphClose").addEventListener("click", function () { closeGraph(); });
+/* back to the pane's note, keeping the Graph tab (Esc) */
+function graphBackToNote() {
+  const p = graphPane;
+  if (!p || p.type !== "graph") return;
+  p.open(p.noteId != null && findNote(p.noteId) ? p.noteId : p.tabs[0]);
+}
+/* the tab's \u00d7: the graph goes; its pane shows its note */
+function closeGraph() {
+  const p = graphPane;
+  graphPane = null;
+  hideGraph();
+  workarea.appendChild(graphEl);
+  document.getElementById("actGraph").classList.remove("on");
+  if (p) {
+    p.graphTab = false;
+    if (p.type === "graph" && panes.indexOf(p) !== -1) p.open(p.noteId != null && findNote(p.noteId) ? p.noteId : p.tabs[0]);
+    else if (p.renderTabs) p.renderTabs();
+  }
+  scheduleSession();
+}
+/* a note picked in the graph: with another pane open, it opens there so the graph stays in view */
+function openFromGraph(id) {
+  const shown = paneShowing("note", id);
+  if (shown) { revealPane(shown); renderSidebar(); return; }
+  const other = graphPane && panes.filter(function (q) { return q !== graphPane; })[0];
+  if (other) openInPane(id, other); else openInPane(id, graphPane || focusedPane || panes[0], { here: true });
+  renderSidebar();
+}
+document.getElementById("graphRecentre").addEventListener("click", function () {
+  cam.follow = null; cam.home = true; cam.tk = cam.fit || cam.tk;
+});
 
 function tickGraph() {
   if (!state.graphOpen || !graphData) return;
@@ -502,12 +556,11 @@ function renderGraphSide(n) {
   actions.className = "gs-actions";
   const open = document.createElement("button");
   open.className = "new-btn"; open.textContent = "Open note";
-  open.addEventListener("click", function () { closeGraph(); openInPane(note.id, focusedPane || panes[0]); renderSidebar(); });
+  open.addEventListener("click", function () { openFromGraph(note.id); });
   const split = document.createElement("button");
   split.className = "btn-mini"; split.textContent = "Open in split";
   split.addEventListener("click", function () {
-    closeGraph();
-    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(focusedPane || panes[0], note.id);   /* already open: shown there */
+    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(graphPane || focusedPane || panes[0], note.id);   /* already open: shown there */
     renderSidebar();
   });
   const back = document.createElement("button");
@@ -581,9 +634,7 @@ graphCanvas.addEventListener("dblclick", function (e) {
   const n = gPick && performance.now() - gPick.t < 600 ? gPick.node : graphNodeAt(pt[0], pt[1]);
   gPick = null;
   if (!n) return;
-  closeGraph();
-  openInPane(n.id, focusedPane || panes[0]);
-  renderSidebar();
+  openFromGraph(n.id);
 });
 graphCanvas.addEventListener("wheel", function (e) {
   e.preventDefault();
@@ -600,10 +651,16 @@ graphCanvas.addEventListener("wheel", function (e) {
     cam.home = false;
   }
 }, { passive: false });
-/* the canvas changes size when the sidebar, a pane, or the reader column does - not only the window */
+/* the canvas changes size when the sidebar, a pane, or the reader column does - not only the window.
+   Coming back from another tab is not a resize: the view you left is kept. */
+let gWrapSeen = false;
 new ResizeObserver(function () {
-  if (!state.graphOpen || !graphData) return;
+  const wrap = graphCanvas.parentNode;
+  if (!state.graphOpen || !graphData || !wrap.clientWidth) { gWrapSeen = false; return; }
   sizeCanvas();
+  const shownAgain = !gWrapSeen;
+  gWrapSeen = true;
+  if (shownAgain) return;
   cam.fit = fitScale();
   if (!graphSel) cam.tk = cam.fit;
 }).observe(graphCanvas.parentNode);

@@ -25,7 +25,8 @@ const ICON = {
   hash: '<path d="M6.2 2.5L5 13.5M11 2.5l-1.2 11M2.8 6h11M2.2 10h11"/>',
   command: '<path d="M4.5 2.5a2 2 0 1 0 2 2v7a2 2 0 1 1-2-2h7a2 2 0 1 1-2 2v-7a2 2 0 1 0 2-2z"/>',
   sort: '<path d="M4.5 2.5v11M2.5 11.5l2 2 2-2M8.5 4h5M8.5 8h3.5M8.5 12h2"/>',
-  check: '<path d="M3.5 8.5l3 3 6-6.5"/>'
+  check: '<path d="M3.5 8.5l3 3 6-6.5"/>',
+  graph: '<circle cx="4" cy="4.7" r="1.5"/><circle cx="12" cy="4.7" r="1.5"/><circle cx="8" cy="11.7" r="1.5"/><path d="M5.5 4.7h5M4.8 6l2.4 4.4M11.2 6l-2.4 4.4"/>'
 };
 const ICO_CACHE = {};
 function ico(name, cls) {

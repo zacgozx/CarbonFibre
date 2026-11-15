@@ -10,14 +10,14 @@ const graphEl = document.getElementById("graph");
 function layoutPanes() {
   Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter")).forEach(function (g) { g.parentNode.removeChild(g); });
   panes.forEach(function (p, i) {
-    workarea.insertBefore(p.root, graphEl);
+    workarea.appendChild(p.root);
     p.root.style.flex = p.width + " 1 0px";
     if (i < panes.length - 1) {
       const g = document.createElement("div");
       g.className = "gutter pane-gutter";
       g.title = "Drag to resize";
       wirePaneGutter(g, i);
-      workarea.insertBefore(g, graphEl);
+      workarea.appendChild(g);
     }
   });
   const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
@@ -287,8 +287,19 @@ function addPane(after, noteId) {
   return p;
 }
 
+/* switching a pane away from whatever isn't a note (a sheet, the board, a docked sketch, the graph),
+   before it shows something else. One place, so every way of opening something handles all of them. */
+function leavePaneContent(p) {
+  if (p.type === "sketch" && typeof skReleasePane === "function") skReleasePane(p);
+  else if (p.type === "sheet") { flushSheets(); p.sheetId = null; if (p.grid) p.grid.root.classList.remove("show"); }
+  else if (p.type === "taskboard") { if (p.tbRoot) p.tbRoot.classList.remove("show"); }
+  else if (p.type === "graph") hideGraph();
+  if (p.type !== "note" && p.type !== "sketch") p.type = "note";
+}
+
 function closePane(p) {
   if (panes.length < 2) return;
+  if (p === graphPane) closeGraph();                       /* the graph goes with its pane */
   if (sk && sk.dockedIn === p) { closeSketch(); return; }   /* closeSketch comes back here */
   if (p.type === "sheet") flushSheets();
   p.sync();
