@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-ndZNL7pDpEo9qP8KXP3IrWFWKINcEgfOvAJYBLxhS24='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-THfdDU2NJ+sKn0Ht0IdwBONlqYmH2+GHSxyalOirWiw='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -1698,12 +1698,17 @@ body { font-family: var(--sans); font-size: 13px; }
 .side-item:focus-visible, .tab:focus-visible, .fold-head:focus-visible, .sb-btn:focus-visible, .statusbar button:focus-visible,
 .cmd-row:focus-visible { outline-offset: -2px; }
 .line-ta:focus-visible, .split-src:focus-visible, #cmdIn:focus-visible { outline: none; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(121, 121, 121, 0.4); border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 140, 0.7); }
-:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(26, 42, 79, 0.22); }
-:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(26, 42, 79, 0.4); }
-::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+/* scrollbars: the standard properties (Edge and Chrome 121+). The thumb is at least 3:1 against every
+   surface it scrolls over in that theme (page, panels, chrome), so you can see where you are. */
+:root { --scroll-thumb: #707078; --scroll-track: transparent; scrollbar-color: var(--scroll-thumb) var(--scroll-track); }
+:root[data-theme="light"] { --scroll-thumb: #7e7e87; }
+* { scrollbar-width: thin; }
+/* older Edge and Chrome: the vendor scrollbar, only where the standard one isn't there */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 0; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: var(--scroll-track); }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 
 /* ---------- title bar ---------- */
@@ -2188,6 +2193,20 @@ input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
 .nsw-foot { margin: 14px 0 0; color: var(--dim); font-size: 12.5px; }
 .nsw-dialog.nsw-one { width: min(520px, 100%); }
 .nsw-one .nsw-btn { margin-top: 6px; }
+
+/* a question with a few answers (Dialogs.choose, browser): the browser's own modal dialog */
+.cf-ask { width: min(460px, calc(100vw - 32px)); padding: 0; background: var(--panel); color: var(--txt); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(var(--shd-rgb, 0, 0, 0), .35); overscroll-behavior: contain; }
+.cf-ask::backdrop { background: rgba(var(--scrim-rgb), .55); overflow: hidden; overscroll-behavior: contain; }
+.cf-ask form { display: grid; gap: 10px; padding: 18px 20px; }
+.cf-ask-title { margin: 0; font-size: 15px; font-weight: 600; }
+.cf-ask-more { margin: 0; color: var(--dim); white-space: pre-line; }
+.cf-ask-more:empty { display: none; }
+.cf-ask-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cf-ask-btn { min-height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--txt); font: inherit; cursor: pointer; }
+.cf-ask-btn:hover { border-color: var(--acc); }
+.cf-ask-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.cf-ask-btn.cf-ask-safe { background: var(--acc); border-color: var(--acc); color: #fff; }
 /* ---------- any screen size ---------- */
 
 /* tables: columns have a minimum width (set in computeTableMeta). When those minimums add up to more
@@ -2911,6 +2930,14 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
 <script>
 "use strict";
 
+/* Typing Japanese, Chinese or Korean: Enter confirms the characters being composed. Without this,
+   every Enter handler in the app (search, find, rename, the palette, sheet cells, the editor) would
+   also act on half-typed text. Caught once, first, for the whole page: isComposing, and keyCode 229
+   for Safari, which reports the confirming Enter after composition has already ended. */
+window.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) e.stopImmediatePropagation();
+}, true);
+
 /* Icons: drawn line icons at one stroke weight, in place of text glyphs. */
 const ICON = {
   x: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>',
@@ -2950,12 +2977,37 @@ const Dialogs = {
     if (Dialogs.desktop) return Dialogs.desktop.prompt(String(message), value == null ? "" : String(value)).then(function (v) { return v == null ? null : String(v); });
     return Promise.resolve(window.prompt(message, value == null ? "" : value));
   },
-  /* one of a few answers: buttons in the desktop app; in a browser, typed into a prompt */
-  choose(message, choices, fallback) {
-    if (Dialogs.desktop) return Dialogs.desktop.choose(String(message), choices.map(String)).then(function (v) { return v || fallback; });
-    const typed = window.prompt(message + "\n\nType " + choices.join(", ") + ":", fallback);
-    const v = String(typed || fallback).trim().toLowerCase();
-    return Promise.resolve(choices.indexOf(v) !== -1 ? v : fallback);
+  /* one of a few answers, as buttons: the system's dialog in the desktop app, the browser's own
+     modal dialog otherwise (it keeps focus inside, Esc closes it, and focus returns afterwards).
+     labels: what each button says ({ value: "Button text" }). Esc or Cancel gives fallback, the
+     safe answer, which also has the focus first. */
+  choose(message, choices, fallback, labels) {
+    const text = function (c) { return (labels && labels[c]) || String(c); }, shown = choices.map(text);
+    if (Dialogs.desktop) return Dialogs.desktop.choose(String(message), shown).then(function (v) { const i = shown.indexOf(v); return i === -1 ? fallback : choices[i]; });
+    return new Promise(function (resolve) {
+      const d = document.createElement("dialog");
+      d.className = "cf-ask";
+      d.setAttribute("aria-labelledby", "cfAskText");
+      const lines = String(message).split("\n");
+      d.innerHTML = '<form method="dialog"><p id="cfAskText" class="cf-ask-title"></p><p class="cf-ask-more"></p><div class="cf-ask-btns"></div></form>';
+      d.querySelector(".cf-ask-title").textContent = lines[0];
+      d.querySelector(".cf-ask-more").textContent = lines.slice(1).join("\n").trim();
+      const row = d.querySelector(".cf-ask-btns");
+      choices.forEach(function (c) {
+        const b = document.createElement("button");
+        b.value = c; b.textContent = text(c); b.className = "cf-ask-btn" + (c === fallback ? " cf-ask-safe" : "");
+        if (c === fallback) b.autofocus = true;
+        row.appendChild(b);
+      });
+      d.addEventListener("keydown", function (e) { e.stopPropagation(); });   /* the app's shortcuts wait */
+      d.addEventListener("close", function () {
+        const v = d.returnValue;
+        d.remove();
+        resolve(choices.indexOf(v) !== -1 ? v : fallback);
+      });
+      document.body.appendChild(d);
+      d.showModal();
+    });
   }
 };
 /* ============================================================
@@ -8874,10 +8926,9 @@ function writeGuarded(o) {
     return changed.text().then(function (theirs) {
       if (theirs === o.text) return null;              /* same bytes: nothing to resolve */
       return Dialogs.choose(
-        '"' + o.label + '" changed on disk since CarbonFibre read it.\n\n' +
-        "  keep   - overwrite the file with your version\n" +
-        "  take   - discard your changes and use the file's\n" +
-        "  copy   - save yours as a separate conflict file", ["keep", "take", "copy"], "copy").then(function (choice) {
+        '"' + o.label + '" changed on disk since CarbonFibre read it.\n' +
+        "Something else saved it while you were editing. Which version should be kept?", ["keep", "take", "copy"], "copy",
+        { keep: "Keep mine (overwrite the file)", take: "Use the file’s version", copy: "Keep both (save mine as a copy)" }).then(function (choice) {
         if (choice === "take") { o.onTake(theirs, changed.lastModified); return "done"; }
         if (choice === "keep") return null;
         const alt = o.altName ? o.altName() : o.base.replace(/(\.[^.]+)$/, " (conflict " + stampNow() + ")$1");
@@ -24480,6 +24531,10 @@ function setTheme(t) {
 timerWire();
 document.getElementById("btnTheme").addEventListener("click", toggleTheme);
 /* when nothing is saved, follow Windows live - e.g. an automatic evening switch */
+/* switched in another tab or window of CarbonFibre: follow it here too */
+window.addEventListener("storage", function (e) {
+  if (e.key === "carbonfibre-theme") setTheme(e.newValue === "light" || e.newValue === "dark" ? e.newValue : systemTheme());
+});
 try {
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () {
     if (!savedTheme()) setTheme(systemTheme());

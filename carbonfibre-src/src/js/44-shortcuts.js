@@ -119,6 +119,10 @@ function setTheme(t) {
 timerWire();
 document.getElementById("btnTheme").addEventListener("click", toggleTheme);
 /* when nothing is saved, follow Windows live - e.g. an automatic evening switch */
+/* switched in another tab or window of CarbonFibre: follow it here too */
+window.addEventListener("storage", function (e) {
+  if (e.key === "carbonfibre-theme") setTheme(e.newValue === "light" || e.newValue === "dark" ? e.newValue : systemTheme());
+});
 try {
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () {
     if (!savedTheme()) setTheme(systemTheme());

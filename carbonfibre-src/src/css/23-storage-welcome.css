@@ -21,3 +21,17 @@
 .nsw-foot { margin: 14px 0 0; color: var(--dim); font-size: 12.5px; }
 .nsw-dialog.nsw-one { width: min(520px, 100%); }
 .nsw-one .nsw-btn { margin-top: 6px; }
+
+/* a question with a few answers (Dialogs.choose, browser): the browser's own modal dialog */
+.cf-ask { width: min(460px, calc(100vw - 32px)); padding: 0; background: var(--panel); color: var(--txt); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(var(--shd-rgb, 0, 0, 0), .35); overscroll-behavior: contain; }
+.cf-ask::backdrop { background: rgba(var(--scrim-rgb), .55); overflow: hidden; overscroll-behavior: contain; }
+.cf-ask form { display: grid; gap: 10px; padding: 18px 20px; }
+.cf-ask-title { margin: 0; font-size: 15px; font-weight: 600; }
+.cf-ask-more { margin: 0; color: var(--dim); white-space: pre-line; }
+.cf-ask-more:empty { display: none; }
+.cf-ask-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cf-ask-btn { min-height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--txt); font: inherit; cursor: pointer; }
+.cf-ask-btn:hover { border-color: var(--acc); }
+.cf-ask-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.cf-ask-btn.cf-ask-safe { background: var(--acc); border-color: var(--acc); color: #fff; }

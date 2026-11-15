@@ -80,11 +80,16 @@ body { font-family: var(--sans); font-size: 13px; }
 .side-item:focus-visible, .tab:focus-visible, .fold-head:focus-visible, .sb-btn:focus-visible, .statusbar button:focus-visible,
 .cmd-row:focus-visible { outline-offset: -2px; }
 .line-ta:focus-visible, .split-src:focus-visible, #cmdIn:focus-visible { outline: none; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(121, 121, 121, 0.4); border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 140, 0.7); }
-:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(26, 42, 79, 0.22); }
-:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(26, 42, 79, 0.4); }
-::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+/* scrollbars: the standard properties (Edge and Chrome 121+). The thumb is at least 3:1 against every
+   surface it scrolls over in that theme (page, panels, chrome), so you can see where you are. */
+:root { --scroll-thumb: #707078; --scroll-track: transparent; scrollbar-color: var(--scroll-thumb) var(--scroll-track); }
+:root[data-theme="light"] { --scroll-thumb: #7e7e87; }
+* { scrollbar-width: thin; }
+/* older Edge and Chrome: the vendor scrollbar, only where the standard one isn't there */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 0; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: var(--scroll-track); }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 

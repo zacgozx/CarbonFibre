@@ -135,10 +135,9 @@ function writeGuarded(o) {
     return changed.text().then(function (theirs) {
       if (theirs === o.text) return null;              /* same bytes: nothing to resolve */
       return Dialogs.choose(
-        '"' + o.label + '" changed on disk since CarbonFibre read it.\n\n' +
-        "  keep   - overwrite the file with your version\n" +
-        "  take   - discard your changes and use the file's\n" +
-        "  copy   - save yours as a separate conflict file", ["keep", "take", "copy"], "copy").then(function (choice) {
+        '"' + o.label + '" changed on disk since CarbonFibre read it.\n' +
+        "Something else saved it while you were editing. Which version should be kept?", ["keep", "take", "copy"], "copy",
+        { keep: "Keep mine (overwrite the file)", take: "Use the file’s version", copy: "Keep both (save mine as a copy)" }).then(function (choice) {
         if (choice === "take") { o.onTake(theirs, changed.lastModified); return "done"; }
         if (choice === "keep") return null;
         const alt = o.altName ? o.altName() : o.base.replace(/(\.[^.]+)$/, " (conflict " + stampNow() + ")$1");

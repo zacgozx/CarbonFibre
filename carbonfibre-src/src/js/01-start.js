@@ -1,6 +1,14 @@
 
 "use strict";
 
+/* Typing Japanese, Chinese or Korean: Enter confirms the characters being composed. Without this,
+   every Enter handler in the app (search, find, rename, the palette, sheet cells, the editor) would
+   also act on half-typed text. Caught once, first, for the whole page: isComposing, and keyCode 229
+   for Safari, which reports the confirming Enter after composition has already ended. */
+window.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) e.stopImmediatePropagation();
+}, true);
+
 /* Icons: drawn line icons at one stroke weight, in place of text glyphs. */
 const ICON = {
   x: '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>',

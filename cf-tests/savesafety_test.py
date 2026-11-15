@@ -20,7 +20,9 @@ SETUP = """data => {
   window.__vault = root;
   window.__f = path => { let d = root; const parts = path.split('/'); for (const p of parts.slice(0, -1)) d = d.kids[p]; return d.kids[parts[parts.length - 1]]; };
   window.__theirs = (path, text) => { const f = __f(path); f.data = text; f.mtime = Date.now() + 10000; };   /* changed by someone else */
-  window.__prompts = []; window.__answer = 'keep'; window.prompt = (m, v) => { __prompts.push(m.split('\\n')[0]); return __answer; };
+  window.__prompts = []; window.__answer = 'keep';   /* the save-conflict question is a <dialog>: answer it like a person would */
+  new MutationObserver(() => { const d = document.querySelector('dialog.cf-ask[open]'); if (!d || d.dataset.seen) return; d.dataset.seen = '1';
+    __prompts.push(d.querySelector('.cf-ask-title').textContent); d.querySelector('button[value="' + __answer + '"]').click(); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['open'] });
   window.alert = () => {};
   state.dirHandle = root; state.backend = 'folder'; return loadFolder(); }"""
 with sync_playwright() as p:
