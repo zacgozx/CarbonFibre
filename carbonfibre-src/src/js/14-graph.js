@@ -134,6 +134,7 @@ function closeGraph() {
   document.getElementById("actGraph").classList.remove("on");
   if (graphRaf) { cancelAnimationFrame(graphRaf); graphRaf = null; }
 }
+document.getElementById("graphClose").addEventListener("click", function () { closeGraph(); });
 
 function tickGraph() {
   if (!state.graphOpen || !graphData) return;
@@ -504,7 +505,11 @@ function renderGraphSide(n) {
   open.addEventListener("click", function () { closeGraph(); openInPane(note.id, focusedPane || panes[0]); renderSidebar(); });
   const split = document.createElement("button");
   split.className = "btn-mini"; split.textContent = "Open in split";
-  split.addEventListener("click", function () { closeGraph(); addPane(focusedPane || panes[0], note.id); renderSidebar(); });
+  split.addEventListener("click", function () {
+    closeGraph();
+    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(focusedPane || panes[0], note.id);   /* already open: shown there */
+    renderSidebar();
+  });
   const back = document.createElement("button");
   back.className = "btn-mini"; back.textContent = "Back out";
   back.addEventListener("click", function () { graphSelect(null); });

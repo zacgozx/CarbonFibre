@@ -159,7 +159,7 @@ function tbnBulk(p, act, btn) {
 function tbnOpenBeside(p, n, split) {
   const other = panes.filter(function (q) { return q !== p && q.type === "note"; })[0];
   if (split && panes.length < MAX_PANES) { addPane(p, n.id); return; }
-  if (other) { other.open(n.id); other.focusThis(); } else openInPane(n.id, p);
+  if (other) openInPane(n.id, other); else openInPane(n.id, p);
 }
 /* the library, from anywhere: the Notes view's All notes, in the board's pane */
 function openLibrary(mode) {
@@ -623,10 +623,6 @@ function tbShow() {
   const p = focusedPane || panes[0];
   tbOpenInPane(p);
   return p;
-}
-function tbToggle() {
-  const p = focusedPane || panes[0];
-  if (p.type === "taskboard") tbClosePane(p); else tbShow();
 }
 /* add the note in front of you as a task: the ticket number from its title or first lines */
 function tbAddCurrentNote() {

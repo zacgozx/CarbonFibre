@@ -35,8 +35,17 @@ function openSheetInPane(p, sheetId) {
   scheduleSession();
 }
 function openSheetSplit(from, sheetId) {
-  const target = panes.length < MAX_PANES ? addPane(from) : nextPane(from);
-  openSheetInPane(target, sheetId);
+  const shown = paneShowing("sheet", sheetId);
+  if (shown) { revealPane(shown); return; }
+  openSheetInPane(paneForShift(from), sheetId);              /* the other pane, as Shift+click on a note */
+}
+/* a sheet you clicked: where it's already open, or in this pane (see openInPane) */
+function openSheet(sheetId, pane) {
+  const shown = paneShowing("sheet", sheetId);
+  if (shown) { revealPane(shown); return shown; }
+  const p = pane || focusedPane || panes[0];
+  openSheetInPane(p, sheetId);
+  return p;
 }
 
 /* ---- Phase 6: a markdown table in a note, edited as a sheet ---- */

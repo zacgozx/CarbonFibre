@@ -129,7 +129,7 @@ document.getElementById("btnNewSheet").addEventListener("click", function () {
   Dialogs.prompt("Sheet name", "Sheet").then(function (name) {
     if (!name) return;
     const sh = createSheet(name);
-    openSheetInPane(focusedPane || panes[0], sh.id);
+    openSheet(sh.id, focusedPane || panes[0]);
   });
 });
 const exportMenu = document.getElementById("exportMenu");

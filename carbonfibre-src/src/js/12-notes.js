@@ -8,8 +8,32 @@ function followLink(url) {
   window.open(href, "_blank", "noopener");
 }
 
-function openInPane(id, pane) {
-  (pane || focusedPane || panes[0]).open(id);
+/* ---- showing things: reveal what's open, open what isn't ----
+   One rule for everything you click (a note in the sidebar or search, a link, the graph, the palette,
+   a sheet, the task board): if it's already on screen in some pane, that pane takes the focus and its
+   tab flashes; if it's a tab in some pane, that pane switches to it; only otherwise does it open, in
+   the pane asked for. So nothing opens twice and nothing you clicked closes. Two panes on the same
+   note happen only when you ask (Split, Ctrl+\). opts.here: open in that pane regardless. */
+function paneShowing(type, id) {
+  return panes.filter(function (q) { return q.type === type && sameId(type === "sheet" ? q.sheetId : q.noteId, id); })[0] || null;
+}
+function revealPane(q) {
+  q.focusThis();
+  const t = q.tabsEl && q.tabsEl.querySelector(".tab.on");
+  if (t) { t.classList.remove("tab-reveal"); void t.offsetWidth; t.classList.add("tab-reveal"); setTimeout(function () { t.classList.remove("tab-reveal"); }, 900); }
+  return q;
+}
+function openInPane(id, pane, opts) {
+  const target = pane || focusedPane || panes[0];
+  if (!(opts && opts.here) && id != null) {
+    const shown = paneShowing("note", id);
+    if (shown) return revealPane(shown);
+    const tabbed = panes.filter(function (q) { return q.tabs.some(function (t) { return sameId(t, id); }); })[0];
+    if (tabbed) { tabbed.open(id); return revealPane(tabbed); }
+  }
+  target.open(id);
+  if (target !== focusedPane) target.focusThis();
+  return target;
 }
 
 /* render markdown text as rendered line nodes inside el */

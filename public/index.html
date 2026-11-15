@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-dq53KAcQVnoBPxJ5fN67gzM7jROO4E+KZGLcGkIGUG4='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-ndZNL7pDpEo9qP8KXP3IrWFWKINcEgfOvAJYBLxhS24='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -564,6 +564,10 @@ body.resizing * { cursor: col-resize !important; }
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .bl-empty { padding: 6px 10px 10px; font-size: 12.5px; color: var(--dim); }
 
+/* a tab that was already open and has just been shown again (openInPane): a brief ring, so you see where */
+@keyframes tab-reveal { 0% { box-shadow: inset 0 0 0 2px var(--acc); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
+.tab.tab-reveal { animation: tab-reveal .9s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tab.tab-reveal { animation: none; box-shadow: inset 0 0 0 2px var(--acc); } }
 /* ---------- lines ---------- */
 .ln { padding: 1px 0; min-height: 1.7em; overflow-wrap: anywhere; white-space: pre-wrap; tab-size: 4; }
 .ln.ln-sel { background: var(--blu-soft); }
@@ -900,6 +904,7 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .gs-body { flex: 1; overflow-y: auto; padding: 12px 14px 30px; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
 .gs-body .ln { min-height: 1.6em; }
 
+.graph-close { margin-left: 10px; }
 /* ---------- sketch board ---------- */
 /* ---- task board: CarbonFibre palette. Accent = the task you are on and your day's numbers,
    blue = navigation and selection, red = urgency, green = done, grey = inactive. ---- */
@@ -2834,6 +2839,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
         <span id="graphStats"></span>
         <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
         <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
+        <button class="btn-mini graph-close" id="graphClose" type="button" title="Close the graph (Esc)" aria-label="Close the graph">Close</button>
       </div>
       <div class="graph-body">
         <div class="graph-canvas-wrap"><canvas id="graphCanvas"></canvas></div>
@@ -11767,7 +11773,8 @@ function layoutPanes() {
       workarea.insertBefore(g, graphEl);
     }
   });
-  document.getElementById("btnDual").classList.toggle("pill-on", panes.length > 1);
+  const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
+  dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its \u00d7 first" : "Split: another pane beside this one (Ctrl+\\)";
 }
 
 function wirePaneGutter(g, leftIndex) {
@@ -12052,9 +12059,11 @@ function closePane(p) {
   scheduleSession();
 }
 
+/* Split (the button, Ctrl+\\): another pane beside the one you're in. It never closes one: each pane
+   has its own close button. At the most panes there's nothing to add, so it says so. */
 function toggleDual() {
-  if (panes.length > 1) closePane(focusedPane && panes.indexOf(focusedPane) > 0 ? focusedPane : panes[panes.length - 1]);
-  else addPane(panes[0]);
+  if (panes.length >= MAX_PANES) { pushToastLike(MAX_PANES + " panes is the most. Close one with the \u00d7 at its top right."); return; }
+  addPane(focusedPane || panes[0]);
 }
 
 /* sidebar drag */
@@ -12091,8 +12100,32 @@ function followLink(url) {
   window.open(href, "_blank", "noopener");
 }
 
-function openInPane(id, pane) {
-  (pane || focusedPane || panes[0]).open(id);
+/* ---- showing things: reveal what's open, open what isn't ----
+   One rule for everything you click (a note in the sidebar or search, a link, the graph, the palette,
+   a sheet, the task board): if it's already on screen in some pane, that pane takes the focus and its
+   tab flashes; if it's a tab in some pane, that pane switches to it; only otherwise does it open, in
+   the pane asked for. So nothing opens twice and nothing you clicked closes. Two panes on the same
+   note happen only when you ask (Split, Ctrl+\). opts.here: open in that pane regardless. */
+function paneShowing(type, id) {
+  return panes.filter(function (q) { return q.type === type && sameId(type === "sheet" ? q.sheetId : q.noteId, id); })[0] || null;
+}
+function revealPane(q) {
+  q.focusThis();
+  const t = q.tabsEl && q.tabsEl.querySelector(".tab.on");
+  if (t) { t.classList.remove("tab-reveal"); void t.offsetWidth; t.classList.add("tab-reveal"); setTimeout(function () { t.classList.remove("tab-reveal"); }, 900); }
+  return q;
+}
+function openInPane(id, pane, opts) {
+  const target = pane || focusedPane || panes[0];
+  if (!(opts && opts.here) && id != null) {
+    const shown = paneShowing("note", id);
+    if (shown) return revealPane(shown);
+    const tabbed = panes.filter(function (q) { return q.tabs.some(function (t) { return sameId(t, id); }); })[0];
+    if (tabbed) { tabbed.open(id); return revealPane(tabbed); }
+  }
+  target.open(id);
+  if (target !== focusedPane) target.focusThis();
+  return target;
 }
 
 /* render markdown text as rendered line nodes inside el */
@@ -12713,6 +12746,7 @@ function closeGraph() {
   document.getElementById("actGraph").classList.remove("on");
   if (graphRaf) { cancelAnimationFrame(graphRaf); graphRaf = null; }
 }
+document.getElementById("graphClose").addEventListener("click", function () { closeGraph(); });
 
 function tickGraph() {
   if (!state.graphOpen || !graphData) return;
@@ -13083,7 +13117,11 @@ function renderGraphSide(n) {
   open.addEventListener("click", function () { closeGraph(); openInPane(note.id, focusedPane || panes[0]); renderSidebar(); });
   const split = document.createElement("button");
   split.className = "btn-mini"; split.textContent = "Open in split";
-  split.addEventListener("click", function () { closeGraph(); addPane(focusedPane || panes[0], note.id); renderSidebar(); });
+  split.addEventListener("click", function () {
+    closeGraph();
+    if (paneShowing("note", note.id)) openInPane(note.id); else addPane(focusedPane || panes[0], note.id);   /* already open: shown there */
+    renderSidebar();
+  });
   const back = document.createElement("button");
   back.className = "btn-mini"; back.textContent = "Back out";
   back.addEventListener("click", function () { graphSelect(null); });
@@ -13482,7 +13520,7 @@ function renderSheetList() {
     it.appendChild(del);
     it.addEventListener("click", function (e) {
       const fp = focusedPane || panes[0];
-      if (e.shiftKey) openSheetSplit(fp, sh.id); else openSheetInPane(fp, sh.id);
+      if (e.shiftKey) openSheetSplit(fp, sh.id); else openSheet(sh.id, fp);
     });
     list.appendChild(it);
   });
@@ -13832,10 +13870,9 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
   b.addEventListener("click", function () { showView(b.dataset.view, true); });
 });
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
-document.getElementById("actBoard").addEventListener("click", function () { tbToggle(); });
-document.getElementById("actGraph").addEventListener("click", function () {
-  state.graphOpen ? closeGraph() : openGraph();
-});
+/* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
+document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
+document.getElementById("actGraph").addEventListener("click", function () { if (!state.graphOpen) openGraph(); });
 
 /* ---------------- search input ---------------- */
 
@@ -21191,8 +21228,17 @@ function openSheetInPane(p, sheetId) {
   scheduleSession();
 }
 function openSheetSplit(from, sheetId) {
-  const target = panes.length < MAX_PANES ? addPane(from) : nextPane(from);
-  openSheetInPane(target, sheetId);
+  const shown = paneShowing("sheet", sheetId);
+  if (shown) { revealPane(shown); return; }
+  openSheetInPane(paneForShift(from), sheetId);              /* the other pane, as Shift+click on a note */
+}
+/* a sheet you clicked: where it's already open, or in this pane (see openInPane) */
+function openSheet(sheetId, pane) {
+  const shown = paneShowing("sheet", sheetId);
+  if (shown) { revealPane(shown); return shown; }
+  const p = pane || focusedPane || panes[0];
+  openSheetInPane(p, sheetId);
+  return p;
 }
 
 /* ---- Phase 6: a markdown table in a note, edited as a sheet ---- */
@@ -21455,9 +21501,9 @@ function tbOpenNote(t, fromPane) {
     }
     t.noteId = n.id; tbSave(); renderSidebar();
   }
+  /* beside the board, so it stays in view; already open somewhere: shown there (openInPane) */
   const target = panes.filter(function (q) { return q !== fromPane && q.type === "note"; })[0] || fromPane || focusedPane || panes[0];
-  target.open(n.id);
-  target.focusThis();
+  openInPane(n.id, target);
 }
 
 /* ---- the board as a pane ---- */
@@ -21583,7 +21629,7 @@ function tbRenderDash(p) {
     kpi("ok", "Done today", doneT, delta(doneT - doneY)) +
     kpi("blu", "To do", todo.length, '<span class="tbd-delta flat">' + (todo.length ? short(todo.reduce(function (s, t) { return s + Math.max(0, t.est - tbMinutes(t)); }, 0)) + " estimated left" : "all clear") + "</span>") +
     kpi("ora", "Waiting", waiting.length, '<span class="tbd-delta flat">' + (waiting.length ? "on someone else" : "nothing blocked") + "</span>") +
-    kpi(over.length ? "bad" : "mute", "Over estimate", over.length, '<span class="tbd-delta ' + (over.length ? "down" : "flat") + '">' + (over.length ? over.map(function (t) { return t.id; }).slice(0, 2).join(", ") : "on track") + "</span>") +
+    kpi(over.length ? "bad" : "mute", "Over estimate", over.length, '<span class="tbd-delta ' + (over.length ? "down" : "flat") + '">' + (over.length ? esc(over.map(function (t) { return t.id; }).slice(0, 2).join(", ")) : "on track") + "</span>") +
     "</div>";
   const panel = function (cls, title, body, side) { return '<section class="tbd-panel ' + cls + '"><header class="tbd-head"><h3><i></i>' + esc(title) + "</h3>" + (side || "") + "</header>" + body + "</section>"; };
   /* ---- my tickets: dense rows, start straight from here ---- */
@@ -21819,7 +21865,7 @@ function tbnBulk(p, act, btn) {
 function tbnOpenBeside(p, n, split) {
   const other = panes.filter(function (q) { return q !== p && q.type === "note"; })[0];
   if (split && panes.length < MAX_PANES) { addPane(p, n.id); return; }
-  if (other) { other.open(n.id); other.focusThis(); } else openInPane(n.id, p);
+  if (other) openInPane(n.id, other); else openInPane(n.id, p);
 }
 /* the library, from anywhere: the Notes view's All notes, in the board's pane */
 function openLibrary(mode) {
@@ -22283,10 +22329,6 @@ function tbShow() {
   const p = focusedPane || panes[0];
   tbOpenInPane(p);
   return p;
-}
-function tbToggle() {
-  const p = focusedPane || panes[0];
-  if (p.type === "taskboard") tbClosePane(p); else tbShow();
 }
 /* add the note in front of you as a task: the ticket number from its title or first lines */
 function tbAddCurrentNote() {
@@ -24448,7 +24490,7 @@ document.getElementById("btnNewSheet").addEventListener("click", function () {
   Dialogs.prompt("Sheet name", "Sheet").then(function (name) {
     if (!name) return;
     const sh = createSheet(name);
-    openSheetInPane(focusedPane || panes[0], sh.id);
+    openSheet(sh.id, focusedPane || panes[0]);
   });
 });
 const exportMenu = document.getElementById("exportMenu");

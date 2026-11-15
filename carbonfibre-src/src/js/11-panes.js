@@ -20,7 +20,8 @@ function layoutPanes() {
       workarea.insertBefore(g, graphEl);
     }
   });
-  document.getElementById("btnDual").classList.toggle("pill-on", panes.length > 1);
+  const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
+  dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its \u00d7 first" : "Split: another pane beside this one (Ctrl+\\)";
 }
 
 function wirePaneGutter(g, leftIndex) {
@@ -305,9 +306,11 @@ function closePane(p) {
   scheduleSession();
 }
 
+/* Split (the button, Ctrl+\\): another pane beside the one you're in. It never closes one: each pane
+   has its own close button. At the most panes there's nothing to add, so it says so. */
 function toggleDual() {
-  if (panes.length > 1) closePane(focusedPane && panes.indexOf(focusedPane) > 0 ? focusedPane : panes[panes.length - 1]);
-  else addPane(panes[0]);
+  if (panes.length >= MAX_PANES) { pushToastLike(MAX_PANES + " panes is the most. Close one with the \u00d7 at its top right."); return; }
+  addPane(focusedPane || panes[0]);
 }
 
 /* sidebar drag */

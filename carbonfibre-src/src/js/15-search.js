@@ -105,7 +105,7 @@ function renderSheetList() {
     it.appendChild(del);
     it.addEventListener("click", function (e) {
       const fp = focusedPane || panes[0];
-      if (e.shiftKey) openSheetSplit(fp, sh.id); else openSheetInPane(fp, sh.id);
+      if (e.shiftKey) openSheetSplit(fp, sh.id); else openSheet(sh.id, fp);
     });
     list.appendChild(it);
   });
@@ -455,10 +455,9 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
   b.addEventListener("click", function () { showView(b.dataset.view, true); });
 });
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
-document.getElementById("actBoard").addEventListener("click", function () { tbToggle(); });
-document.getElementById("actGraph").addEventListener("click", function () {
-  state.graphOpen ? closeGraph() : openGraph();
-});
+/* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
+document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
+document.getElementById("actGraph").addEventListener("click", function () { if (!state.graphOpen) openGraph(); });
 
 /* ---------------- search input ---------------- */
 

@@ -197,9 +197,9 @@ function tbOpenNote(t, fromPane) {
     }
     t.noteId = n.id; tbSave(); renderSidebar();
   }
+  /* beside the board, so it stays in view; already open somewhere: shown there (openInPane) */
   const target = panes.filter(function (q) { return q !== fromPane && q.type === "note"; })[0] || fromPane || focusedPane || panes[0];
-  target.open(n.id);
-  target.focusThis();
+  openInPane(n.id, target);
 }
 
 /* ---- the board as a pane ---- */
@@ -325,7 +325,7 @@ function tbRenderDash(p) {
     kpi("ok", "Done today", doneT, delta(doneT - doneY)) +
     kpi("blu", "To do", todo.length, '<span class="tbd-delta flat">' + (todo.length ? short(todo.reduce(function (s, t) { return s + Math.max(0, t.est - tbMinutes(t)); }, 0)) + " estimated left" : "all clear") + "</span>") +
     kpi("ora", "Waiting", waiting.length, '<span class="tbd-delta flat">' + (waiting.length ? "on someone else" : "nothing blocked") + "</span>") +
-    kpi(over.length ? "bad" : "mute", "Over estimate", over.length, '<span class="tbd-delta ' + (over.length ? "down" : "flat") + '">' + (over.length ? over.map(function (t) { return t.id; }).slice(0, 2).join(", ") : "on track") + "</span>") +
+    kpi(over.length ? "bad" : "mute", "Over estimate", over.length, '<span class="tbd-delta ' + (over.length ? "down" : "flat") + '">' + (over.length ? esc(over.map(function (t) { return t.id; }).slice(0, 2).join(", ")) : "on track") + "</span>") +
     "</div>";
   const panel = function (cls, title, body, side) { return '<section class="tbd-panel ' + cls + '"><header class="tbd-head"><h3><i></i>' + esc(title) + "</h3>" + (side || "") + "</header>" + body + "</section>"; };
   /* ---- my tickets: dense rows, start straight from here ---- */
