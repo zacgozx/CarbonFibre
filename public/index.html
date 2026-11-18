@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-GiiJTIJXhAc+5eT2EpGp2TixFGow/sQQVlWW3g5II60='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-70fIShiHTpYtiXcx7jZf7aqvCewfhh6Haxpsjh7zQ+0='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -884,6 +884,14 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tk-num { color: var(--ora); }
 .tk-com { color: var(--c5e5e5e); font-style: italic; }
 
+/* the board's Files tab: + New sits at the end of the folder row; names may take two lines */
+.sk-library .skl-where-row { padding: 0 10px 8px; align-items: center; flex-wrap: nowrap; gap: 8px; }
+.sk-library .skl-where { flex: 0 1 auto; }
+.sk-library .skl-where-row .skl-link { flex: none; }
+.skl-new-sm { margin-left: auto; height: 26px; padding: 0 10px; font-size: 12.5px; }
+.sk-library .skl-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+.skl-where-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-library .skl-body { padding-top: 2px; }
 /* ---------- graph ---------- */
 .graph {
   position: absolute; inset: 0; background: var(--bg);
@@ -2139,8 +2147,11 @@ input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
 .sk-library { position: absolute; left: 46px; top: 0; bottom: 0; width: 296px; z-index: 13; display: none; flex-direction: column;
   background: var(--panel); border-right: 1px solid var(--line); box-shadow: var(--pop-shadow); }
 .sk-library.show { display: flex; }
-.sk-lib-search { margin: 10px 10px 8px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: 13px var(--sans); }
-.sk-lib-tabs { display: flex; gap: 4px; padding: 0 10px 8px; border-bottom: 1px solid var(--line); }
+/* tabs first, then one search box: the same place on both tabs, so switching doesn't move anything */
+.sk-lib-tabs { display: flex; gap: 4px; padding: 10px 10px 8px; flex: none; }
+.sk-lib-search { flex: none; margin: 0 10px; padding: 0 10px; height: 32px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: 13px var(--sans); }
+.sk-library > .sk-lib-search { margin-bottom: 0; }
+.sk-library > #skPalette, .sk-library > #skTemplates { border-top: 1px solid var(--line); margin-top: 10px; }
 .sk-lib-tabs button { flex: 1; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: none; color: var(--txt); font: 12.5px var(--sans); cursor: pointer; }
 .sk-lib-tabs button.on { background: var(--sel); border-color: transparent; font-weight: 600; }
 .sk-library .sk-palette, .sk-library .sk-templates { display: none; flex: 1; min-height: 0; overflow-y: auto; border: 0; background: none; }
@@ -2835,7 +2846,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
       <div class="sk-top" role="toolbar" aria-label="Board"><button class="sk-ib" id="skUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 5.5H10a3.3 3.3 0 0 1 0 6.6H6.5"/><path d="M7.8 3.2L5.5 5.5l2.3 2.3"/></svg></button><button class="sk-ib" id="skRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 5.5H6a3.3 3.3 0 0 0 0 6.6h3.5"/><path d="M8.2 3.2l2.3 2.3-2.3 2.3"/></svg></button><span class="sep"></span><button class="sk-ib" id="skZoomOut" title="Zoom out (Ctrl+-)" aria-label="Zoom out"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"/></svg></button><button class="sk-zoom" id="skZoomPct" title="Back to 100%">100%</button><button class="sk-ib" id="skZoomIn" title="Zoom in (Ctrl+=)" aria-label="Zoom in"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg></button><button class="mini-pill" id="skFit" title="Fit the drawing to the view (Shift+1)">Fit</button><span class="sep"></span><button class="mini-pill" id="skTreeBtn" title="Orientate: turn the layout a quarter turn clockwise (down, left, up, right)">Orientate</button><button class="mini-pill" id="skTidy" title="Tidy up: lay out everything that is connected, keeping the way it reads (top-down unless it already reads left to right). Shift+T">Tidy up</button><span class="sep"></span><button class="mini-pill on" id="skHighlightBtn" title="Selecting or hovering a shape fades everything it is not connected to">Highlight</button><button class="mini-pill on" id="skStatusBtn" title="Show system status dots">Status</button><button class="mini-pill on" id="skSnap" title="Snap to the grid and to other shapes while dragging (hold Alt to bypass)">Snap</button><span class="spacer"></span><button class="mini-pill" id="skExport" title="Download as .excalidraw for excalidraw.com">Export</button><span class="sk-morewrap"><button class="sk-ib" id="skMoreBtn" title="More" aria-label="More" aria-haspopup="menu"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="3.5" cy="8" r="1.2"/><circle class="f" cx="8" cy="8" r="1.2"/><circle class="f" cx="12.5" cy="8" r="1.2"/></svg></button><div class="menu sk-more" id="skMore" role="menu"><button role="menuitem" data-more="tidy-tb">Tidy up, top to bottom</button><button role="menuitem" data-more="tidy-lr">Tidy up, left to right</button><button role="menuitem" data-more="wrapfans" id="skWrapBtn">Wrap wide fan-outs: on</button><button role="menuitem" data-more="autosplit" id="skAutoSplitBtn">Auto splitters: on</button><button role="menuitem" data-more="netcolours" id="skNetColBtn">Colour links by source</button><button role="menuitem" data-more="rename">Rename labels in bulk<kbd>Ctrl+R</kbd></button><button role="menuitem" data-more="clear">Clear the board</button><button role="menuitem" data-more="keys">Keyboard shortcuts</button></div></span><button class="new-btn" id="skClose">Done</button></div>
       <div class="sk-body">
         <nav class="sk-rail" role="toolbar" aria-label="Tools" aria-orientation="vertical"><button class="sk-tool" data-tool="select" title="Select (V)" aria-label="Select (V)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5l8.5 6-3.8.9 2.2 4.3-1.6.8-2.2-4.3L4 13z"/></svg></button><button class="sk-tool" data-tool="hand" title="Hand: drag to pan (H)" aria-label="Hand: drag to pan (H)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 8.5V4a1 1 0 0 1 2 0v3.5M7.5 6.5V3a1 1 0 0 1 2 0v4M9.5 7V4a1 1 0 0 1 2 0v5.5c0 2.6-1.7 4.5-4.2 4.5-1.6 0-2.7-.8-3.6-2.2L2.4 9.6a1 1 0 0 1 1.6-1.2l1.5 1.7"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="rectangle" title="Rectangle (R)" aria-label="Rectangle (R)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/></svg></button><button class="sk-tool" data-tool="ellipse" title="Ellipse (O)" aria-label="Ellipse (O)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="5.6" ry="4.6"/></svg></button><button class="sk-tool" data-tool="diamond" title="Diamond (D)" aria-label="Diamond (D)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2l5.8 5.8L8 13.8 2.2 8z"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="connect" title="Connector: drag from one shape to another (C)" aria-label="Connector: drag from one shape to another (C)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.3" width="4.4" height="4.4" rx=".8"/><rect x="9.8" y="9.3" width="4.4" height="4.4" rx=".8"/><path d="M6.2 4.5h2.8a1 1 0 0 1 1 1v3.8"/></svg></button><button class="sk-tool" data-tool="splitter" title="Splitter: a junction to split one line into several (J). Or start a Connector on a line to tap into it" aria-label="Splitter (J)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h5M7 8l5-4.5M7 8h6M7 8l5 4.5"/><circle cx="7" cy="8" r="1.8" fill="currentColor"/></svg></button><button class="sk-tool" data-tool="arrow" title="Arrow (A)" aria-label="Arrow (A)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L13 3M7.5 3H13v5.5"/></svg></button><button class="sk-tool" data-tool="line" title="Line (L)" aria-label="Line (L)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L13 3"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="text" title="Text (T)" aria-label="Text (T)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.5V3h9v1.5M8 3v10M6 13h4"/></svg></button><button class="sk-tool" data-tool="pen" title="Pen (P)" aria-label="Pen (P)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.8 2.6l2.6 2.6-7.9 7.9H2.9v-2.6z"/><path d="M9.3 4.1l2.6 2.6"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" data-tool="eraser" title="Eraser: click or drag across shapes (E)" aria-label="Eraser: click or drag across shapes (E)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 13.5h7"/><path d="M2.9 9.6l6-6a1.4 1.4 0 0 1 2 0l2.5 2.5a1.4 1.4 0 0 1 0 2l-5.2 5.4H5.6L2.9 10.8a.8.8 0 0 1 0-1.2z"/><path d="M5.6 7l3.9 3.9"/></svg></button><i class="sk-rsep"></i><button class="sk-tool" id="skLibBtn" title="Library: shapes and templates (S)" aria-label="Library: shapes and templates (S)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.3" y="2.3" width="4.6" height="4.6" rx="1"/><rect x="9.1" y="2.3" width="4.6" height="4.6" rx="1"/><rect x="2.3" y="9.1" width="4.6" height="4.6" rx="1"/><rect x="9.1" y="9.1" width="4.6" height="4.6" rx="1"/></svg></button><button class="sk-tool" id="skSticky" title="Keep the tool after drawing (Q)" aria-label="Keep the tool after drawing (Q)"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></button></nav>
-        <aside class="sk-library" id="skLibrary" aria-label="Library"><input class="sk-lib-search" id="skLibSearch" placeholder="Search shapes and templates" autocomplete="off" spellcheck="false" /><div class="sk-lib-tabs" role="tablist"><button role="tab" class="on" data-lib="stencils">Shapes</button><button role="tab" data-lib="files">Files</button></div><div class="sk-palette show" id="skPalette"></div><div class="sk-templates skl-host" id="skTemplates" data-where="panel"></div><div class="sk-lib-empty" id="skLibEmpty">Nothing matches.</div></aside>
+        <aside class="sk-library" id="skLibrary" aria-label="Library"><div class="sk-lib-tabs" role="tablist"><button role="tab" class="on" data-lib="stencils">Shapes</button><button role="tab" data-lib="files">Files</button></div><input class="sk-lib-search" id="skLibSearch" type="search" placeholder="Search shapes and templates" aria-label="Search shapes and templates" autocomplete="off" spellcheck="false" /><div class="sk-palette show" id="skPalette"></div><div class="sk-templates skl-host" id="skTemplates" data-where="panel"></div><div class="sk-lib-empty" id="skLibEmpty">Nothing matches.</div></aside>
       <div class="sk-canvas-wrap"><canvas id="sketchCanvas"></canvas></div>
         <aside class="sk-panel" id="skPanel" aria-label="Selected shape">
           <button class="sk-panel-head" id="skPanelHeadBtn" aria-expanded="true" title="Show or hide the properties"><span id="skPanelHead"></span><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button>
@@ -9238,7 +9249,7 @@ function sketchLibHtml() {
     }).join("");
   /* the folder's own drawings; a search looks through every folder */
   const files = sketchFiles.filter(function (f) {
-    if (q) return f.path.toLowerCase().indexOf(q) !== -1;
+    if (q) return f.path.replace(/\.excalidraw$/i, "").toLowerCase().indexOf(q) !== -1;   /* not the extension: every file has it */
     const parent = f.path.indexOf("/") === -1 ? "" : f.path.slice(0, f.path.lastIndexOf("/"));
     return parent === dir;
   }).sort(function (a, b) { return a.path.localeCompare(b.path); });
@@ -9251,7 +9262,7 @@ function sketchLibHtml() {
     const name = f.path.split("/").pop(), where = f.path.indexOf("/") === -1 ? "" : f.path.slice(0, f.path.lastIndexOf("/"));
     return '<div class="skl-card" draggable="true" data-skfile="' + esc(f.path) + '" tabindex="0" title="' + esc(f.path) + ' \u00b7 click to add, double-click to edit, drag into a sketch or a note">' +
       '<span class="skl-thumb" data-thumb="' + esc(f.path) + '"></span><span class="skl-name">' + esc(name) + "</span>" +
-      '<span class="skl-sub">' + (q && where ? esc(where) + " \u00b7 " : "") + sketchCount(f) + " shapes</span></div>";
+      '<span class="skl-sub">' + (q && where ? esc(where) + " \u00b7 " : "") + sketchCount(f) + (sketchCount(f) === 1 ? " shape" : " shapes") + "</span></div>";
   }).join("");
   const target = sk ? "the open sketch" : "the note";
   if (!sketchCanWrite()) {
@@ -9260,23 +9271,33 @@ function sketchLibHtml() {
       (state.sketchPending ? '<button type="button" class="skl-btn" data-skreconnect="1">Reconnect \u201c' + esc(state.sketchPending.name) + '\u201d</button> ' : "") +
       '<button type="button" class="skl-btn" data-skchoose="1">Choose folder\u2026</button></div>';
   }
-  return '<div class="skl-where-row"><span class="skl-where" title="Where your sketches are">' + ico("folder") + esc(sketchWhere()) + "</span>" +
-      '<button type="button" class="skl-link" data-skchoose="1">Change folder\u2026</button>' + (state.sketchHandle ? '<button type="button" class="skl-link" data-skforget="1" title="Stop using this folder">Forget</button>' : "") + "</div>" +
-    '<div class="skl-top"><input class="skl-q" type="search" placeholder="Find a drawing in every folder" value="' + esc(skLib.q) + '" aria-label="Find a drawing">' +
-      '<button type="button" class="skl-btn" data-sknew="1">+ New drawing</button>' + (skLib.where === "win" ? '<button type="button" class="skl-x" data-skclose="1" aria-label="Close">\u00d7</button>' : "") + "</div>" +
+  return '<div class="skl-where-row"><span class="skl-where" title="Where your sketches are: ' + esc(sketchWhere()) + '">' + ico("folder") + '<span class="skl-where-name">' + esc(sketchWhere()) + "</span></span>" +
+      '<button type="button" class="skl-link" data-skchoose="1" title="Use another folder for sketches">' + (skLib.where === "panel" ? "Change\u2026" : "Change folder\u2026") + "</button>" + (state.sketchHandle ? '<button type="button" class="skl-link" data-skforget="1" title="Stop using this folder">Forget</button>' : "") +
+      (skLib.where === "panel" ? '<button type="button" class="skl-btn skl-new-sm" data-sknew="1">+ New</button>' : "") + "</div>" +
+    (skLib.where === "panel" ? "" :                    /* the board's panel has its own search box and the + New above */
+      '<div class="skl-top"><input class="skl-q" type="search" placeholder="Find a drawing" value="' + esc(skLib.q) + '" aria-label="Find a drawing in every folder">' +
+      '<button type="button" class="skl-btn" data-sknew="1">+ New drawing</button>' + (skLib.where === "win" ? '<button type="button" class="skl-x" data-skclose="1" aria-label="Close">\u00d7</button>' : "") + "</div>") +
     '<div class="skl-body"><nav class="skl-tree" aria-label="Folders">' + tree + "</nav>" +
     '<div class="skl-main"><div class="skl-crumbs">' + (q ? (files.length + " found") : crumbs) + '</div><div class="skl-grid">' +
       (cards || '<p class="skl-empty">' + (sketchFiles.length ? "Nothing here." : "No drawings yet. Use <b>+ New drawing</b>, or save a sketch to the folder from its note.") + "</p>") +
     '</div><div class="skl-hint">Click to add to ' + target + " \u00b7 double-click to edit \u00b7 drag into a sketch or a note \u00b7 right-click for more</div></div></div>";
 }
-/* thumbnails are drawn only once they scroll into view */
+/* thumbnails are drawn only once they scroll into view, and kept per drawing (by its content), so
+   searching or switching tabs shows them at once instead of blanking and redrawing every card */
+const sklThumbs = new Map();
+function sklThumbHtml(f) {
+  const hit = sklThumbs.get(f.path);
+  if (hit && hit.text === f.text) return hit.html;
+  const url = sketchPreviewUrl(f.text), html = url ? '<img src="' + url + '" alt="" draggable="false">' : "<i>empty</i>";
+  sklThumbs.set(f.path, { text: f.text, html: html });
+  return html;
+}
 const sklObs = typeof IntersectionObserver === "function" ? new IntersectionObserver(function (ents) {
   ents.forEach(function (en) {
     if (!en.isIntersecting) return;
     const el = en.target, f = sketchFileOf(el.dataset.thumb);
     sklObs.unobserve(el);
-    const url = f ? sketchPreviewUrl(f.text) : "";
-    el.innerHTML = url ? '<img src="' + url + '" alt="" draggable="false">' : '<i>empty</i>';
+    el.innerHTML = f ? sklThumbHtml(f) : "<i>empty</i>";
   });
 }) : null;
 function sketchLibRender(box) {
@@ -9284,7 +9305,9 @@ function sketchLibRender(box) {
   const keepQ = document.activeElement && document.activeElement.classList.contains("skl-q") && box.contains(document.activeElement);
   box.innerHTML = sketchLibHtml();
   Array.prototype.forEach.call(box.querySelectorAll("[data-thumb]"), function (t) {
-    if (sklObs) sklObs.observe(t); else { const f = sketchFileOf(t.dataset.thumb); t.innerHTML = f ? '<img src="' + sketchPreviewUrl(f.text) + '" alt="">' : ""; }
+    const f = sketchFileOf(t.dataset.thumb), hit = f && sklThumbs.get(f.path);
+    if (hit && hit.text === f.text) t.innerHTML = hit.html;
+    else if (sklObs) sklObs.observe(t); else t.innerHTML = f ? sklThumbHtml(f) : "";
   });
   if (keepQ) { const qi = box.querySelector(".skl-q"); qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
 }
@@ -18749,10 +18772,16 @@ function skLibTab(which) {
   Array.prototype.forEach.call(document.querySelectorAll("#skLibrary [data-lib]"), function (b) { b.classList.toggle("on", b.dataset.lib === which); });
   document.getElementById("skPalette").classList.toggle("show", which === "stencils");
   document.getElementById("skTemplates").classList.toggle("show", which === "files");
-  document.getElementById("skLibSearch").style.display = which === "files" ? "none" : "";   /* the files browser has its own */
-  if (which === "files") { skLib.where = "panel"; sketchLibRender(document.getElementById("skTemplates")); }
+  /* one search box, in the same place on both tabs (so nothing jumps), with each tab's own words */
+  const s = document.getElementById("skLibSearch"), files = which === "files";
+  if (files !== (s.dataset.tab === "files")) { if (files) { skLibQ.shapes = s.value; s.value = skLib.q; } else { skLib.q = s.value; s.value = skLibQ.shapes; } }
+  s.dataset.tab = which;
+  s.placeholder = files ? "Find a drawing" : "Search shapes and templates";
+  s.setAttribute("aria-label", files ? "Find a drawing in every folder" : "Search shapes and templates");
+  if (files) { skLib.where = "panel"; sketchLibRender(document.getElementById("skTemplates")); }
   skLibFilter();
 }
+const skLibQ = { shapes: "" };
 function skLibFilter() {
   const q = document.getElementById("skLibSearch").value.trim().toLowerCase(); let any = false;
   const stencilsOn = document.getElementById("skPalette").classList.contains("show");
@@ -18766,10 +18795,13 @@ function skLibFilter() {
     while (n && !n.classList.contains("sk-lib-h")) { if (n.style.display !== "none") seen = true; n = n.nextElementSibling; }
     h.style.display = seen ? "" : "none";
   });
-  document.getElementById("skLibEmpty").style.display = any ? "none" : "block";
+  document.getElementById("skLibEmpty").style.display = any || !stencilsOn ? "none" : "block";   /* the Files tab says its own "nothing here" */
 }
 document.getElementById("skLibBtn").addEventListener("click", function () { skLibOpen(); });
-document.getElementById("skLibSearch").addEventListener("input", skLibFilter);
+document.getElementById("skLibSearch").addEventListener("input", function (e) {
+  if (e.target.dataset.tab === "files") { skLib.q = e.target.value; sketchLibRender(document.getElementById("skTemplates")); }
+  else skLibFilter();
+});
 document.getElementById("skLibSearch").addEventListener("keydown", function (e) {
   if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); skLibOpen(false); }
 });

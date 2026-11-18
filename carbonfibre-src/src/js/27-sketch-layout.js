@@ -299,10 +299,16 @@ function skLibTab(which) {
   Array.prototype.forEach.call(document.querySelectorAll("#skLibrary [data-lib]"), function (b) { b.classList.toggle("on", b.dataset.lib === which); });
   document.getElementById("skPalette").classList.toggle("show", which === "stencils");
   document.getElementById("skTemplates").classList.toggle("show", which === "files");
-  document.getElementById("skLibSearch").style.display = which === "files" ? "none" : "";   /* the files browser has its own */
-  if (which === "files") { skLib.where = "panel"; sketchLibRender(document.getElementById("skTemplates")); }
+  /* one search box, in the same place on both tabs (so nothing jumps), with each tab's own words */
+  const s = document.getElementById("skLibSearch"), files = which === "files";
+  if (files !== (s.dataset.tab === "files")) { if (files) { skLibQ.shapes = s.value; s.value = skLib.q; } else { skLib.q = s.value; s.value = skLibQ.shapes; } }
+  s.dataset.tab = which;
+  s.placeholder = files ? "Find a drawing" : "Search shapes and templates";
+  s.setAttribute("aria-label", files ? "Find a drawing in every folder" : "Search shapes and templates");
+  if (files) { skLib.where = "panel"; sketchLibRender(document.getElementById("skTemplates")); }
   skLibFilter();
 }
+const skLibQ = { shapes: "" };
 function skLibFilter() {
   const q = document.getElementById("skLibSearch").value.trim().toLowerCase(); let any = false;
   const stencilsOn = document.getElementById("skPalette").classList.contains("show");
@@ -316,10 +322,13 @@ function skLibFilter() {
     while (n && !n.classList.contains("sk-lib-h")) { if (n.style.display !== "none") seen = true; n = n.nextElementSibling; }
     h.style.display = seen ? "" : "none";
   });
-  document.getElementById("skLibEmpty").style.display = any ? "none" : "block";
+  document.getElementById("skLibEmpty").style.display = any || !stencilsOn ? "none" : "block";   /* the Files tab says its own "nothing here" */
 }
 document.getElementById("skLibBtn").addEventListener("click", function () { skLibOpen(); });
-document.getElementById("skLibSearch").addEventListener("input", skLibFilter);
+document.getElementById("skLibSearch").addEventListener("input", function (e) {
+  if (e.target.dataset.tab === "files") { skLib.q = e.target.value; sketchLibRender(document.getElementById("skTemplates")); }
+  else skLibFilter();
+});
 document.getElementById("skLibSearch").addEventListener("keydown", function (e) {
   if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); skLibOpen(false); }
 });

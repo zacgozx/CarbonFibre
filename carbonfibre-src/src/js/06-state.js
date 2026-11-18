@@ -400,7 +400,7 @@ function sketchLibHtml() {
     }).join("");
   /* the folder's own drawings; a search looks through every folder */
   const files = sketchFiles.filter(function (f) {
-    if (q) return f.path.toLowerCase().indexOf(q) !== -1;
+    if (q) return f.path.replace(/\.excalidraw$/i, "").toLowerCase().indexOf(q) !== -1;   /* not the extension: every file has it */
     const parent = f.path.indexOf("/") === -1 ? "" : f.path.slice(0, f.path.lastIndexOf("/"));
     return parent === dir;
   }).sort(function (a, b) { return a.path.localeCompare(b.path); });
@@ -413,7 +413,7 @@ function sketchLibHtml() {
     const name = f.path.split("/").pop(), where = f.path.indexOf("/") === -1 ? "" : f.path.slice(0, f.path.lastIndexOf("/"));
     return '<div class="skl-card" draggable="true" data-skfile="' + esc(f.path) + '" tabindex="0" title="' + esc(f.path) + ' \u00b7 click to add, double-click to edit, drag into a sketch or a note">' +
       '<span class="skl-thumb" data-thumb="' + esc(f.path) + '"></span><span class="skl-name">' + esc(name) + "</span>" +
-      '<span class="skl-sub">' + (q && where ? esc(where) + " \u00b7 " : "") + sketchCount(f) + " shapes</span></div>";
+      '<span class="skl-sub">' + (q && where ? esc(where) + " \u00b7 " : "") + sketchCount(f) + (sketchCount(f) === 1 ? " shape" : " shapes") + "</span></div>";
   }).join("");
   const target = sk ? "the open sketch" : "the note";
   if (!sketchCanWrite()) {
@@ -422,23 +422,33 @@ function sketchLibHtml() {
       (state.sketchPending ? '<button type="button" class="skl-btn" data-skreconnect="1">Reconnect \u201c' + esc(state.sketchPending.name) + '\u201d</button> ' : "") +
       '<button type="button" class="skl-btn" data-skchoose="1">Choose folder\u2026</button></div>';
   }
-  return '<div class="skl-where-row"><span class="skl-where" title="Where your sketches are">' + ico("folder") + esc(sketchWhere()) + "</span>" +
-      '<button type="button" class="skl-link" data-skchoose="1">Change folder\u2026</button>' + (state.sketchHandle ? '<button type="button" class="skl-link" data-skforget="1" title="Stop using this folder">Forget</button>' : "") + "</div>" +
-    '<div class="skl-top"><input class="skl-q" type="search" placeholder="Find a drawing in every folder" value="' + esc(skLib.q) + '" aria-label="Find a drawing">' +
-      '<button type="button" class="skl-btn" data-sknew="1">+ New drawing</button>' + (skLib.where === "win" ? '<button type="button" class="skl-x" data-skclose="1" aria-label="Close">\u00d7</button>' : "") + "</div>" +
+  return '<div class="skl-where-row"><span class="skl-where" title="Where your sketches are: ' + esc(sketchWhere()) + '">' + ico("folder") + '<span class="skl-where-name">' + esc(sketchWhere()) + "</span></span>" +
+      '<button type="button" class="skl-link" data-skchoose="1" title="Use another folder for sketches">' + (skLib.where === "panel" ? "Change\u2026" : "Change folder\u2026") + "</button>" + (state.sketchHandle ? '<button type="button" class="skl-link" data-skforget="1" title="Stop using this folder">Forget</button>' : "") +
+      (skLib.where === "panel" ? '<button type="button" class="skl-btn skl-new-sm" data-sknew="1">+ New</button>' : "") + "</div>" +
+    (skLib.where === "panel" ? "" :                    /* the board's panel has its own search box and the + New above */
+      '<div class="skl-top"><input class="skl-q" type="search" placeholder="Find a drawing" value="' + esc(skLib.q) + '" aria-label="Find a drawing in every folder">' +
+      '<button type="button" class="skl-btn" data-sknew="1">+ New drawing</button>' + (skLib.where === "win" ? '<button type="button" class="skl-x" data-skclose="1" aria-label="Close">\u00d7</button>' : "") + "</div>") +
     '<div class="skl-body"><nav class="skl-tree" aria-label="Folders">' + tree + "</nav>" +
     '<div class="skl-main"><div class="skl-crumbs">' + (q ? (files.length + " found") : crumbs) + '</div><div class="skl-grid">' +
       (cards || '<p class="skl-empty">' + (sketchFiles.length ? "Nothing here." : "No drawings yet. Use <b>+ New drawing</b>, or save a sketch to the folder from its note.") + "</p>") +
     '</div><div class="skl-hint">Click to add to ' + target + " \u00b7 double-click to edit \u00b7 drag into a sketch or a note \u00b7 right-click for more</div></div></div>";
 }
-/* thumbnails are drawn only once they scroll into view */
+/* thumbnails are drawn only once they scroll into view, and kept per drawing (by its content), so
+   searching or switching tabs shows them at once instead of blanking and redrawing every card */
+const sklThumbs = new Map();
+function sklThumbHtml(f) {
+  const hit = sklThumbs.get(f.path);
+  if (hit && hit.text === f.text) return hit.html;
+  const url = sketchPreviewUrl(f.text), html = url ? '<img src="' + url + '" alt="" draggable="false">' : "<i>empty</i>";
+  sklThumbs.set(f.path, { text: f.text, html: html });
+  return html;
+}
 const sklObs = typeof IntersectionObserver === "function" ? new IntersectionObserver(function (ents) {
   ents.forEach(function (en) {
     if (!en.isIntersecting) return;
     const el = en.target, f = sketchFileOf(el.dataset.thumb);
     sklObs.unobserve(el);
-    const url = f ? sketchPreviewUrl(f.text) : "";
-    el.innerHTML = url ? '<img src="' + url + '" alt="" draggable="false">' : '<i>empty</i>';
+    el.innerHTML = f ? sklThumbHtml(f) : "<i>empty</i>";
   });
 }) : null;
 function sketchLibRender(box) {
@@ -446,7 +456,9 @@ function sketchLibRender(box) {
   const keepQ = document.activeElement && document.activeElement.classList.contains("skl-q") && box.contains(document.activeElement);
   box.innerHTML = sketchLibHtml();
   Array.prototype.forEach.call(box.querySelectorAll("[data-thumb]"), function (t) {
-    if (sklObs) sklObs.observe(t); else { const f = sketchFileOf(t.dataset.thumb); t.innerHTML = f ? '<img src="' + sketchPreviewUrl(f.text) + '" alt="">' : ""; }
+    const f = sketchFileOf(t.dataset.thumb), hit = f && sklThumbs.get(f.path);
+    if (hit && hit.text === f.text) t.innerHTML = hit.html;
+    else if (sklObs) sklObs.observe(t); else t.innerHTML = f ? sklThumbHtml(f) : "";
   });
   if (keepQ) { const qi = box.querySelector(".skl-q"); qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
 }

@@ -123,3 +123,11 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tk-num { color: var(--ora); }
 .tk-com { color: var(--c5e5e5e); font-style: italic; }
 
+/* the board's Files tab: + New sits at the end of the folder row; names may take two lines */
+.sk-library .skl-where-row { padding: 0 10px 8px; align-items: center; flex-wrap: nowrap; gap: 8px; }
+.sk-library .skl-where { flex: 0 1 auto; }
+.sk-library .skl-where-row .skl-link { flex: none; }
+.skl-new-sm { margin-left: auto; height: 26px; padding: 0 10px; font-size: 12.5px; }
+.sk-library .skl-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+.skl-where-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-library .skl-body { padding-top: 2px; }
