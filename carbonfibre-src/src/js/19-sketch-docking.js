@@ -326,9 +326,12 @@ function skChanged() {
 function skSnapshot() { sk.undo.push(JSON.stringify(sk.elements)); if (sk.undo.length > 60) sk.undo.shift(); }
 
 /* insert an empty board at the cursor of the focused pane and open it */
+/* the Sketch button (Ctrl+Shift+D): a sketch board at the cursor of the note in front of you. With
+   no note there (an empty pane, the board, the graph, a sheet) it used to do nothing; it now starts a
+   new sketch: a file in the sketch folder when there is one, otherwise a new note holding the board. */
 function insertSketch() {
   const p = focusedPane || panes[0];
-  if (!p.note()) return;
+  if (p.type !== "note" || !p.note()) { newSketchNowhere(p); return; }
   if (p.mode !== "live") p.setMode("live");
   const at = p.activeLine !== null ? p.activeLine + 1 : p.lines.length;
   const block = ["```excalidraw", JSON.stringify(skDoc([])), "```"];
@@ -338,6 +341,17 @@ function insertSketch() {
   p.deactivate(); p.activeLine = null;
   p.render();
   openSketch(p, at + (block.length === 4 ? 1 : 0));
+}
+
+function newSketchNowhere(p) {
+  if (sketchCanWrite()) { newSketchFile(""); pushToastLike("No note open, so this is a new sketch file in " + sketchWhere() + "."); return; }
+  const d = new Date(), pad = function (x) { return (x < 10 ? "0" : "") + x; };
+  const title = "Sketch " + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + "." + pad(d.getMinutes()) + "." + pad(d.getSeconds());
+  const n = createNoteWithText(title, "```excalidraw\n" + JSON.stringify(skDoc([])) + "\n```\n", p);
+  const q = paneShowing("note", n.id) || p;
+  q.render();
+  openSketch(q, 0);
+  pushToastLike("No note open, so the sketch is in a new note, \u201c" + title + "\u201d.");
 }
 
 /* ---- transforms ---- */
