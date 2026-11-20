@@ -8,6 +8,7 @@ publishes the app only.
 | `public/` | The app (`index.html`) and `robots.txt` | Yes |
 | `carbonfibre-src/` | The source, split by area; `build.py` joins it into the app | No |
 | `cf-tests/` | The test suite and code checker | No |
+| `CHANGELOG.md` | What changed, newest first | No |
 | `SECURITY.md` | What protects your notes, the limits, and how to report a problem | No |
 | `desktop/` | The same app as a desktop app for macOS, Windows and Linux (Electron), which also runs Obsidian community plugins (see its README) | No |
 | `.github/workflows/pages.yml` | Rebuilds the app from the source and publishes `public/` on every push | — |
@@ -46,7 +47,9 @@ On a first visit the app asks:
 | A folder you choose | `.md` files in that folder, readable by any editor | Edge, Chrome and other Chromium browsers on a desktop or laptop |
 | This browser | The browser's storage for this site, on this device | Any modern browser, including phones |
 
-The desktop app always uses a folder (it asks for one on first start).
+The desktop app always uses a folder (it asks for one on first start). Its own data (settings, the task
+board, plugin settings) is kept in one SQLite file, `carbonfibre.db`, in the app's data folder; notes are
+never in it (see `desktop/README.md`).
 
 Firefox, Safari and phone browsers don't offer the folder API, so there the folder choice is shown
 disabled with the reason. Switch any time from the bottom-left of the window.
@@ -80,6 +83,19 @@ disabled with the reason. Switch any time from the bottom-left of the window.
   tags and `onerror=` handlers stay blocked. While any plugin is on, links opened from the page ask before
   your browser opens them. The desktop app itself talks to GitHub only: the plugin catalog, the plugins
   you check or install, and its own updates (checked against each release's SHA-256). See `SECURITY.md`.
+
+## Typing aids
+
+| You type | What happens |
+|---|---|
+| 3+ letters of a word | Words from your notes are suggested: start of the word first, then the start of a part (`vault` finds `ObsidianVault`), then the letters in order (`splk` finds `Splunk`). Words you pick and use often rank higher. The best one shows faintly after the cursor. |
+| `[[` | Note titles are suggested (recent notes when nothing is typed yet) |
+| `/` at the start of a word | Snippets: `/date`, `/time`, `/now`, `/today` (link to today's note), `/tomorrow`, `/yesterday`; at a line start also `/todo`, `/done`, `/h1`, `/h2`, `/quote`, `/code`, `/divider` |
+| **Tab** | Takes the highlighted suggestion |
+| **Enter** | A new line, as always. It takes a suggestion only for `[[links]]`, or after you moved to one with the arrow keys |
+| **Esc**, or moving the cursor | Closes the suggestions |
+
+Turn suggestions off with `COMPLETE_ON` in `carbonfibre-src/src/js/07-editing-aids.js`.
 
 ## Good to know
 
