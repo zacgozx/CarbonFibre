@@ -113,12 +113,33 @@ function createWindow(nodeOn) {
     openExternalChecked(url);
     return { action: "deny" };
   });
+  const popKids = new Set();
   wc.on("did-create-window", (child) => {
     child.webContents.on("will-navigate", (e, u) => { if (!u.startsWith(ORIGIN + "/index.html#popout=")) { e.preventDefault(); openExternalChecked(u); } });
-    /* it saves through this window, so it closes with it (it sends its edits every 1.5 s at most) */
-    const parent = win;
-    parent.once("closed", () => { if (!child.isDestroyed()) child.close(); });
+    popKids.add(child);
+    child.once("closed", () => popKids.delete(child));
   });
+  /* A popped-out note saves through this window and closes with it. Its last keystrokes may not have
+     been sent yet (it sends after a pause in typing), so before this window closes its text is taken
+     straight from it and handed to this page, whose own unload handler then saves it. */
+  let popFlushed = false;
+  const self = win;
+  self.on("close", (e) => {
+    const kids = Array.from(popKids).filter((c) => !c.isDestroyed());
+    if (!kids.length || popFlushed) return;
+    e.preventDefault();
+    popFlushed = true;
+    const grab = "(() => { if (typeof PopOut !== 'object' || !PopOut.sat) return null; syncAllPanes(); const n = findNote(PopOut.satId); return n ? [String(PopOut.satId), n.content] : null; })()";
+    Promise.all(kids.map((c) => c.webContents.executeJavaScript(grab, true).catch(() => null)))
+      .then((texts) => Promise.all(texts.filter(Boolean).map((t) =>
+        self.isDestroyed() ? null : self.webContents.executeJavaScript("PopOut.take(" + JSON.stringify(t[0]) + ", " + JSON.stringify(t[1]) + "); true", true).catch(() => null))))
+      .then(() => {
+        if (self.isDestroyed()) return;
+        self.close();
+        setTimeout(() => { popFlushed = false; }, 2000);   /* "Wait" in the unsaved-changes dialog keeps it open: the next close takes them again */
+      });
+  });
+  self.once("closed", () => { popKids.forEach((c) => { if (!c.isDestroyed()) c.close(); }); });
   wc.on("will-navigate", (e, url) => {
     if (url === ORIGIN + "/index.html" || url === ORIGIN + "/") return;   /* reload; nothing else of the app's own files */
     e.preventDefault();

@@ -9,6 +9,7 @@ app.setPath("userData", ud);
 dialog.showMessageBox = async () => ({ response: 0 });
 require("../main.js");
 const db = require("../db.js");
+app.removeAllListeners("window-all-closed");          /* the test ends the app itself, after its last checks */
 
 const results = [];
 const check = (name, ok, detail) => { results.push({ name, ok: !!ok, detail }); };
@@ -51,10 +52,15 @@ async function run(w) {
   await wait(3500);
   check("after the main window reloads, edits there still arrive", (await js(`findNote(7).content`)).endsWith("more after"), await js(`findNote(7).content`));
   check("...with no warning bar", await cj(`!document.getElementById("popOffline")`));
+  /* typed, then the main window closed at once: those keystrokes are saved anyway */
+  await cj(`(() => { const q = panes[0]; q.ta.value += " last"; q.ta.dispatchEvent(new Event("input")); return true; })()`);
   const gone = new Promise((r) => child.once("closed", r));
   w.close();
   await Promise.race([gone, wait(3000)]);
+  await wait(300);
   check("closing the main window closes the note's window too", child.isDestroyed());
+  const saved = JSON.parse(db.pageAll().data["carbonfibre-v1"] || "{}"), note = (saved.notes || []).find((x) => x.id === 7);
+  check("keys typed there just before the main window closed are saved", note && note.content.endsWith("after last"), note && note.content.slice(-40));
   finish();
 }
 function finish() {

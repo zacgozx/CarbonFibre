@@ -94,7 +94,7 @@ const GetApp = {
   /* ---- the desktop app: "Update available" ---- */
   initUpdates(right) {
     const u = Dialogs.desktop.updates;
-    if (!u) return;
+    if (!u || /^#popout=/.test(location.hash)) return;     /* a popped-out note's window: the main one shows updates */
     const b = document.createElement("button");
     b.className = "sb-btn ga-update";
     b.id = "btnUpdate";
