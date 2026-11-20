@@ -105,7 +105,7 @@ Turn suggestions off with `COMPLETE_ON` in `carbonfibre-src/src/js/07-editing-ai
 | Split by dragging | Drag a tab onto a pane and hold it near an edge for a moment: the highlighted half is where it goes. Drop in the middle (or quickly) to move the tab as before |
 | More | Right-click the empty part of a pane's tab bar: Split right, Split down, Float, Pop out |
 | Float a pane | The float button in its bar lifts it over the others. Drag it by its bar, size it from its corner, double-click the bar to dock it again |
-| Pop a note out | Tab right-click **Move into a new window**, or **Pop out** in the bar menu: the note opens in its own window (as in VS Code) and leaves the pane. Edits in either window show in both; only the main window saves. Opening that note again goes to its window. Needs pop-ups allowed for the page |
+| Pop a note out | Tab right-click **Move into a new window**, or **Pop out** in the bar menu: the note opens in its own window (as in VS Code) and leaves the pane. Edits in either window show in both; only the main window saves. Opening that note again goes to its window. Needs pop-ups allowed for the page. If the main window is reloaded, edits made meanwhile are saved once it's back; if it's closed, a bar says so and offers to copy the note (in the desktop app the note's window closes with it) |
 | Move the sidebar | Drag its title past the middle of the window to dock it on the right (the icon bar goes too) |
 | Start over | **Reset the layout** in the command palette |
 

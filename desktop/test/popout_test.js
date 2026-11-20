@@ -40,9 +40,21 @@ async function run(w) {
   check("that window saved nothing to the database itself", Object.keys(db.pageAll().data).length >= rows0 && !(await cj(`!!window.cfDesktopStore`)));
   const opened = await cj(`(() => { try { return !!window.open("https://example.com"); } catch (e) { return "threw"; } })()`);
   check("it can't open other windows", BrowserWindow.getAllWindows().length === 2, String(opened));
-  child.close();
-  await wait(400);
-  check("closing it leaves the app running", !w.isDestroyed());
+  /* the main window reloads: the note's window carries on, and its edits arrive once the page is back.
+     (No folder in this test, so the page's notes come back from the database; the note is put back first.) */
+  await js(`flushPersist(); true`);
+  const back = new Promise((r) => w.webContents.once("did-finish-load", r));
+  w.webContents.reload();
+  await back;
+  await js(`if (!findNote(7)) state.notes.push({ id: 7, title: "Popped", path: "Popped", content: "" }); true`);
+  await cj(`(() => { const q = panes[0]; q.ta.value += " after"; q.ta.dispatchEvent(new Event("input")); return true; })()`);
+  await wait(3500);
+  check("after the main window reloads, edits there still arrive", (await js(`findNote(7).content`)).endsWith("more after"), await js(`findNote(7).content`));
+  check("...with no warning bar", await cj(`!document.getElementById("popOffline")`));
+  const gone = new Promise((r) => child.once("closed", r));
+  w.close();
+  await Promise.race([gone, wait(3000)]);
+  check("closing the main window closes the note's window too", child.isDestroyed());
   finish();
 }
 function finish() {

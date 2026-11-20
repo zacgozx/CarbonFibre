@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-JcGe5ga5AMdm8pVyf4uzAOBqgn/Tg9vmsaLvD0iEiTk='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-CPwt2wnbLC1/XiHYegRMLwFK7twiLUT5Ar3nNZo8s58='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2781,6 +2781,10 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
 /* Find a note, in the graph's bar */
 .graph-find { width: 160px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: inherit; font-size: 12px; }
 .graph-find:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
+
+/* a popped-out note that can't reach the main window (js/44-popout.js) */
+.pop-offline { position: fixed; left: 0; right: 0; top: 0; z-index: 300; display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: #8a2c2c; color: #fff; font-size: 13px; }
+.pop-offline-text { flex: 1; }
 </style>
 <script>/* Storage, before anything reads it. Desktop app: the page's storage lives in the app's SQLite file
    (desktop/db.js) instead of the browser's. The page keeps calling localStorage; reads come from a copy
@@ -26072,6 +26076,7 @@ const PopOut = {
     clearTimeout(PopOut.timers.get(key)); PopOut.timers.delete(key);
     syncAllPanes();
     const n = findNote(key), target = PopOut.sat ? window.opener : PopOut.wins.get(key);
+    if (PopOut.sat) PopOut.dirty = true;                       /* until the main window says it has it */
     if (n && target && !target.closed) PopOut.post(target, { cf: PopOut.sat ? "pop-edit" : "pop-update", id: key, content: n.content });
   },
   /* text from the other window: taken, and panes showing it are redrawn unless you're typing in one */
@@ -26100,6 +26105,38 @@ const PopOut = {
       PopOut.post(window.opener, { cf: "pop-closed", id: PopOut.satId });
     });
     PopOut.first = first;
+    /* Staying in touch: every 1.5 s this window says hello, with its text if the main window hasn't
+       confirmed the last edit. No answer (the main window was reloaded and is still loading, or closed):
+       a bar says changes aren't being saved. When it answers again, the unsaved text goes over. */
+    PopOut.lastAck = Date.now();
+    setInterval(function () {
+      const gone = !window.opener || window.opener.closed;
+      if (!gone) {
+        const n = findNote(PopOut.satId);
+        if (PopOut.timers.has(PopOut.satId)) PopOut.flush(PopOut.satId);
+        PopOut.post(window.opener, { cf: "pop-hello", id: PopOut.satId, content: PopOut.dirty && n ? n.content : null });
+      }
+      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : null);
+    }, 1500);
+  },
+  /* the bar shown while edits here can't reach the main window */
+  offline(why) {
+    let bar = document.getElementById("popOffline");
+    if (!why) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "popOffline"; bar.className = "pop-offline"; bar.setAttribute("role", "alert");
+      bar.innerHTML = '<span class="pop-offline-text"></span><button type="button" class="btn-mini">Copy this note</button>';
+      bar.querySelector("button").addEventListener("click", function () {
+        syncAllPanes();
+        const n = findNote(PopOut.satId);
+        if (n && navigator.clipboard) navigator.clipboard.writeText(n.content).then(function () { pushToastLike("Copied. Paste it into the note in the main window."); }, function () { pushToastLike("Couldn't copy: select the text and copy it yourself."); });
+      });
+      document.body.insertBefore(bar, document.body.firstChild);
+    }
+    bar.querySelector(".pop-offline-text").textContent = why === "closed"
+      ? "The main CarbonFibre window is closed, so changes here aren't saved. Copy this note before you close this window."
+      : "Lost touch with the main CarbonFibre window, so changes here aren't being saved yet. They'll be saved when it's back.";
   },
   start(d) {
     if (!d.note) { document.title = "Note not found"; return; }
@@ -26120,11 +26157,14 @@ const PopOut = {
       if (!d || typeof d.cf !== "string" || d.cf.indexOf("pop-") !== 0) return;
       if (PopOut.sat) {
         if (e.source !== window.opener) return;                 /* only the window that opened this one */
-        if (d.cf === "pop-note") PopOut.start(d);
+        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.offline(null); }
+        else if (d.cf === "pop-note") PopOut.start(d);
         else if (d.cf === "pop-update" && String(d.id) === PopOut.satId) PopOut.take(PopOut.satId, d.content);
         return;
       }
-      const key = PopOut.winOf(e.source);
+      let key = PopOut.winOf(e.source);
+      /* after a reload this window has forgotten its popped-out notes: one it opened says hello again */
+      if (key === null) { try { if (e.source && e.source.opener === window) { key = String(d.id); PopOut.wins.set(key, e.source); } } catch (err) { /* not ours */ } }
       if (key === null || String(d.id) !== key) return;       /* only windows this one opened, about their own note */
       const n = findNote(key);
       if (d.cf === "pop-ready") {
@@ -26132,7 +26172,11 @@ const PopOut = {
         PopOut.post(e.source, { cf: "pop-note", theme: document.documentElement.getAttribute("data-theme") || "",
           note: n ? { id: n.id, title: n.title, path: n.path, content: n.content } : null,
           titles: state.notes.map(function (x) { return { id: x.id, title: x.title, path: x.path }; }) });
-      } else if (d.cf === "pop-edit") PopOut.take(key, d.content);
+      } else if (d.cf === "pop-edit" || d.cf === "pop-hello") {
+        if (n && typeof d.content === "string") PopOut.take(key, d.content);
+        /* saved: true only once the note is here to take it (a folder may still be loading) */
+        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string" });
+      }
       else if (d.cf === "pop-open" && findNote(d.to)) { window.focus(); openInPane(findNote(d.to).id); }
       else if (d.cf === "pop-closed") setTimeout(function () { if (e.source.closed) PopOut.wins.delete(key); }, 500);   /* a reload says it too */
     });

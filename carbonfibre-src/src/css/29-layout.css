@@ -58,3 +58,7 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
 /* Find a note, in the graph's bar */
 .graph-find { width: 160px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: inherit; font-size: 12px; }
 .graph-find:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
+
+/* a popped-out note that can't reach the main window (js/44-popout.js) */
+.pop-offline { position: fixed; left: 0; right: 0; top: 0; z-index: 300; display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: #8a2c2c; color: #fff; font-size: 13px; }
+.pop-offline-text { flex: 1; }

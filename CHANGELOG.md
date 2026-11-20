@@ -4,6 +4,13 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Pop-out: no lost edits when the main window reloads or closes
+- A popped-out note says hello to the main window every 1.5 s, with its text while an edit is
+  unconfirmed. A reloaded main window recognises its popped-out notes again and saves what they typed
+  meanwhile. With no answer, a bar says changes aren't being saved; with the main window closed, it
+  offers to copy the note. In the desktop app the note's window closes with the main one.
+- Tests: `cf-tests/layout_test.py` (reload and close), `desktop/test/popout_test.js` (8 checks).
+
 ### Layout: split down, drag to split, floating panes, pop-out windows
 - Panes split right or down (Alt+click on Split, or the bar's right-click menu); up to 6.
 - A tab held near a pane's edge for a moment splits that way, with the half highlighted; a quick drop

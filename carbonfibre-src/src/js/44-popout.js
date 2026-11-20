@@ -52,6 +52,7 @@ const PopOut = {
     clearTimeout(PopOut.timers.get(key)); PopOut.timers.delete(key);
     syncAllPanes();
     const n = findNote(key), target = PopOut.sat ? window.opener : PopOut.wins.get(key);
+    if (PopOut.sat) PopOut.dirty = true;                       /* until the main window says it has it */
     if (n && target && !target.closed) PopOut.post(target, { cf: PopOut.sat ? "pop-edit" : "pop-update", id: key, content: n.content });
   },
   /* text from the other window: taken, and panes showing it are redrawn unless you're typing in one */
@@ -80,6 +81,38 @@ const PopOut = {
       PopOut.post(window.opener, { cf: "pop-closed", id: PopOut.satId });
     });
     PopOut.first = first;
+    /* Staying in touch: every 1.5 s this window says hello, with its text if the main window hasn't
+       confirmed the last edit. No answer (the main window was reloaded and is still loading, or closed):
+       a bar says changes aren't being saved. When it answers again, the unsaved text goes over. */
+    PopOut.lastAck = Date.now();
+    setInterval(function () {
+      const gone = !window.opener || window.opener.closed;
+      if (!gone) {
+        const n = findNote(PopOut.satId);
+        if (PopOut.timers.has(PopOut.satId)) PopOut.flush(PopOut.satId);
+        PopOut.post(window.opener, { cf: "pop-hello", id: PopOut.satId, content: PopOut.dirty && n ? n.content : null });
+      }
+      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : null);
+    }, 1500);
+  },
+  /* the bar shown while edits here can't reach the main window */
+  offline(why) {
+    let bar = document.getElementById("popOffline");
+    if (!why) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "popOffline"; bar.className = "pop-offline"; bar.setAttribute("role", "alert");
+      bar.innerHTML = '<span class="pop-offline-text"></span><button type="button" class="btn-mini">Copy this note</button>';
+      bar.querySelector("button").addEventListener("click", function () {
+        syncAllPanes();
+        const n = findNote(PopOut.satId);
+        if (n && navigator.clipboard) navigator.clipboard.writeText(n.content).then(function () { pushToastLike("Copied. Paste it into the note in the main window."); }, function () { pushToastLike("Couldn't copy: select the text and copy it yourself."); });
+      });
+      document.body.insertBefore(bar, document.body.firstChild);
+    }
+    bar.querySelector(".pop-offline-text").textContent = why === "closed"
+      ? "The main CarbonFibre window is closed, so changes here aren't saved. Copy this note before you close this window."
+      : "Lost touch with the main CarbonFibre window, so changes here aren't being saved yet. They'll be saved when it's back.";
   },
   start(d) {
     if (!d.note) { document.title = "Note not found"; return; }
@@ -100,11 +133,14 @@ const PopOut = {
       if (!d || typeof d.cf !== "string" || d.cf.indexOf("pop-") !== 0) return;
       if (PopOut.sat) {
         if (e.source !== window.opener) return;                 /* only the window that opened this one */
-        if (d.cf === "pop-note") PopOut.start(d);
+        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.offline(null); }
+        else if (d.cf === "pop-note") PopOut.start(d);
         else if (d.cf === "pop-update" && String(d.id) === PopOut.satId) PopOut.take(PopOut.satId, d.content);
         return;
       }
-      const key = PopOut.winOf(e.source);
+      let key = PopOut.winOf(e.source);
+      /* after a reload this window has forgotten its popped-out notes: one it opened says hello again */
+      if (key === null) { try { if (e.source && e.source.opener === window) { key = String(d.id); PopOut.wins.set(key, e.source); } } catch (err) { /* not ours */ } }
       if (key === null || String(d.id) !== key) return;       /* only windows this one opened, about their own note */
       const n = findNote(key);
       if (d.cf === "pop-ready") {
@@ -112,7 +148,11 @@ const PopOut = {
         PopOut.post(e.source, { cf: "pop-note", theme: document.documentElement.getAttribute("data-theme") || "",
           note: n ? { id: n.id, title: n.title, path: n.path, content: n.content } : null,
           titles: state.notes.map(function (x) { return { id: x.id, title: x.title, path: x.path }; }) });
-      } else if (d.cf === "pop-edit") PopOut.take(key, d.content);
+      } else if (d.cf === "pop-edit" || d.cf === "pop-hello") {
+        if (n && typeof d.content === "string") PopOut.take(key, d.content);
+        /* saved: true only once the note is here to take it (a folder may still be loading) */
+        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string" });
+      }
       else if (d.cf === "pop-open" && findNote(d.to)) { window.focus(); openInPane(findNote(d.to).id); }
       else if (d.cf === "pop-closed") setTimeout(function () { if (e.source.closed) PopOut.wins.delete(key); }, 500);   /* a reload says it too */
     });

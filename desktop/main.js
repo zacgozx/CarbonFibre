@@ -115,6 +115,9 @@ function createWindow(nodeOn) {
   });
   wc.on("did-create-window", (child) => {
     child.webContents.on("will-navigate", (e, u) => { if (!u.startsWith(ORIGIN + "/index.html#popout=")) { e.preventDefault(); openExternalChecked(u); } });
+    /* it saves through this window, so it closes with it (it sends its edits every 1.5 s at most) */
+    const parent = win;
+    parent.once("closed", () => { if (!child.isDestroyed()) child.close(); });
   });
   wc.on("will-navigate", (e, url) => {
     if (url === ORIGIN + "/index.html" || url === ORIGIN + "/") return;   /* reload; nothing else of the app's own files */
