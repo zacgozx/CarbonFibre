@@ -1,4 +1,4 @@
-/* The only things the page can reach outside itself: native dialogs, and the plugin calls below
+/* The only things the page can reach outside itself: native dialogs, its own storage, and the plugin calls below
    (internet requests only for plugins you allowed). No Node, no files.
    Except: a window opened while a plugin you allowed Node.js is on (main.js createWindow) has no
    sandbox and no isolation, and gets Node's built-in modules below, for those plugins (the page's
@@ -12,6 +12,11 @@ const api = {
   confirm: (message) => ipcRenderer.invoke("cf:confirm", String(message)),
   prompt: (message, value) => ipcRenderer.invoke("cf:prompt", String(message), value == null ? "" : String(value)),
   choose: (message, choices) => ipcRenderer.invoke("cf:choose", String(message), Array.from(choices || [], String)),
+  /* the page's storage, kept in the app's SQLite file (db.js): all of it once at start, then writes in order */
+  store: {
+    all: () => ipcRenderer.sendSync("cf:store:all"),
+    write: (ops, copied) => ipcRenderer.send("cf:store:write", Array.from(ops || [], (o) => [String(o[0]), o[1] == null ? null : String(o[1]), o[2] === "clear" ? "clear" : undefined]), !!copied)
+  },
   /* updates (updater.js): the page shows them; installing asks in the app's own dialog first */
   updates: {
     state: () => ipcRenderer.invoke("cf:update:state"),

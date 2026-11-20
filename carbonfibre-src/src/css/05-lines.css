@@ -28,6 +28,16 @@
 }
 .ac-item { padding: 4px 8px; border-radius: 4px; color: var(--cbdbdbd); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ac-item.on { background: var(--acc-soft); color: var(--acc-text); }
+.ac { overflow-y: auto; overscroll-behavior: contain; }
+.ac.ac-up { top: auto; bottom: 100%; margin: 0 0 2px; }
+.ac-item { display: flex; align-items: baseline; gap: 10px; }
+.ac-word { overflow: hidden; text-overflow: ellipsis; }
+.ac-word b { font-weight: 600; color: var(--acc-text); }
+.ac-sub { margin-left: auto; color: var(--c8a8a8a); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.ac-hint { margin-top: 3px; padding: 4px 8px 2px; border-top: 1px solid var(--line); color: var(--c8a8a8a); font-size: 10.5px; }
+.ac-hint kbd { font: inherit; padding: 0 4px; border: 1px solid var(--line); border-radius: 3px; }
+/* the best word, faintly after the caret; Tab takes it */
+.ac-ghost { opacity: 0.38; pointer-events: none; font-weight: inherit; }
 .ln-active { position: relative; }
 .ln-active::before {
   content: ""; position: absolute;

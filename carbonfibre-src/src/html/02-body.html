@@ -1,4 +1,39 @@
 </style>
+<script>/* Desktop app only: the page's storage lives in the app's SQLite file (desktop/db.js) instead of the
+   browser's. The page keeps calling localStorage; reads come from a copy loaded once at start, writes go
+   to the file in order. The first time, what the browser had is copied in (and left there). Runs before
+   anything reads storage; on the website (no cfDesktop.store) it does nothing. */
+(function () {
+  const d = window.cfDesktop && window.cfDesktop.store;
+  if (!d) return;
+  let got = null;
+  try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  if (!got || !got.data) return;
+  const map = new Map(Object.entries(got.data));
+  if (!got.copied) {
+    const ops = [];
+    try {
+      const real = window.localStorage;
+      for (let i = 0; i < real.length; i++) { const k = real.key(i); if (!map.has(k)) { map.set(k, real.getItem(k)); ops.push([k, real.getItem(k)]); } }
+    } catch (e) { /* no browser storage to copy */ }
+    d.write(ops, true);
+  }
+  let pending = null;
+  const send = function (op) {
+    if (!pending) { pending = []; queueMicrotask(function () { const o = pending; pending = null; d.write(o, false); }); }
+    pending.push(op);
+  };
+  const store = {
+    getItem(k) { k = String(k); return map.has(k) ? map.get(k) : null; },
+    setItem(k, v) { k = String(k); v = String(v); map.set(k, v); send([k, v]); },
+    removeItem(k) { k = String(k); if (map.delete(k)) send([k, null]); },
+    clear() { map.clear(); send(["", null, "clear"]); },
+    key(n) { const ks = Array.from(map.keys()); return n >= 0 && n < ks.length ? ks[n] : null; },
+    get length() { return map.size; }
+  };
+  Object.defineProperty(window, "localStorage", { configurable: true, enumerable: true, get: function () { return store; } });
+  window.cfDesktopStore = true;
+})();</script>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
 <body>

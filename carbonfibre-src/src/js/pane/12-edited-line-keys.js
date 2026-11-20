@@ -4,11 +4,15 @@
       const mod = e.ctrlKey || e.metaKey;
       const i = p.activeLine;
 
+      /* the completion popup: Tab picks; Enter picks a [[link]] or a choice moved to with the arrows,
+         otherwise the popup closes and Enter makes a new line as usual */
       if (ac.el) {
-        if (e.key === "ArrowDown") { e.preventDefault(); ac.idx = (ac.idx + 1) % ac.items.length; acRender(); return; }
-        if (e.key === "ArrowUp") { e.preventDefault(); ac.idx = (ac.idx - 1 + ac.items.length) % ac.items.length; acRender(); return; }
-        if (e.key === "Tab" || e.key === "Enter") { e.preventDefault(); acAccept(); return; }
+        if (e.key === "ArrowDown" && !e.shiftKey && !e.altKey && !mod) { e.preventDefault(); acMove(1); return; }
+        if (e.key === "ArrowUp" && !e.shiftKey && !e.altKey && !mod) { e.preventDefault(); acMove(-1); return; }
+        if (e.key === "Tab" && !e.shiftKey && !mod && !e.altKey) { e.preventDefault(); acAccept(); return; }
+        if (e.key === "Enter" && !e.shiftKey && !mod && !e.altKey && (ac.kind === "link" || ac.nav)) { e.preventDefault(); acAccept(); return; }
         if (e.key === "Escape") { e.preventDefault(); acClose(); return; }
+        if (e.key === "Enter" || e.key === "Tab" || /^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End|PageUp|PageDown)$/.test(e.key)) acClose();
       }
 
       if (e.key === "Escape" && p.carets.length) { e.preventDefault(); p.clearCarets(); return; }

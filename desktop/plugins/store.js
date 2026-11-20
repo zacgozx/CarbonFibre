@@ -1,10 +1,11 @@
 /* Obsidian plugins for the desktop app: the community catalog, downloads, installed plugins and
    their saved settings. Everything lives in the app's own data folder:
-     plugins/<id>/manifest.json, main.js, styles.css, data.json, compat.json
-     plugins/enabled.json
-     plugins/network.json      which plugins you let use the internet (id: true / false)
-     plugins/node.json         which plugins you let use Node.js, and your notes folder's path for them
-     secrets.json              plugins' API keys and tokens (app.secretStorage), encrypted by the system keychain
+     plugins/<id>/manifest.json, main.js, styles.css, compat.json
+     carbonfibre.db (desktop/db.js), table app:
+       plugins/enabled, plugins/network (who may use the internet), plugins/node (who may use Node.js,
+       and your notes folder's path for them), plugin-data/<id> (each plugin's settings, its data.json),
+       secrets/all (plugins' API keys and tokens, encrypted by the system keychain)
+     (the JSON files these used to be are read once, then left alone)
      plugin-cache/catalog.json, plugin-cache/<id>@<version>/...   (checked but not installed)
    Only this file touches the network: GitHub for the catalog and release files, and (request below)
    the requests of plugins you let use the internet. The page itself still can't reach the network. */
@@ -16,6 +17,7 @@ const path = require("node:path");
 const { Worker } = require("node:worker_threads");
 const { app, net, safeStorage } = require("electron");
 const { VERSION } = require("./compat");
+const db = require("../db");
 
 const CATALOG_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
 const STATS_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
@@ -117,8 +119,9 @@ async function check(id) {
 }
 
 /* ---- installed plugins ---- */
-async function enabledSet() { const e = await readJson(path.join(root(), "enabled.json")); return new Set(Array.isArray(e) ? e : []); }
-async function saveEnabled(set) { await writeText(path.join(root(), "enabled.json"), JSON.stringify(Array.from(set))); }
+/* the settings below live in the app's database (desktop/db.js); each JSON file they used to be is read once */
+async function enabledSet() { const e = db.getJson("plugins", "enabled", path.join(root(), "enabled.json")); return new Set(Array.isArray(e) ? e : []); }
+async function saveEnabled(set) { db.setJson("plugins", "enabled", Array.from(set)); }
 
 async function compatOf(id) {
   const dir = dirOf(id);
@@ -163,7 +166,7 @@ async function place(id, files) {
   await writeText(path.join(dir, "main.js"), files.main);
   if (files.styles != null) await writeText(path.join(dir, "styles.css"), files.styles);
   else await fs.rm(path.join(dir, "styles.css"), { force: true });
-  if (files.data != null && (await readText(path.join(dir, "data.json"))) == null) await writeText(path.join(dir, "data.json"), files.data);
+  if (files.data != null && (await loadData(id)) == null) await saveData(id, files.data);
   await fs.rm(path.join(dir, "compat.json"), { force: true });
   const compat = await compatOf(id);
   return { id, manifest, compat };
@@ -191,8 +194,9 @@ async function installFromDir(dir) {
 async function uninstall(id) {
   await fs.rm(dirOf(id), { recursive: true, force: true });
   const e = await enabledSet(); e.delete(id); await saveEnabled(e);
-  const n = await networkMap(); delete n[id]; await writeText(path.join(root(), "network.json"), JSON.stringify(n));
+  const n = await networkMap(); delete n[id]; db.setJson("plugins", "network", n);
   const st = await nodeState(); delete st.grants[id]; await saveNode(st);
+  db.set("plugin-data", id, null);
 }
 async function setEnabled(id, on) {
   checkId(id);
@@ -206,13 +210,13 @@ async function anyEnabled() { return (await enabledSet()).size > 0; }
 /* ---- the internet, per plugin ----
    Granting happens only in main.js, behind a dialog the page can't answer; the page may only take
    access away. A request is made here, by the main process, and only for a plugin that was granted. */
-async function networkMap() { const n = await readJson(path.join(root(), "network.json")); return n && typeof n === "object" && !Array.isArray(n) ? n : {}; }
+async function networkMap() { const n = db.getJson("plugins", "network", path.join(root(), "network.json")); return n && typeof n === "object" && !Array.isArray(n) ? n : {}; }
 async function networkAllowed(id) { checkId(id); return (await networkMap())[id] === true; }
 async function setNetwork(id, on) {
   checkId(id);
   const n = await networkMap();
   n[id] = !!on;
-  await writeText(path.join(root(), "network.json"), JSON.stringify(n));
+  db.setJson("plugins", "network", n);
   return !!on;
 }
 const FORBIDDEN_HEADERS = /^(host|content-length|connection|transfer-encoding|keep-alive|upgrade|te|trailer|proxy-.*)$/i;
@@ -295,10 +299,12 @@ function send(u, method, headers, body, hops) {
 }
 
 async function styles(id) { return readText(path.join(dirOf(id), "styles.css")); }
-async function loadData(id) { return readText(path.join(dirOf(id), "data.json")); }
+/* a plugin's saved settings (data.json in Obsidian), kept in the database */
+async function loadData(id) { return db.getText("plugin-data", id, path.join(dirOf(id), "data.json")); }
 async function saveData(id, text) {
+  checkId(id);
   if (typeof text !== "string" || text.length > MAX_DATA) throw new Error("Settings too large");
-  await writeText(path.join(dirOf(id), "data.json"), text);
+  db.set("plugin-data", id, text);
 }
 
 /* ---- Node.js, per plugin ----
@@ -306,22 +312,22 @@ async function saveData(id, text) {
    while an enabled plugin has it runs plugins with Node (desktop/preload.js); otherwise the page has
    none. vault: the notes folder's real path, which such plugins need (FileSystemAdapter.getBasePath). */
 async function nodeState() {
-  const o = await readJson(path.join(root(), "node.json"));
+  const o = db.getJson("plugins", "node", path.join(root(), "node.json"));
   const grants = o && o.grants && typeof o.grants === "object" && !Array.isArray(o.grants) ? o.grants : {};
   return { grants, vault: o && typeof o.vault === "string" ? o.vault : null };
 }
-async function saveNode(st) { await writeText(path.join(root(), "node.json"), JSON.stringify({ grants: st.grants, vault: st.vault })); }
+async function saveNode(st) { db.setJson("plugins", "node", { grants: st.grants, vault: st.vault }); }
 async function setNode(id, on) { checkId(id); const st = await nodeState(); st.grants[id] = !!on; await saveNode(st); return !!on; }
 async function nodeWanted() { const st = await nodeState(), e = await enabledSet(); return Array.from(e).some((id) => st.grants[id] === true); }
 async function vaultPath() { return (await nodeState()).vault; }
 async function setVaultPath(p) { const st = await nodeState(); st.vault = p ? path.resolve(String(p)) : null; await saveNode(st); return st.vault; }
 
 /* ---- secrets (Obsidian's app.secretStorage) ----
-   One file of name -> encrypted value. Without a system keychain (some Linux setups) values can't be
+   name -> encrypted value, in the database. Without a system keychain (some Linux setups) values can't be
    kept safely, so they aren't kept at all. */
 const SECRET_RE = /^[\w.:@/-]{1,200}$/;
 async function secretsAll() {
-  const o = await readJson(path.join(app.getPath("userData"), "secrets.json")) || {};
+  const o = db.getJson("secrets", "all", path.join(app.getPath("userData"), "secrets.json")) || {};
   const out = {};
   /* the keychain is only touched once a plugin has saved a secret: on macOS the first touch asks for
      the login password ("CarbonFibre Safe Storage"), which shouldn't happen just for starting plugins */
@@ -334,9 +340,9 @@ async function secretSet(name, value) {
   if (!SECRET_RE.test(name)) throw new Error("Not a valid secret name");
   if (String(value || "").length > 64 * 1024) throw new Error("Secret too large");
   if (value && !safeStorage.isEncryptionAvailable()) throw new Error("This computer has no keychain to keep secrets in");
-  const f = path.join(app.getPath("userData"), "secrets.json"), o = await readJson(f) || {};
+  const o = db.getJson("secrets", "all", path.join(app.getPath("userData"), "secrets.json")) || {};
   if (value) o[name] = safeStorage.encryptString(String(value)).toString("base64"); else delete o[name];
-  await writeText(f, JSON.stringify(o));
+  db.setJson("secrets", "all", o);
 }
 
 /* a plugin's own folder, for app.vault.adapter calls under manifest.dir */
@@ -346,9 +352,13 @@ function inPluginDir(id, rel) {
   return f;
 }
 const pluginFs = {
-  async read(id, rel) { const t = await readText(inPluginDir(id, rel)); if (t == null) throw new Error("No such file: " + rel); return t; },
+  async read(id, rel) {
+    if (path.relative(dirOf(id), inPluginDir(id, rel)).toLowerCase() === "data.json") { const d = await loadData(id); if (d == null) throw new Error("No such file: " + rel); return d; }
+    const t = await readText(inPluginDir(id, rel)); if (t == null) throw new Error("No such file: " + rel); return t; },
   async write(id, rel, text) { if (String(text).length > MAX_DATA) throw new Error("File too large"); await writeText(writable(id, rel), String(text)); },
-  async exists(id, rel) { try { await fs.stat(inPluginDir(id, rel)); return true; } catch (e) { return false; } },
+  async exists(id, rel) {
+    if (path.relative(dirOf(id), inPluginDir(id, rel)).toLowerCase() === "data.json") return (await loadData(id)) != null;
+    try { await fs.stat(inPluginDir(id, rel)); return true; } catch (e) { return false; } },
   async list(id, rel) {
     const f = inPluginDir(id, rel), out = { files: [], folders: [] };
     try { for (const d of await fs.readdir(f, { withFileTypes: true })) (d.isDirectory() ? out.folders : out.files).push(d.name); } catch (e) {}

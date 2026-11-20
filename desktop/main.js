@@ -14,6 +14,7 @@ const { pathToFileURL } = require("node:url");
 const fsp = require("node:fs/promises");
 const plugins = require("./plugins/store");
 const themes = require("./plugins/themes");
+const db = require("./db");
 const { Updater, RELEASES } = require("./updater");
 
 const ORIGIN = "app://carbonfibre";
@@ -126,6 +127,17 @@ function createWindow(nodeOn) {
 }
 
 /* ---- dialogs for the page (Dialogs.confirm / prompt / choose) ---- */
+/* the page's storage (db.js): read whole once when the page starts, written as it changes */
+ipcMain.on("cf:store:all", (e) => {
+  if (!fromApp(e)) { e.returnValue = null; return; }
+  try { e.returnValue = db.pageAll(); } catch (err) { console.error("CarbonFibre: can't open its database", err); e.returnValue = null; }
+});
+ipcMain.on("cf:store:write", (e, ops, copied) => {
+  if (!fromApp(e)) return;
+  try { db.pageWrite(ops, copied); } catch (err) { console.error("CarbonFibre: can't save to its database", err); }
+});
+app.on("will-quit", () => db.close());
+
 ipcMain.handle("cf:confirm", async (e, message) => {
   if (!fromApp(e)) return false;
   const r = await dialog.showMessageBox(BrowserWindow.fromWebContents(e.sender), {

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-70fIShiHTpYtiXcx7jZf7aqvCewfhh6Haxpsjh7zQ+0='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v3FrMZAFLjFWp50wfzK74wTfEckjv4AXWm+wQzfaDdM=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-Zivm7I2TP/CvHcxpVPQR34i4U6ZS3YBBsDc+V5DVdkc='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -601,6 +601,16 @@ body.resizing * { cursor: col-resize !important; }
 }
 .ac-item { padding: 4px 8px; border-radius: 4px; color: var(--cbdbdbd); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ac-item.on { background: var(--acc-soft); color: var(--acc-text); }
+.ac { overflow-y: auto; overscroll-behavior: contain; }
+.ac.ac-up { top: auto; bottom: 100%; margin: 0 0 2px; }
+.ac-item { display: flex; align-items: baseline; gap: 10px; }
+.ac-word { overflow: hidden; text-overflow: ellipsis; }
+.ac-word b { font-weight: 600; color: var(--acc-text); }
+.ac-sub { margin-left: auto; color: var(--c8a8a8a); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.ac-hint { margin-top: 3px; padding: 4px 8px 2px; border-top: 1px solid var(--line); color: var(--c8a8a8a); font-size: 10.5px; }
+.ac-hint kbd { font: inherit; padding: 0 4px; border: 1px solid var(--line); border-radius: 3px; }
+/* the best word, faintly after the caret; Tab takes it */
+.ac-ghost { opacity: 0.38; pointer-events: none; font-weight: inherit; }
 .ln-active { position: relative; }
 .ln-active::before {
   content: ""; position: absolute;
@@ -2712,6 +2722,41 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
 :where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
 @media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }
 </style>
+<script>/* Desktop app only: the page's storage lives in the app's SQLite file (desktop/db.js) instead of the
+   browser's. The page keeps calling localStorage; reads come from a copy loaded once at start, writes go
+   to the file in order. The first time, what the browser had is copied in (and left there). Runs before
+   anything reads storage; on the website (no cfDesktop.store) it does nothing. */
+(function () {
+  const d = window.cfDesktop && window.cfDesktop.store;
+  if (!d) return;
+  let got = null;
+  try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  if (!got || !got.data) return;
+  const map = new Map(Object.entries(got.data));
+  if (!got.copied) {
+    const ops = [];
+    try {
+      const real = window.localStorage;
+      for (let i = 0; i < real.length; i++) { const k = real.key(i); if (!map.has(k)) { map.set(k, real.getItem(k)); ops.push([k, real.getItem(k)]); } }
+    } catch (e) { /* no browser storage to copy */ }
+    d.write(ops, true);
+  }
+  let pending = null;
+  const send = function (op) {
+    if (!pending) { pending = []; queueMicrotask(function () { const o = pending; pending = null; d.write(o, false); }); }
+    pending.push(op);
+  };
+  const store = {
+    getItem(k) { k = String(k); return map.has(k) ? map.get(k) : null; },
+    setItem(k, v) { k = String(k); v = String(v); map.set(k, v); send([k, v]); },
+    removeItem(k) { k = String(k); if (map.delete(k)) send([k, null]); },
+    clear() { map.clear(); send(["", null, "clear"]); },
+    key(n) { const ks = Array.from(map.keys()); return n >= 0 && n < ks.length ? ks[n] : null; },
+    get length() { return map.size; }
+  };
+  Object.defineProperty(window, "localStorage", { configurable: true, enumerable: true, get: function () { return store; } });
+  window.cfDesktopStore = true;
+})();</script>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
 <body>
@@ -9558,8 +9603,9 @@ const AUTOCORRECT = {
   "i": "I", "im": "I'm", "ive": "I've", "dont": "don't", "cant": "can't", "didnt": "didn't", "wont": "won't"
 };
 
-/* words the completion popup can offer: every 5+ letter word in the vault, rebuilt at most every 1.5s */
-const vocabCache = { key: "", at: 0, words: [] };
+/* words the completion popup can offer: every 5+ letter word in the vault, with how often it's used
+   and whether it's in a note edited in the last three days; rebuilt at most every 1.5s */
+const vocabCache = { key: "", at: 0, words: [], freq: new Map(), recent: new Set() };
 function vocabulary() {
   const now = Date.now();
   if (now - vocabCache.at < 1500) return vocabCache.words;
@@ -9567,18 +9613,124 @@ function vocabulary() {
   const key = state.notes.length + ":" + state.notes.reduce(function (a, n) { return a + n.content.length; }, 0);
   vocabCache.at = now;
   if (key === vocabCache.key) return vocabCache.words;
-  const seen = {}, out = [];
+  const freq = new Map(), form = new Map(), recent = new Set(), out = [];
+  const fresh = now - 3 * 864e5;
   state.notes.forEach(function (n) {
+    const isNew = noteStamp(n) > fresh;
     (n.content.match(/[A-Za-z][A-Za-z0-9_-]{4,}/g) || []).forEach(function (w) {
       const k = w.toLowerCase();
-      if (!seen[k]) { seen[k] = 1; out.push(w); }
+      freq.set(k, (freq.get(k) || 0) + 1);
+      if (!form.has(k)) { form.set(k, w); out.push(w); }
+      if (isNew) recent.add(k);
     });
   });
   out.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
-  vocabCache.key = key; vocabCache.words = out;
+  vocabCache.key = key; vocabCache.words = out; vocabCache.freq = freq; vocabCache.recent = recent;
   return out;
 }
 
+/* ============================================================
+   Completion ranking and snippets, for the popup in the editor (js/pane/10-edited-line-completion.js).
+   - matches: the start of the word first, then the start of a part ("vault" finds "ObsidianVault",
+     "my-vault"), then the letters in order from the first ("splk" finds "Splunk")
+   - then: words you picked before (recently more), words used often, words in notes edited lately
+   - snippets: "/" at the start of a word offers /date, /time, /todo...
+   ============================================================ */
+const Complete = {
+  PICKS_KEY: "carbonfibre-complete-picks",
+  picks: null,                              /* lower-case word -> [times picked, last picked] */
+  MAX_PICKS: 400,
+
+  loadPicks() {
+    if (Complete.picks) return Complete.picks;
+    let o = null;
+    try { o = JSON.parse(localStorage.getItem(Complete.PICKS_KEY) || "null"); } catch (e) { /* storage off */ }
+    Complete.picks = o && typeof o === "object" && !Array.isArray(o) ? o : {};
+    return Complete.picks;
+  },
+  remember(word) {
+    const pk = Complete.loadPicks(), k = String(word).toLowerCase(), had = pk[k];
+    pk[k] = [(had ? had[0] : 0) + 1, Date.now()];
+    const keys = Object.keys(pk);
+    if (keys.length > Complete.MAX_PICKS) {
+      keys.sort(function (a, b) { return pk[a][1] - pk[b][1]; }).slice(0, keys.length - Complete.MAX_PICKS).forEach(function (x) { delete pk[x]; });
+    }
+    storeSet(Complete.PICKS_KEY, JSON.stringify(pk));
+  },
+
+  /* how well what you typed matches a word: { score, hits: [indexes of matched letters] } or null */
+  match(typed, word) {
+    const q = typed.toLowerCase(), w = word.toLowerCase();
+    if (!q) return null;
+    const run = function (from) { const h = []; for (let k = 0; k < q.length; k++) h.push(from + k); return h; };
+    if (w.indexOf(q) === 0) return { score: 100, hits: run(0) };
+    /* the start of a later part: after - _ or a lower-to-upper change */
+    for (let k = 1; k < word.length; k++) {
+      const part = /[-_]/.test(word.charAt(k - 1)) || (/[a-z]/.test(word.charAt(k - 1)) && /[A-Z]/.test(word.charAt(k)));
+      if (part && w.indexOf(q, k) === k) return { score: 75, hits: run(k) };
+    }
+    /* the letters in order, from the first: fewer and shorter gaps score higher */
+    if (w.charAt(0) !== q.charAt(0)) return null;
+    const hits = [0];
+    let at = 1, gaps = 0;
+    for (let k = 1; k < q.length; k++) {
+      const f = w.indexOf(q.charAt(k), at);
+      if (f < 0) return null;
+      if (f !== at) gaps++;
+      hits.push(f); at = f + 1;
+    }
+    const spread = hits[hits.length - 1] - q.length + 1;
+    return { score: Math.max(10, 60 - gaps * 8 - spread * 2), hits: hits };
+  },
+
+  /* the best words for what's typed, best first */
+  rank(typed, words, max, keepCase) {
+    const q = typed.toLowerCase(), pk = Complete.loadPicks(), now = Date.now(), out = [];
+    words.forEach(function (w) {
+      const k = w.toLowerCase();
+      if (k === q || w.length < typed.length) return;
+      const m = Complete.match(typed, w);
+      if (!m) return;
+      const f = vocabCache.freq.get(k) || 0, p = pk[k];
+      let s = m.score + 6 * Math.log2(1 + f);
+      if (p) s += 12 * Math.log2(1 + p[0]) + 30 * Math.exp(-(now - p[1]) / (7 * 864e5));
+      if (vocabCache.recent.has(k)) s += 8;
+      out.push({ word: keepCase ? w : Complete.caseLike(typed, w), score: s, hits: m.hits });
+    });
+    out.sort(function (a, b) { return b.score - a.score || a.word.length - b.word.length || a.word.localeCompare(b.word); });
+    return out.slice(0, max || 6);
+  },
+  /* typed with a capital first letter: the pick starts with one too ("Splk" -> "Splunk") */
+  caseLike(typed, word) {
+    const c = typed.charAt(0);
+    return c !== c.toLowerCase() && word.charAt(0) === word.charAt(0).toLowerCase() ? c + word.slice(1) : word;
+  },
+
+  pad(n) { return (n < 10 ? "0" : "") + n; },
+  ymd(d) { return d.getFullYear() + "-" + Complete.pad(d.getMonth() + 1) + "-" + Complete.pad(d.getDate()); },
+  hm(d) { return Complete.pad(d.getHours()) + ":" + Complete.pad(d.getMinutes()); },
+  dayOff(n) { const d = new Date(); d.setDate(d.getDate() + n); return d; },
+  SNIPPETS: [
+    { key: "date", label: "Today's date", text: function () { return Complete.ymd(new Date()); } },
+    { key: "time", label: "The time now", text: function () { return Complete.hm(new Date()); } },
+    { key: "now", label: "Date and time", text: function () { const d = new Date(); return Complete.ymd(d) + " " + Complete.hm(d); } },
+    { key: "today", label: "Link to today's note", text: function () { return "[[" + Complete.ymd(new Date()) + "]]"; } },
+    { key: "tomorrow", label: "Tomorrow's date", text: function () { return Complete.ymd(Complete.dayOff(1)); } },
+    { key: "yesterday", label: "Yesterday's date", text: function () { return Complete.ymd(Complete.dayOff(-1)); } },
+    { key: "todo", label: "A checkbox", text: function () { return "- [ ] "; }, lineStart: true },
+    { key: "done", label: "A ticked checkbox", text: function () { return "- [x] "; }, lineStart: true },
+    { key: "h1", label: "Heading", text: function () { return "# "; }, lineStart: true },
+    { key: "h2", label: "Subheading", text: function () { return "## "; }, lineStart: true },
+    { key: "quote", label: "Quote", text: function () { return "> "; }, lineStart: true },
+    { key: "code", label: "Code block", text: function () { return "```"; }, lineStart: true },
+    { key: "divider", label: "A line across", text: function () { return "---"; }, lineStart: true }
+  ],
+  /* "/da" -> the snippets whose name starts with "da" (all of them for "/") */
+  snippets(q) {
+    const l = q.toLowerCase();
+    return Complete.SNIPPETS.filter(function (s) { return s.key.indexOf(l) === 0; });
+  }
+};
 /* ============================================================
    Paste conversion - HTML to markdown, spreadsheet blocks to
    tables, images to files, a URL over a selection to a link.
@@ -11011,32 +11163,75 @@ function createPane(index) {
       if (tableish) refreshTableAround(i, oldT);
     }
 
-    /* ---- completion popup ---- */
-    const ac = { el: null, items: [], idx: 0, start: 0, kind: "" };
-    function acClose() { if (ac.el) { ac.el.remove(); ac.el = null; } ac.items = []; }
+    /* ---- completion popup ----
+       [[ offers note titles, a word of 3+ letters offers words from the vault (Complete.rank), "/" at
+       the start of a word offers snippets. Tab picks; Enter picks only a [[link]] or a choice you moved
+       to with the arrow keys, otherwise it starts a new line as usual. The best word also shows faintly
+       after the caret (at the end of the line). */
+    const ac = { el: null, items: [], idx: 0, start: 0, kind: "", nav: false, typed: "" };
+    const acId = "ac" + Math.random().toString(36).slice(2, 8);
+    function acGhostOff() { const g = hl.querySelector(".ac-ghost"); if (g) g.remove(); }
+    function acClose() {
+      if (ac.el) { ac.el.remove(); ac.el = null; }
+      ac.items = []; ac.nav = false;
+      acGhostOff();
+      ta.removeAttribute("aria-activedescendant"); ta.removeAttribute("aria-controls");
+    }
     function acCandidates() {
       const raw = ta.value, s = ta.selectionStart;
       if (s !== ta.selectionEnd) return null;
       const before = raw.slice(0, s);
       let m = before.match(/\[\[([^\[\]]*)$/);
       if (m) {
-        const q = m[1].toLowerCase();
-        const titles = state.notes.map(function (n) { return n.title; })
-          .filter(function (t) { return t.toLowerCase().indexOf(q) !== -1; })
-          .sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
-        return titles.length ? { kind: "link", start: s - m[1].length, items: titles.slice(0, 8) } : null;
+        const q = m[1];
+        const titles = q
+          ? Complete.rank(q, state.notes.map(function (n) { return n.title; }), 8, true)
+          : state.notes.slice().sort(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 8).map(function (n) { return { word: n.title, hits: [] }; });
+        return titles.length ? { kind: "link", start: s - q.length, typed: q, items: titles } : null;
       }
       if (p.fmeta[p.activeLine] && p.fmeta[p.activeLine].fence) return null;
-      m = before.match(/[A-Za-z][A-Za-z0-9_-]{2,}$/);
+      if ((before.split("`").length - 1) % 2 === 1) return null;            /* inside `inline code` */
+      m = before.match(/(^|\s)\/([a-z0-9]*)$/i);
+      if (m) {
+        const atStart = /^\s*$/.test(before.slice(0, before.length - m[2].length - 1));
+        const sn = Complete.snippets(m[2]).filter(function (x) { return atStart || !x.lineStart; });
+        return sn.length ? { kind: "snippet", start: s - m[2].length - 1, typed: m[2], items: sn.map(function (x) { return { word: "/" + x.key, snip: x, hits: [] }; }) } : null;
+      }
+      m = before.match(/(^|[^A-Za-z0-9_-])([A-Za-z][A-Za-z0-9_-]{2,})$/);
       if (!m) return null;
-      const w = m[0], wl = w.toLowerCase();
-      const words = vocabulary().filter(function (v) { return v.length > w.length && v.toLowerCase().indexOf(wl) === 0; }).slice(0, 6);
-      return words.length ? { kind: "word", start: s - w.length, items: words } : null;
+      const w = m[2];
+      const words = Complete.rank(w, vocabulary(), 6);
+      return words.length ? { kind: "word", start: s - w.length, typed: w, items: words } : null;
+    }
+    /* the matched letters in bold */
+    function acLabel(it) {
+      if (!it.hits.length) return esc(it.word);
+      const on = new Set(it.hits);
+      let h = "";
+      for (let k = 0; k < it.word.length; k++) h += on.has(k) ? "<b>" + esc(it.word.charAt(k)) + "</b>" : esc(it.word.charAt(k));
+      return h;
     }
     function acRender() {
-      ac.el.innerHTML = ac.items.map(function (t, k) {
-        return '<div class="ac-item' + (k === ac.idx ? " on" : "") + '" data-i="' + k + '">' + esc(t) + "</div>";
-      }).join("");
+      ac.el.innerHTML = ac.items.map(function (it, k) {
+        const extra = it.snip ? '<span class="ac-sub">' + esc(it.snip.label) + " · " + esc(it.snip.text().trim() || it.snip.text()) + "</span>" : "";
+        return '<div class="ac-item' + (k === ac.idx ? " on" : "") + '" role="option" id="' + acId + "-" + k + '" aria-selected="' + (k === ac.idx) + '" data-i="' + k + '">' +
+          '<span class="ac-word">' + acLabel(it) + "</span>" + extra + "</div>";
+      }).join("") + '<div class="ac-hint" aria-hidden="true"><kbd>Tab</kbd> pick' + (ac.kind === "link" ? " · <kbd>Enter</kbd> pick" : "") + " · <kbd>Esc</kbd> close</div>";
+      ta.setAttribute("aria-activedescendant", acId + "-" + ac.idx);
+      acGhost();
+    }
+    /* the rest of the highlighted word, faintly after the caret, when the caret is at the end of the line */
+    function acGhost() {
+      acGhostOff();
+      const it = ac.items[ac.idx];
+      if (!it || ac.kind === "snippet" || ta.selectionStart !== ta.value.length) return;
+      if (it.word.toLowerCase().indexOf(ac.typed.toLowerCase()) !== 0) return;
+      const rest = it.word.slice(ac.typed.length);
+      if (!rest) return;
+      const g = document.createElement("span");
+      g.className = "ac-ghost"; g.setAttribute("aria-hidden", "true");
+      g.textContent = rest;
+      hl.appendChild(g);
     }
     function acCaretX() {
       return Math.max(0, Math.min(measureIn(ta, ta.value.slice(0, ac.start)), wrap.clientWidth - 200));
@@ -11045,10 +11240,10 @@ function createPane(index) {
       if (!COMPLETE_ON) return;
       const c = acCandidates();
       if (!c) { acClose(); return; }
-      ac.items = c.items; ac.start = c.start; ac.kind = c.kind; ac.idx = 0;
+      ac.items = c.items; ac.start = c.start; ac.kind = c.kind; ac.typed = c.typed; ac.idx = 0; ac.nav = false;
       if (!ac.el) {
         ac.el = document.createElement("div");
-        ac.el.className = "ac";
+        ac.el.className = "ac"; ac.el.id = acId; ac.el.setAttribute("role", "listbox");
         ac.el.addEventListener("mousedown", function (e) {
           e.preventDefault();
           const it = e.target.closest(".ac-item");
@@ -11056,18 +11251,42 @@ function createPane(index) {
         });
         wrap.appendChild(ac.el);
       }
+      ta.setAttribute("aria-controls", acId);
       ac.el.style.left = acCaretX() + "px";
       acRender();
+      acPlace();
+    }
+    /* below the line, or above it when the editor has no room below (the panel under the editor
+       would cover it); a long list scrolls */
+    function acPlace() {
+      const box = (p.editorEl || wrap).getBoundingClientRect(), line = wrap.getBoundingClientRect();
+      ac.el.classList.remove("ac-up");
+      ac.el.style.maxHeight = "";
+      const below = box.bottom - line.bottom - 8, above = line.top - box.top - 8, h = ac.el.offsetHeight;
+      if (h > below && above > below) { ac.el.classList.add("ac-up"); ac.el.style.maxHeight = Math.max(80, above) + "px"; }
+      else if (h > below) ac.el.style.maxHeight = Math.max(80, below) + "px";
+    }
+    function acMove(step) {
+      ac.idx = (ac.idx + step + ac.items.length) % ac.items.length;
+      ac.nav = true;
+      acRender();
+      const on = ac.el.querySelector(".ac-item.on");
+      if (on) on.scrollIntoView({ block: "nearest" });
     }
     function acAccept() {
       if (!ac.el) return;
-      const raw = ta.value, s = ta.selectionStart, pick = ac.items[ac.idx];
+      const raw = ta.value, s = ta.selectionStart, it = ac.items[ac.idx];
       const after = raw.slice(s);
-      const ins = ac.kind === "link" ? pick + (after.indexOf("]]") === 0 ? "" : "]]") : pick;
-      const next = raw.slice(0, ac.start) + ins + after, pos = ac.start + ins.length;
+      let ins;
+      if (ac.kind === "link") ins = it.word + (after.indexOf("]]") === 0 ? "" : "]]");
+      else if (ac.kind === "snippet") ins = it.snip.text();
+      else { ins = it.word; Complete.remember(it.word); }
+      const from = ac.start;
+      const next = raw.slice(0, from) + ins + after, pos = from + ins.length;
       acClose();
       applyInline(next, pos, pos);
     }
+    ta.addEventListener("mousedown", function () { acClose(); });   /* the caret moves: the popup was for where it was */
 
     let lastLen = ta.value.length;
     ta.addEventListener("input", function () {
@@ -11201,11 +11420,15 @@ function createPane(index) {
       const mod = e.ctrlKey || e.metaKey;
       const i = p.activeLine;
 
+      /* the completion popup: Tab picks; Enter picks a [[link]] or a choice moved to with the arrows,
+         otherwise the popup closes and Enter makes a new line as usual */
       if (ac.el) {
-        if (e.key === "ArrowDown") { e.preventDefault(); ac.idx = (ac.idx + 1) % ac.items.length; acRender(); return; }
-        if (e.key === "ArrowUp") { e.preventDefault(); ac.idx = (ac.idx - 1 + ac.items.length) % ac.items.length; acRender(); return; }
-        if (e.key === "Tab" || e.key === "Enter") { e.preventDefault(); acAccept(); return; }
+        if (e.key === "ArrowDown" && !e.shiftKey && !e.altKey && !mod) { e.preventDefault(); acMove(1); return; }
+        if (e.key === "ArrowUp" && !e.shiftKey && !e.altKey && !mod) { e.preventDefault(); acMove(-1); return; }
+        if (e.key === "Tab" && !e.shiftKey && !mod && !e.altKey) { e.preventDefault(); acAccept(); return; }
+        if (e.key === "Enter" && !e.shiftKey && !mod && !e.altKey && (ac.kind === "link" || ac.nav)) { e.preventDefault(); acAccept(); return; }
         if (e.key === "Escape") { e.preventDefault(); acClose(); return; }
+        if (e.key === "Enter" || e.key === "Tab" || /^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End|PageUp|PageDown)$/.test(e.key)) acClose();
       }
 
       if (e.key === "Escape" && p.carets.length) { e.preventDefault(); p.clearCarets(); return; }

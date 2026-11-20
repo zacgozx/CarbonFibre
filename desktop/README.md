@@ -112,8 +112,9 @@ do, and those parts stay inert until the editor is replaced. Most of what still 
 private Obsidian internals, one or two plugins each. Reading the code alone (`compat.js`) rates 171 as
 working and 328 as partly working; 262 will ask for the internet and 127 for Node.js.
 
-Plugins live in the app's data folder (`plugins/<id>/`, each with its own `data.json` settings), not in
-the vault, so the website never sees them. Plugin views open in a panel on the right.
+Plugins live in the app's data folder (`plugins/<id>/`), not in the vault, so the website never sees them.
+Their settings (what Obsidian keeps in `data.json`), which ones are on, their internet and Node.js grants
+and their secrets are in the app's database (below). Plugin views open in a panel on the right.
 
 ## How it fits together
 
@@ -131,6 +132,7 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
 | `plugins/compat.js` | Reads a plugin's code (never runs it) and decides Works / Partly works, what won't work, and whether it will ask for the internet or Node.js |
 | `test/node_test.js` | Node.js per plugin end to end: asked in the dialog, the window reopens with it, the allowed plugin gets real files, another plugin doesn't, taking it away works |
 | `test/live.js` | Not part of `npm test`: runs a folder of real plugins one by one and records what broke (`CF_LIVE_NODE=1` with Node.js allowed) |
+| `test/db_test.js` | `npm test`: the page's storage goes to `carbonfibre.db`, browser storage and the old JSON files are copied in once, and it all survives a restart |
 | `test/update_test.js` | The update path end to end on Linux, with a made-up release: check, download, SHA-256, swap, restart |
 | `test/run.js` | `npm test`: installs `test/fixture-plugin/` in a throwaway data folder and checks the plugin API end to end, the internet permission (requestUrl, fetch, XMLHttpRequest) against a server on this machine, old compiled plugins, moment, Buffer, secrets, notes-folder images, the file explorer, then checks the web build keeps plugins off |
 
@@ -154,6 +156,12 @@ the vault, so the website never sees them. Plugin views open in a panel on the r
   in the app's own storage are moved into that folder as `.md` files (sheets as `.csv` in `sheets/`), then
   removed from there. The website and the app can open the same folder. Settings (theme, pins, layout)
   are still remembered by the app itself.
+- **The app's own data is one SQLite file**, `carbonfibre.db` in the app's data folder (`db.js`). Everything
+  the website keeps in browser storage (settings, the task board, the timer, sessions, completion picks)
+  goes there instead, with no 5 MB browser limit; so do the plugin and theme settings that used to be JSON
+  files. What the browser storage or those files held is copied in once on first start and the originals are
+  left alone. Notes are never in it: they stay `.md` files in your folder. SQLite is Electron's own
+  (`node:sqlite`), so nothing native is added to the build.
 - **Closing while saving:** if folder writes are still going, the app asks before closing.
 - **Icon:** put a 1024×1024 `icon.png` in `desktop/build/`; electron-builder makes the Mac, Windows and
   Linux icons from it. Until then the default Electron icon shows.

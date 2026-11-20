@@ -2,11 +2,12 @@
    one in use. A theme is only CSS (theme.css and its manifest.json); no code runs. Lives in the app's
    data folder:
      themes/<name>/theme.css, manifest.json
-     themes/active.json        { "name": "<name>" } or {} for CarbonFibre's own look
+     carbonfibre.db, app themes/active: { "name": "<name>" } or {} for CarbonFibre's own look
      plugin-cache/themes.json  the catalog
    The page shows it through an Obsidian-shaped layer (carbonfibre-src/src/js/plugins/06-themes.js):
    Obsidian's variables mapped onto CarbonFibre's, and Obsidian's class names on CarbonFibre's parts. */
 "use strict";
+const db = require("../db");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { app } = require("electron");
@@ -96,10 +97,10 @@ async function uninstall(name) {
   await fs.rm(dirOf(name), { recursive: true, force: true });
   if ((await activeName()) === name) await setActive(null);
 }
-async function activeName() { const a = await readJson(path.join(root(), "active.json")); return a && typeof a.name === "string" ? a.name : null; }
+async function activeName() { const a = db.getJson("themes", "active", path.join(root(), "active.json")); return a && typeof a.name === "string" ? a.name : null; }
 async function setActive(name) {
   if (name !== null) { checkName(name); if ((await readText(path.join(dirOf(name), "theme.css"))) == null) throw new Error("Not installed: " + name); }
-  await writeText(path.join(root(), "active.json"), JSON.stringify(name === null ? {} : { name }));
+  db.setJson("themes", "active", name === null ? {} : { name });
   return name;
 }
 /* the active theme's CSS (or a named one), for the page to apply */
