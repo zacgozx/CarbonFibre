@@ -24,6 +24,8 @@ function revealPane(q) {
   return q;
 }
 function openInPane(id, pane, opts) {
+  if (PopOut.sat && id != null && !sameId(id, PopOut.satId)) { PopOut.post(window.opener, { cf: "pop-open", id: PopOut.satId, to: id }); return null; }
+  if (!PopOut.sat && id != null && !(opts && opts.here) && PopOut.reveal(id)) return null;
   const target = pane || focusedPane || panes[0];
   if (!(opts && opts.here) && id != null) {
     const shown = paneShowing("note", id);

@@ -9,6 +9,7 @@
   layoutPanes();
   focusedPane = first;
   first.root.classList.add("focused");
+  if (PopOut.sat) { PopOut.boot(first); return; }        /* a popped-out note: its text comes from the main window */
   updateStorageUI();
   NarrowLayout.settle();                               /* before anything loads, so a phone never flashes the panel */
   PluginManager.init();                                /* the Plugins button; plugins themselves run only in the desktop app */

@@ -101,8 +101,20 @@ function createWindow(nodeOn) {
   const wc = win.webContents;
   /* links: web and mail links open in the system browser; the window itself never navigates away */
   wc.setWindowOpenHandler(({ url }) => {
+    /* a note popped out into its own window (js/44-popout.js): this same page, sandboxed like the
+       main one; it saves nothing itself and can't open anything further */
+    if (url.startsWith(ORIGIN + "/index.html#popout=")) {
+      return { action: "allow", overrideBrowserWindowOptions: {
+        width: 760, height: 860, minWidth: 360, minHeight: 240, title: "CarbonFibre", backgroundColor: "#18181b",
+        icon: path.join(__dirname, "build", "icon.png"), autoHideMenuBar: process.platform !== "darwin",
+        webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, nodeIntegration: false, webviewTag: false, spellcheck: true }
+      } };
+    }
     openExternalChecked(url);
     return { action: "deny" };
+  });
+  wc.on("did-create-window", (child) => {
+    child.webContents.on("will-navigate", (e, u) => { if (!u.startsWith(ORIGIN + "/index.html#popout=")) { e.preventDefault(); openExternalChecked(u); } });
   });
   wc.on("will-navigate", (e, url) => {
     if (url === ORIGIN + "/index.html" || url === ORIGIN + "/") return;   /* reload; nothing else of the app's own files */

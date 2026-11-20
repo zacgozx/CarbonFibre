@@ -26,6 +26,8 @@
     const skf = e.target.closest("[data-skfile]");
     if (skf && !e.altKey) { e.preventDefault(); openSketchFile(skf.dataset.skfile); return; }
     const skc = e.target.closest("[data-sketch]");
+    const mmv = e.target.closest("[data-mm-view]");
+    if (mmv && !e.altKey && !e.target.closest("[data-mermaid]")) { e.preventDefault(); e.stopPropagation(); const mo = p.fmeta[parseInt(mmv.dataset.mmView, 10)]; if (mo && mo.mmBody) MermaidView.expand(mo.mmBody); return; }
     const mmc = e.target.closest("[data-mermaid]");
     if (mmc && !e.altKey) { e.preventDefault(); e.stopPropagation(); convertMermaid(p, parseInt(mmc.dataset.mermaid, 10)); return; }
     const sks = e.target.closest("[data-sketch-split]");

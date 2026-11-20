@@ -29,6 +29,7 @@ css/25-theme.css
 css/26-plugins.css
 css/27-obsidian-themes.css
 css/28-interaction.css
+css/29-layout.css
 html/02-body.html
 js/01-start.js
 js/01-dialogs.js
@@ -103,10 +104,13 @@ js/39-templates.js
 js/40-mermaid.js
 js/41-mermaid-layout.js
 js/42-mermaid-to-sketch.js
+js/42-mermaid-view.js
 js/43-session.js
 js/44-shortcuts.js
 js/44-narrow-layout.js
 js/44-get-app.js
 js/44-tooltips.js
+js/44-popout.js
+js/44-vim.js
 js/45-boot.js
 html/03-tail.html

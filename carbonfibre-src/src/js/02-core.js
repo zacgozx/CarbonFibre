@@ -263,6 +263,14 @@ function computeFenceMeta(ls) {
     meta[i].sketch = count;
     meta[i].skBody = body.join("\n");               /* drawn as a picture in the note */
   }
+  /* Mermaid: drawn under its code (42-mermaid-view.js), on the closing line */
+  for (i = 0; i < ls.length; i++) {
+    if (meta[i].fence !== "open" || !/^mermaid$/i.test(meta[i].lang)) continue;
+    let j = i + 1;
+    while (j < ls.length && meta[j].fence !== "close") j++;
+    meta[i].mmBody = ls.slice(i + 1, j).join("\n");
+    if (j < ls.length) { meta[j].mmBody = meta[i].mmBody; meta[j].mmOpen = i; }
+  }
   PluginHost.markBlocks(ls, meta);                 /* code blocks an Obsidian plugin draws (js/plugins/) */
   computeTableMeta(ls, meta);
   return meta;

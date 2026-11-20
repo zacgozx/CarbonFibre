@@ -77,7 +77,9 @@
   p.liveBtn.addEventListener("click", function () { focusThis(); p.setMode("live"); });
   p.splitBtn.addEventListener("click", function () { focusThis(); p.setMode("split"); });
   p.closeBtn.addEventListener("click", function () { closePane(p); });
-  p.moreBtn.addEventListener("click", function () { addPane(p); });
+  p.moreBtn.addEventListener("click", function (e) { splitPane(p, e.altKey ? "down" : "right"); });
+  p.floatBtn.addEventListener("click", function () { floatPane(p, !p.floating); });
+  wireFloating(p);
   p.sheetBtn.addEventListener("click", function () {
     focusThis();
     if (!editTableAsSheet(p)) pushToastLike("Put the cursor inside a table first.");

@@ -89,18 +89,22 @@
     const src = panes[info.pane];
     if (src) moveTab(src, info.id, p, d.at);
   });
+  /* the middle of a pane: move the tab here; near an edge, held a moment: split that way (TabSplit) */
   col.addEventListener("dragover", function (e) {
     if (!isTabDrag(e) || p.tabsEl.contains(e.target)) return;
     e.preventDefault(); e.dataTransfer.dropEffect = "move";
-    clearTabDropMarks(); col.classList.add("tab-drop-on");
+    clearTabDropMarks();
+    col.classList.toggle("tab-drop-on", !TabSplit.over(p, e));
   });
-  col.addEventListener("dragleave", function (e) { if (!col.contains(e.relatedTarget)) col.classList.remove("tab-drop-on"); });
+  col.addEventListener("dragleave", function (e) { if (!col.contains(e.relatedTarget)) { col.classList.remove("tab-drop-on"); TabSplit.end(); } });
   col.addEventListener("drop", function (e) {
     if (!isTabDrag(e) || p.tabsEl.contains(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     col.classList.remove("tab-drop-on");
     const info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), src = panes[info.pane];
-    if (src && src !== p) moveTab(src, info.id, p, p.tabs.length);
+    if (!src) return;
+    if (TabSplit.drop(src, info.id, p)) return;
+    if (src !== p) moveTab(src, info.id, p, p.tabs.length);
   });
   p.renderTabs = function () {
     tabTreeSoon();

@@ -132,6 +132,7 @@ and their secrets are in the app's database (below). Plugin views open in a pane
 | `plugins/compat.js` | Reads a plugin's code (never runs it) and decides Works / Partly works, what won't work, and whether it will ask for the internet or Node.js |
 | `test/node_test.js` | Node.js per plugin end to end: asked in the dialog, the window reopens with it, the allowed plugin gets real files, another plugin doesn't, taking it away works |
 | `test/live.js` | Not part of `npm test`: runs a folder of real plugins one by one and records what broke (`CF_LIVE_NODE=1` with Node.js allowed) |
+| `test/popout_test.js` | `npm test`: a note popped out into its own window opens, shows the note, sends edits back to the main window, saves nothing itself and can't open further windows |
 | `test/db_test.js` | `npm test`: the page's storage goes to `carbonfibre.db`, browser storage and the old JSON files are copied in once, and it all survives a restart |
 | `test/update_test.js` | The update path end to end on Linux, with a made-up release: check, download, SHA-256, swap, restart |
 | `test/run.js` | `npm test`: installs `test/fixture-plugin/` in a throwaway data folder and checks the plugin API end to end, the internet permission (requestUrl, fetch, XMLHttpRequest) against a server on this machine, old compiled plugins, moment, Buffer, secrets, notes-folder images, the file explorer, then checks the web build keeps plugins off |

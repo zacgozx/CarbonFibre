@@ -15,7 +15,7 @@
     "dist:mac": "node build-page.js && electron-builder --mac --publish never",
     "dist:win": "node build-page.js && electron-builder --win --publish never",
     "dist:linux": "node build-page.js && electron-builder --linux --publish never",
-    "test": "node build-page.js && electron test/run.js && electron test/node_test.js && electron test/db_test.js && electron test/update_test.js",
+    "test": "node build-page.js && electron test/run.js && electron test/node_test.js && electron test/db_test.js && electron test/popout_test.js && electron test/update_test.js",
     "icons": "electron build-icons.js"
   },
   "build": {

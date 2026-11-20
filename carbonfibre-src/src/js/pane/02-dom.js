@@ -11,9 +11,11 @@
           '<svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/>' +
           '<rect class="fill" x="2" y="2.5" width="12" height="3.2" rx="1.5"/>' +
           '<path d="M2 9.2h12M6.3 5.7v7.8M10.1 5.7v7.8"/></svg></button>' +
-        '<button class="mini-pill pb-ico md-more" title="Split this pane to the right (Ctrl+\\)">' +
+        '<button class="mini-pill pb-ico md-more" title="Split this pane to the right (Alt+click: below) (Ctrl+\\)">' +
           '<svg viewBox="0 0 16 16"><rect x="1.8" y="2.5" width="12.4" height="11" rx="1.5"/>' +
           '<path d="M8 2.5v11"/></svg></button>' +
+        '<button class="mini-pill pb-ico md-float" title="Float this pane over the others (double-click its bar to dock it)" aria-label="Float this pane">' +
+          '<svg viewBox="0 0 16 16"><rect x="1.8" y="4.5" width="9" height="9" rx="1.5"/><path d="M5 4.5V2.8h9.2v8.7H10.8"/></svg></button>' +
         '<button class="mini-pill pb-ico md-close" title="Close this pane" aria-label="Close this pane">' + ico("x") + '</button>' +
       "</span>" +
     "</div>" +
@@ -30,6 +32,7 @@
   p.crumbEl = col.querySelector(".crumbs");
   p.tabsEl = col.querySelector(".tabs");
   p.moreBtn = col.querySelector(".md-more");
+  p.floatBtn = col.querySelector(".md-float");
   p.sheetBtn = col.querySelector(".md-sheet");
   p.emptyEl = col.querySelector(".pane-empty");
   p.editorEl = col.querySelector(".editor");

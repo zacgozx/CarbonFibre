@@ -89,6 +89,12 @@ function palCommands() {
     { label: "Toggle live preview and source", run: function () {
         const p = fp(); if (p && p.type === "note") p.root.querySelector(p.mode === "live" ? ".md-split" : ".md-live").click(); } },
     { label: "Split editor", key: "Ctrl+\\", run: click("#btnDual") },
+    { label: "Split editor down", run: function () { splitPane(fp(), "down"); } },
+    { label: "Float this pane (or dock it)", run: function () { const p = fp(); if (p) floatPane(p, !p.floating); } },
+    { label: "Pop out this note into a new window", run: function () { PopOut.open(fp()); } },
+    { label: "Move the sidebar to the other side", run: function () { SideDock.set(!SideDock.right); } },
+    { label: "Reset the layout", run: function () { resetLayout(); } },
+    { label: "Toggle vim mode", run: function () { Vim.toggle(); } },
     { label: "Show notes", key: "Ctrl+Shift+E", run: function () { showView("notes"); } },
     { label: "Show open tabs", key: "Alt+O", run: function () { showView("tabs"); } },
     { label: "Sketch library (drawings in the sketch folder)", key: "Alt+K", run: function () { openSketchLibrary(); } },

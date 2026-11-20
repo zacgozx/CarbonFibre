@@ -23,7 +23,7 @@ with sync_playwright() as p:
     check("classDef colours on the classed states (52)", g["styled"] == 52, str(g["styled"]))
     check("CamelCase ids read as words ('Alert Validation')", g["label"] == "Alert Validation")
     t0 = time.time()
-    pg.get_by_text("convert to sketch", exact=False).first.click(); pg.wait_for_timeout(500)
+    pg.get_by_text("Edit as sketch", exact=True).first.click(); pg.wait_for_timeout(500)
     print("    convert took %.1f s" % (time.time() - t0))
     check("convert to sketch makes a sketch", pg.locator(".pane-col .skp-img").count() == 1 or pg.locator(".pane-col [data-sketch]").count() >= 1)
     pg.locator(".pane-col .skp-img").first.click(); pg.wait_for_timeout(600)

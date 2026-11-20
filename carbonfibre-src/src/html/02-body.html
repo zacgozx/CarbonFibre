@@ -1,13 +1,20 @@
 </style>
-<script>/* Desktop app only: the page's storage lives in the app's SQLite file (desktop/db.js) instead of the
-   browser's. The page keeps calling localStorage; reads come from a copy loaded once at start, writes go
-   to the file in order. The first time, what the browser had is copied in (and left there). Runs before
-   anything reads storage; on the website (no cfDesktop.store) it does nothing. */
+<script>/* Storage, before anything reads it. Desktop app: the page's storage lives in the app's SQLite file
+   (desktop/db.js) instead of the browser's. The page keeps calling localStorage; reads come from a copy
+   loaded once at start, writes go to the file in order. The first time, what the browser had is copied in
+   (and left there). A popped-out note (#popout=, js/44-popout.js): a read-only copy, so that window never
+   saves over the main one. On the website's main window this does nothing. */
 (function () {
-  const d = window.cfDesktop && window.cfDesktop.store;
-  if (!d) return;
+  const sat = /^#popout=/.test(location.hash) && !!window.opener;
+  const d = !sat && window.cfDesktop && window.cfDesktop.store;
+  if (!sat && !d) return;
   let got = null;
-  try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  if (sat) {
+    got = { data: {}, copied: true };
+    try { const r = window.localStorage; for (let i = 0; i < r.length; i++) got.data[r.key(i)] = r.getItem(r.key(i)); } catch (e) { /* no storage */ }
+  } else {
+    try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  }
   if (!got || !got.data) return;
   const map = new Map(Object.entries(got.data));
   if (!got.copied) {
@@ -19,7 +26,7 @@
     d.write(ops, true);
   }
   let pending = null;
-  const send = function (op) {
+  const send = sat ? function () { /* read-only */ } : function (op) {
     if (!pending) { pending = []; queueMicrotask(function () { const o = pending; pending = null; d.write(o, false); }); }
     pending.push(op);
   };
@@ -32,7 +39,7 @@
     get length() { return map.size; }
   };
   Object.defineProperty(window, "localStorage", { configurable: true, enumerable: true, get: function () { return store; } });
-  window.cfDesktopStore = true;
+  if (!sat) window.cfDesktopStore = true;
 })();</script>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
@@ -236,6 +243,7 @@
         <span id="graphTitle">Graph</span>
         <span id="graphStats"></span>
         <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
+        <input class="graph-find" id="graphFind" type="search" list="graphFindList" placeholder="Find a note" aria-label="Find a note in the graph" autocomplete="off"><datalist id="graphFindList"></datalist>
         <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
         <button class="btn-mini" id="graphRecentre" type="button" title="Fit the whole graph in view">Recentre</button>
       </div>

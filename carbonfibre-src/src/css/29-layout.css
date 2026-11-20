@@ -1,0 +1,60 @@
+/* ---------- the movable layout (js/11-panes.js) ---------- */
+.pane-stack { display: flex; flex-direction: column; min-width: 220px; min-height: 0; }
+.pane-stack > .pane-col { min-height: 120px; }
+.row-gutter { flex: 0 0 6px; width: auto; height: 6px; cursor: row-resize; }
+.row-gutter::after { top: 2px; bottom: auto; left: 0; right: 0; width: auto; height: 1px; }
+
+/* a floating pane: over the others, moved by its bar, sized from its corner */
+.pane-col.floating {
+  position: absolute; z-index: 20; min-width: 260px; min-height: 160px;
+  resize: both; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 14px 40px rgba(var(--shd-rgb), calc(0.55 * var(--shd-k)));
+}
+.pane-col.floating .pane-bar { cursor: move; }
+.pane-col.floating .md-float { color: var(--acc-text); }
+
+/* where a dragged tab would split the pane */
+.pane-col { position: relative; }
+.split-hint {
+  position: absolute; z-index: 25; pointer-events: none;
+  background: var(--acc-soft); border: 2px solid var(--acc); border-radius: 6px;
+  transition: inset 0.12s ease;
+}
+.split-hint[data-side="left"] { inset: 36px 50% 0 0; }
+.split-hint[data-side="right"] { inset: 36px 0 0 50%; }
+.split-hint[data-side="up"] { inset: 36px 0 50% 0; }
+.split-hint[data-side="down"] { inset: 50% 0 0 0; }
+
+/* the sidebar on the right */
+body.side-right .mo-body { flex-direction: row-reverse; }
+body.side-right .activity { border-right: 0; border-left: 1px solid var(--line); }
+body.side-moving, body.side-moving * { cursor: grabbing !important; }
+.side-head { cursor: grab; }
+.side-head :is(button, input, a) { cursor: pointer; }
+
+/* a note popped out into its own window: just the pane */
+body.cf-popout :is(.mo-head, .activity, .side, #sideGutter, .statusbar) { display: none !important; }
+body.cf-popout .pane-col :is(.md-more, .md-float, .md-close) { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .split-hint { transition: none; } }
+
+/* vim (js/44-vim.js): a block caret where the browser has one, and the mode in the status bar */
+body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
+.sb-vim { font-family: var(--mono, monospace); font-size: 11px; color: var(--acc-text); white-space: pre; }
+
+/* Mermaid diagrams under their code (js/42-mermaid-view.js) */
+.mmd { position: relative; display: block; margin: 6px 0 2px; padding: 42px 12px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: zoom-in; overflow-x: auto; }
+.mmd:hover { border-color: var(--acc); }
+.mmd-img { display: block; max-width: 100%; max-height: 520px; margin: 0 auto; }
+.mmd-err { cursor: default; padding: 10px 12px; color: var(--dim); font-size: 13px; border-style: dashed; }
+.mmd-full { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; flex-direction: column; }
+.mmd-tools { display: flex; gap: 6px; justify-content: flex-end; padding: 8px; border-bottom: 1px solid var(--line); }
+.mmd-tools button { min-width: 32px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--txt); cursor: pointer; }
+.mmd-stage { position: relative; flex: 1; overflow: hidden; cursor: grab; touch-action: none; }
+.mmd-stage:active { cursor: grabbing; }
+.mmd-stage img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; }
+
+/* Find a note, in the graph's bar */
+.graph-find { width: 160px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: inherit; font-size: 12px; }
+.graph-find:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }

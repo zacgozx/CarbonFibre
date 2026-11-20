@@ -12,12 +12,12 @@ function saveSession() {
       backend: state.backend,
       folder: state.dirHandle ? state.dirHandle.name : null,
       panes: panes.map(function (p) {
-        return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, type: p.type,
+        return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, height: p.height || 1, down: !!p.down, floating: p.floating || null, type: p.type,
           sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null, graph: !!p.graphTab,
           scroll: p.type === "note" ? (p.mode === "live" ? p.editorEl.scrollTop : p.srcEl.scrollTop) : 0 };
       }),
       focused: panes.indexOf(focusedPane),
-      view: currentView, sideClosed: sideEl.classList.contains("side-closed"), sideWidth: sideWidth,
+      view: currentView, sideClosed: sideEl.classList.contains("side-closed"), sideWidth: sideWidth, sideRight: SideDock.right,
       collapsed: collapsedFolders, sort: sortMode
     }));
   } catch (e) {}
@@ -33,7 +33,8 @@ function restoreSession() {
   if (state.backend === "folder" && ss.folder && state.dirHandle && ss.folder !== state.dirHandle.name) return false;
   const wanted = ss.panes.map(function (sp) {
     return { tabs: (sp.tabs || []).filter(function (t) { return findNote(t); }), noteId: sp.noteId,
-      mode: sp.mode || "live", width: sp.width || 1, scroll: sp.scroll || 0,
+      mode: sp.mode || "live", width: sp.width || 1, height: sp.height || 1, down: !!sp.down, scroll: sp.scroll || 0,
+      floating: sp.floating && typeof sp.floating.x === "number" ? { x: sp.floating.x, y: sp.floating.y, w: sp.floating.w || 480, h: sp.floating.h || 360 } : null,
       type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" || sp.type === "graph" ? sp.type : "note",
       sketchOpen: sp.sketchOpen, sheetId: sp.sheetId, graph: !!sp.graph };
   }).filter(function (sp) { return sp.tabs.length; }).slice(0, MAX_PANES);
@@ -46,6 +47,7 @@ function restoreSession() {
     p.tabs = sp.tabs.slice();
     p.mode = sp.mode;
     p.width = sp.width;
+    p.height = sp.height; p.down = sp.down; p.floating = sp.floating;
     p.open(findNote(sp.noteId) ? sp.noteId : sp.tabs[0]);
   });
   layoutPanes();
@@ -53,6 +55,7 @@ function restoreSession() {
   const fp = panes[Math.max(0, Math.min(panes.length - 1, ss.focused || 0))];
   fp.focusThis();
   if (ss.collapsed) collapsedFolders = ss.collapsed;
+  SideDock.set(!!ss.sideRight);
   if (ss.sideWidth) { sideWidth = ss.sideWidth; sideEl.style.setProperty("--side-w", sideWidth + "px"); }
   if (ss.sort) setSort(ss.sort);
   if (ss.view === "notes" || ss.view === "search") showView(ss.view);

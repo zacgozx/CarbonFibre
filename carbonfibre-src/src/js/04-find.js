@@ -258,8 +258,8 @@ function lineInnerHtml(raw, fenceInfo, idx) {
         ? '<span data-deco="1" class="fence-lang">' + esc(fenceInfo.lang) + "</span>" : "") +
       (fenceInfo.fence === "open" && idx >= 0
         ? '<span data-deco="1" class="code-copy" data-copy="' + idx + '" role="button" tabindex="-1" title="Copy the code in this block">Copy</span>' : "") +
-      (fenceInfo.fence === "open" && /^mermaid$/i.test(fenceInfo.lang || "")
-        ? '<span data-deco="1" class="sk-open-split mm-convert" data-mermaid="' + idx + '" title="Add an editable sketch of this flowchart below it">convert to sketch</span>' : "");
+      (fenceInfo.fence === "close" && fenceInfo.mmBody !== undefined && fenceInfo.mmBody.trim()
+        ? MermaidView.html(fenceInfo.mmBody, fenceInfo.mmOpen) : "");
   }
   if (fenceInfo && fenceInfo.fence === "in") return raw === "" ? "&nbsp;" : highlightCode(raw);
 

@@ -172,7 +172,7 @@ document.getElementById("btnReconnect").addEventListener("click", function () {
     });
   }).catch(function (e) { console.error(e); });
 });
-document.getElementById("btnDual").addEventListener("click", toggleDual);
+document.getElementById("btnDual").addEventListener("click", function (e) { toggleDual(e.altKey); });
 document.getElementById("btnSketch").addEventListener("click", insertSketch);
 
 window.addEventListener("keydown", function (e) {

@@ -25,13 +25,15 @@ const SimpleGraph = {
   bar(g) {
     const simple = !!g.simple;
     const title = document.getElementById("graphTitle"), hint = document.getElementById("graphHint"), b = document.getElementById("graphMode");
-    if (title) title.textContent = simple ? "Graph" : "Solar system";
+    if (title) title.textContent = simple ? "Network" : "Solar system";
+    const list = document.getElementById("graphFindList");
+    if (list) list.innerHTML = g.nodes.slice(0, 3000).map(function (n) { return '<option value="' + esc(n.title) + '">'; }).join("");
     if (hint) hint.innerHTML = simple
       ? "Scroll to zoom &middot; drag to pan &middot; drag a dot to move it &middot; click a note to read it &middot; double-click opens it &middot; Esc backs out"
       : "Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out";
     if (b) {
       b.hidden = !SimpleGraph.choosable();
-      b.textContent = simple ? "Show as planets" : "Show as simple graph";
+      b.textContent = simple ? "Show as planets" : "Show as network";
     }
   },
 
@@ -171,16 +173,24 @@ const SimpleGraph = {
       disc(p[0], p[1], r);
       if (n === g.sun && !hot) { gctx.strokeStyle = acc; gctx.lineWidth = 1.5; gctx.beginPath(); gctx.arc(p[0], p[1], r + 3, 0, Math.PI * 2); gctx.stroke(); }
     });
-    /* names: always for the hot note and its neighbours; for everyone in a small vault or once zoomed in */
+    /* names wherever they fit: the hot note and its neighbours first, then the most linked; a name
+       that would overlap one already drawn (or run off screen) is left out until you zoom in */
     gctx.font = "12px " + GRAPH_FONT;
     gctx.textAlign = "center"; gctx.textBaseline = "top";
-    g.order.forEach(function (n) {
+    const placed = [], order = g.order.slice().sort(function (a, b) {
+      const la = a === hot ? 2 : near[a.id] ? 1 : 0, lb = b === hot ? 2 : near[b.id] ? 1 : 0;
+      return lb - la || b.deg - a.deg;
+    });
+    order.forEach(function (n) {
+      const p = P(n), tw = gctx.measureText(n.title).width, y = p[1] + screenRadius(n) + 4;
+      const r = [p[0] - tw / 2 - 3, y - 1, p[0] + tw / 2 + 3, y + 15];
+      if (r[2] < 0 || r[0] > w || r[3] < 0 || r[1] > h) return;
+      if (placed.some(function (q) { return q[0] < r[2] && r[0] < q[2] && q[1] < r[3] && r[1] < q[3]; })) return;
+      placed.push(r);
       const lit = n === hot || near[n.id];
-      if (!lit && cam.k < 0.9 && n.deg < 6 && g.order.length > 80) return;
-      const p = P(n);
       gctx.globalAlpha = hot && !lit ? 0.3 : 1;
-      gctx.fillStyle = n === hot ? txt : (lit ? txt : dim);
-      gctx.fillText(n.title, p[0], p[1] + screenRadius(n) + 4);
+      gctx.fillStyle = lit ? txt : dim;
+      gctx.fillText(n.title, p[0], y);
     });
     gctx.globalAlpha = 1;
   },
@@ -188,6 +198,21 @@ const SimpleGraph = {
   init() {
     const b = document.getElementById("graphMode");
     if (b) b.addEventListener("click", function () { SimpleGraph.setMode(!(graphData && graphData.simple)); });
+    /* Find a note: Enter (or picking from the list) flies to the best match */
+    const f = document.getElementById("graphFind");
+    if (!f) return;
+    const go = function () {
+      const q = f.value.trim().toLowerCase();
+      if (!q || !graphData) return;
+      const all = graphData.nodes, hit = all.filter(function (n) { return n.title.toLowerCase() === q; })[0] ||
+        all.filter(function (n) { return n.title.toLowerCase().indexOf(q) === 0; })[0] || all.filter(function (n) { return n.title.toLowerCase().indexOf(q) !== -1; })[0];
+      if (hit) graphSelect(hit); else pushToastLike("No note called \u201c" + f.value.trim() + "\u201d in the graph.");
+    };
+    f.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); go(); }
+      else if (e.key === "Escape") { e.stopPropagation(); f.value = ""; f.blur(); }
+    });
+    f.addEventListener("input", function (e) { if (!e.inputType || e.inputType === "insertReplacementText") go(); });   /* picked from the list */
   }
 };
 SimpleGraph.init();

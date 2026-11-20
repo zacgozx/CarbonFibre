@@ -1,4 +1,5 @@
     ta.addEventListener("keydown", function (e) {
+      if (Vim.on && Vim.key(p, ta, e)) { if (ac.el) acClose(); return; }
       let raw = ta.value;
       let s = ta.selectionStart, se = ta.selectionEnd;
       const mod = e.ctrlKey || e.metaKey;

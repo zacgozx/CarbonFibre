@@ -57,6 +57,7 @@ jobs:
           xvfb-run -a npx electron --no-sandbox test/run.js
           xvfb-run -a npx electron --no-sandbox test/node_test.js
           xvfb-run -a npx electron --no-sandbox test/db_test.js
+          xvfb-run -a npx electron --no-sandbox test/popout_test.js
           xvfb-run -a npx electron --no-sandbox test/update_test.js
 
   build:

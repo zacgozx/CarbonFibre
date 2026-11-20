@@ -40,7 +40,7 @@ with sync_playwright() as p:
     print("RIGHT-CLICK MENU")
     pg.locator(".pane-col").nth(0).locator(".tab[data-id]", has_text="Charlie").click(button="right"); pg.wait_for_timeout(150)
     items = E("() => [...document.querySelectorAll('.tab-menu .tab-menu-item')].map(b => b.querySelector('span').textContent + (b.disabled ? ' (off)' : ''))")
-    check("right-click offers move to the other pane, a new split, close", items == ["Move to the right pane", "Move to a new split", "Close"], str(items))
+    check("right-click offers move to the other pane, a new split (right or below), a new window, close", items == ["Move to the right pane", "Move to a new split", "Move to a split below", "Move into a new window", "Close"], str(items))
     pg.locator(".tab-menu-item", has_text="Move to the right pane").click(); pg.wait_for_timeout(250)
     check("'Move to the right pane' moves it", tabs() == [["Echo", "Alpha"], ["Delta", "Bravo", "Charlie"]], str(tabs()))
     pg.locator(".pane-col").nth(1).locator(".tab[data-id]", has_text="Delta").click(button="right"); pg.wait_for_timeout(150)

@@ -90,6 +90,7 @@ function markDirty(n) {
   if (state.backend === "folder") dirty[n.id] = true;
   schedulePersist();
   PluginHost.noteChanged(n);
+  PopOut.changed(n);
 }
 function noteStamp(n) { return n.touched || n.mtime || 0; }
 

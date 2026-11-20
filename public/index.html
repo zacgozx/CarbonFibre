@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-v3FrMZAFLjFWp50wfzK74wTfEckjv4AXWm+wQzfaDdM=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-Zivm7I2TP/CvHcxpVPQR34i4U6ZS3YBBsDc+V5DVdkc='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-JcGe5ga5AMdm8pVyf4uzAOBqgn/Tg9vmsaLvD0iEiTk='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2721,16 +2721,83 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
 :where(.tbn-card, .tb-card, .tbd-kpi, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
 :where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
 @media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }
+/* ---------- the movable layout (js/11-panes.js) ---------- */
+.pane-stack { display: flex; flex-direction: column; min-width: 220px; min-height: 0; }
+.pane-stack > .pane-col { min-height: 120px; }
+.row-gutter { flex: 0 0 6px; width: auto; height: 6px; cursor: row-resize; }
+.row-gutter::after { top: 2px; bottom: auto; left: 0; right: 0; width: auto; height: 1px; }
+
+/* a floating pane: over the others, moved by its bar, sized from its corner */
+.pane-col.floating {
+  position: absolute; z-index: 20; min-width: 260px; min-height: 160px;
+  resize: both; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 14px 40px rgba(var(--shd-rgb), calc(0.55 * var(--shd-k)));
+}
+.pane-col.floating .pane-bar { cursor: move; }
+.pane-col.floating .md-float { color: var(--acc-text); }
+
+/* where a dragged tab would split the pane */
+.pane-col { position: relative; }
+.split-hint {
+  position: absolute; z-index: 25; pointer-events: none;
+  background: var(--acc-soft); border: 2px solid var(--acc); border-radius: 6px;
+  transition: inset 0.12s ease;
+}
+.split-hint[data-side="left"] { inset: 36px 50% 0 0; }
+.split-hint[data-side="right"] { inset: 36px 0 0 50%; }
+.split-hint[data-side="up"] { inset: 36px 0 50% 0; }
+.split-hint[data-side="down"] { inset: 50% 0 0 0; }
+
+/* the sidebar on the right */
+body.side-right .mo-body { flex-direction: row-reverse; }
+body.side-right .activity { border-right: 0; border-left: 1px solid var(--line); }
+body.side-moving, body.side-moving * { cursor: grabbing !important; }
+.side-head { cursor: grab; }
+.side-head :is(button, input, a) { cursor: pointer; }
+
+/* a note popped out into its own window: just the pane */
+body.cf-popout :is(.mo-head, .activity, .side, #sideGutter, .statusbar) { display: none !important; }
+body.cf-popout .pane-col :is(.md-more, .md-float, .md-close) { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .split-hint { transition: none; } }
+
+/* vim (js/44-vim.js): a block caret where the browser has one, and the mode in the status bar */
+body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
+.sb-vim { font-family: var(--mono, monospace); font-size: 11px; color: var(--acc-text); white-space: pre; }
+
+/* Mermaid diagrams under their code (js/42-mermaid-view.js) */
+.mmd { position: relative; display: block; margin: 6px 0 2px; padding: 42px 12px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: zoom-in; overflow-x: auto; }
+.mmd:hover { border-color: var(--acc); }
+.mmd-img { display: block; max-width: 100%; max-height: 520px; margin: 0 auto; }
+.mmd-err { cursor: default; padding: 10px 12px; color: var(--dim); font-size: 13px; border-style: dashed; }
+.mmd-full { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; flex-direction: column; }
+.mmd-tools { display: flex; gap: 6px; justify-content: flex-end; padding: 8px; border-bottom: 1px solid var(--line); }
+.mmd-tools button { min-width: 32px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--txt); cursor: pointer; }
+.mmd-stage { position: relative; flex: 1; overflow: hidden; cursor: grab; touch-action: none; }
+.mmd-stage:active { cursor: grabbing; }
+.mmd-stage img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; }
+
+/* Find a note, in the graph's bar */
+.graph-find { width: 160px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--txt); font: inherit; font-size: 12px; }
+.graph-find:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
 </style>
-<script>/* Desktop app only: the page's storage lives in the app's SQLite file (desktop/db.js) instead of the
-   browser's. The page keeps calling localStorage; reads come from a copy loaded once at start, writes go
-   to the file in order. The first time, what the browser had is copied in (and left there). Runs before
-   anything reads storage; on the website (no cfDesktop.store) it does nothing. */
+<script>/* Storage, before anything reads it. Desktop app: the page's storage lives in the app's SQLite file
+   (desktop/db.js) instead of the browser's. The page keeps calling localStorage; reads come from a copy
+   loaded once at start, writes go to the file in order. The first time, what the browser had is copied in
+   (and left there). A popped-out note (#popout=, js/44-popout.js): a read-only copy, so that window never
+   saves over the main one. On the website's main window this does nothing. */
 (function () {
-  const d = window.cfDesktop && window.cfDesktop.store;
-  if (!d) return;
+  const sat = /^#popout=/.test(location.hash) && !!window.opener;
+  const d = !sat && window.cfDesktop && window.cfDesktop.store;
+  if (!sat && !d) return;
   let got = null;
-  try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  if (sat) {
+    got = { data: {}, copied: true };
+    try { const r = window.localStorage; for (let i = 0; i < r.length; i++) got.data[r.key(i)] = r.getItem(r.key(i)); } catch (e) { /* no storage */ }
+  } else {
+    try { got = d.all(); } catch (e) { /* the app couldn't open its database: browser storage it is */ }
+  }
   if (!got || !got.data) return;
   const map = new Map(Object.entries(got.data));
   if (!got.copied) {
@@ -2742,7 +2809,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
     d.write(ops, true);
   }
   let pending = null;
-  const send = function (op) {
+  const send = sat ? function () { /* read-only */ } : function (op) {
     if (!pending) { pending = []; queueMicrotask(function () { const o = pending; pending = null; d.write(o, false); }); }
     pending.push(op);
   };
@@ -2755,7 +2822,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
     get length() { return map.size; }
   };
   Object.defineProperty(window, "localStorage", { configurable: true, enumerable: true, get: function () { return store; } });
-  window.cfDesktopStore = true;
+  if (!sat) window.cfDesktopStore = true;
 })();</script>
 <script>if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("CarbonFibre won't run inside another page"); } try { var t = localStorage.getItem("carbonfibre-theme"); if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 </head>
@@ -2959,6 +3026,7 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
         <span id="graphTitle">Graph</span>
         <span id="graphStats"></span>
         <button class="btn-mini" id="graphMode" type="button" hidden>Show as planets</button>
+        <input class="graph-find" id="graphFind" type="search" list="graphFindList" placeholder="Find a note" aria-label="Find a note in the graph" autocomplete="off"><datalist id="graphFindList"></datalist>
         <span class="graph-hint" id="graphHint">Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out</span>
         <button class="btn-mini" id="graphRecentre" type="button" title="Fit the whole graph in view">Recentre</button>
       </div>
@@ -8098,6 +8166,14 @@ function computeFenceMeta(ls) {
     meta[i].sketch = count;
     meta[i].skBody = body.join("\n");               /* drawn as a picture in the note */
   }
+  /* Mermaid: drawn under its code (42-mermaid-view.js), on the closing line */
+  for (i = 0; i < ls.length; i++) {
+    if (meta[i].fence !== "open" || !/^mermaid$/i.test(meta[i].lang)) continue;
+    let j = i + 1;
+    while (j < ls.length && meta[j].fence !== "close") j++;
+    meta[i].mmBody = ls.slice(i + 1, j).join("\n");
+    if (j < ls.length) { meta[j].mmBody = meta[i].mmBody; meta[j].mmOpen = i; }
+  }
   PluginHost.markBlocks(ls, meta);                 /* code blocks an Obsidian plugin draws (js/plugins/) */
   computeTableMeta(ls, meta);
   return meta;
@@ -8670,8 +8746,8 @@ function lineInnerHtml(raw, fenceInfo, idx) {
         ? '<span data-deco="1" class="fence-lang">' + esc(fenceInfo.lang) + "</span>" : "") +
       (fenceInfo.fence === "open" && idx >= 0
         ? '<span data-deco="1" class="code-copy" data-copy="' + idx + '" role="button" tabindex="-1" title="Copy the code in this block">Copy</span>' : "") +
-      (fenceInfo.fence === "open" && /^mermaid$/i.test(fenceInfo.lang || "")
-        ? '<span data-deco="1" class="sk-open-split mm-convert" data-mermaid="' + idx + '" title="Add an editable sketch of this flowchart below it">convert to sketch</span>' : "");
+      (fenceInfo.fence === "close" && fenceInfo.mmBody !== undefined && fenceInfo.mmBody.trim()
+        ? MermaidView.html(fenceInfo.mmBody, fenceInfo.mmOpen) : "");
   }
   if (fenceInfo && fenceInfo.fence === "in") return raw === "" ? "&nbsp;" : highlightCode(raw);
 
@@ -8984,6 +9060,7 @@ function markDirty(n) {
   if (state.backend === "folder") dirty[n.id] = true;
   schedulePersist();
   PluginHost.noteChanged(n);
+  PopOut.changed(n);
 }
 function noteStamp(n) { return n.touched || n.mtime || 0; }
 
@@ -10139,9 +10216,11 @@ function createPane(index) {
           '<svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/>' +
           '<rect class="fill" x="2" y="2.5" width="12" height="3.2" rx="1.5"/>' +
           '<path d="M2 9.2h12M6.3 5.7v7.8M10.1 5.7v7.8"/></svg></button>' +
-        '<button class="mini-pill pb-ico md-more" title="Split this pane to the right (Ctrl+\\)">' +
+        '<button class="mini-pill pb-ico md-more" title="Split this pane to the right (Alt+click: below) (Ctrl+\\)">' +
           '<svg viewBox="0 0 16 16"><rect x="1.8" y="2.5" width="12.4" height="11" rx="1.5"/>' +
           '<path d="M8 2.5v11"/></svg></button>' +
+        '<button class="mini-pill pb-ico md-float" title="Float this pane over the others (double-click its bar to dock it)" aria-label="Float this pane">' +
+          '<svg viewBox="0 0 16 16"><rect x="1.8" y="4.5" width="9" height="9" rx="1.5"/><path d="M5 4.5V2.8h9.2v8.7H10.8"/></svg></button>' +
         '<button class="mini-pill pb-ico md-close" title="Close this pane" aria-label="Close this pane">' + ico("x") + '</button>' +
       "</span>" +
     "</div>" +
@@ -10158,6 +10237,7 @@ function createPane(index) {
   p.crumbEl = col.querySelector(".crumbs");
   p.tabsEl = col.querySelector(".tabs");
   p.moreBtn = col.querySelector(".md-more");
+  p.floatBtn = col.querySelector(".md-float");
   p.sheetBtn = col.querySelector(".md-sheet");
   p.emptyEl = col.querySelector(".pane-empty");
   p.editorEl = col.querySelector(".editor");
@@ -10265,18 +10345,22 @@ function createPane(index) {
     const src = panes[info.pane];
     if (src) moveTab(src, info.id, p, d.at);
   });
+  /* the middle of a pane: move the tab here; near an edge, held a moment: split that way (TabSplit) */
   col.addEventListener("dragover", function (e) {
     if (!isTabDrag(e) || p.tabsEl.contains(e.target)) return;
     e.preventDefault(); e.dataTransfer.dropEffect = "move";
-    clearTabDropMarks(); col.classList.add("tab-drop-on");
+    clearTabDropMarks();
+    col.classList.toggle("tab-drop-on", !TabSplit.over(p, e));
   });
-  col.addEventListener("dragleave", function (e) { if (!col.contains(e.relatedTarget)) col.classList.remove("tab-drop-on"); });
+  col.addEventListener("dragleave", function (e) { if (!col.contains(e.relatedTarget)) { col.classList.remove("tab-drop-on"); TabSplit.end(); } });
   col.addEventListener("drop", function (e) {
     if (!isTabDrag(e) || p.tabsEl.contains(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     col.classList.remove("tab-drop-on");
     const info = JSON.parse(e.dataTransfer.getData("text/x-cf-tab") || "{}"), src = panes[info.pane];
-    if (src && src !== p) moveTab(src, info.id, p, p.tabs.length);
+    if (!src) return;
+    if (TabSplit.drop(src, info.id, p)) return;
+    if (src !== p) moveTab(src, info.id, p, p.tabs.length);
   });
   p.renderTabs = function () {
     tabTreeSoon();
@@ -10921,6 +11005,8 @@ function createPane(index) {
     const skf = e.target.closest("[data-skfile]");
     if (skf && !e.altKey) { e.preventDefault(); openSketchFile(skf.dataset.skfile); return; }
     const skc = e.target.closest("[data-sketch]");
+    const mmv = e.target.closest("[data-mm-view]");
+    if (mmv && !e.altKey && !e.target.closest("[data-mermaid]")) { e.preventDefault(); e.stopPropagation(); const mo = p.fmeta[parseInt(mmv.dataset.mmView, 10)]; if (mo && mo.mmBody) MermaidView.expand(mo.mmBody); return; }
     const mmc = e.target.closest("[data-mermaid]");
     if (mmc && !e.altKey) { e.preventDefault(); e.stopPropagation(); convertMermaid(p, parseInt(mmc.dataset.mermaid, 10)); return; }
     const sks = e.target.closest("[data-sketch-split]");
@@ -11415,6 +11501,7 @@ function createPane(index) {
     });
 
     ta.addEventListener("keydown", function (e) {
+      if (Vim.on && Vim.key(p, ta, e)) { if (ac.el) acClose(); return; }
       let raw = ta.value;
       let s = ta.selectionStart, se = ta.selectionEnd;
       const mod = e.ctrlKey || e.metaKey;
@@ -12016,7 +12103,9 @@ function createPane(index) {
   p.liveBtn.addEventListener("click", function () { focusThis(); p.setMode("live"); });
   p.splitBtn.addEventListener("click", function () { focusThis(); p.setMode("split"); });
   p.closeBtn.addEventListener("click", function () { closePane(p); });
-  p.moreBtn.addEventListener("click", function () { addPane(p); });
+  p.moreBtn.addEventListener("click", function (e) { splitPane(p, e.altKey ? "down" : "right"); });
+  p.floatBtn.addEventListener("click", function () { floatPane(p, !p.floating); });
+  wireFloating(p);
   p.sheetBtn.addEventListener("click", function () {
     focusThis();
     if (!editTableAsSheet(p)) pushToastLike("Put the cursor inside a table first.");
@@ -12112,46 +12201,83 @@ function scheduleMirror(source, noteId) {
    workarea / panes management
    ============================================================ */
 
-const MAX_PANES = 4;
+const MAX_PANES = 6;
 const workarea = document.getElementById("workarea");
 const graphEl = document.getElementById("graph");
 
-/* rebuild the [pane, gutter, pane, gutter, pane] sequence and apply widths */
+/* The layout: panes in reading order. A pane with .down sits under the one before it, in the same
+   column; the others start a column. Column widths are the first pane's .width, heights in a column
+   each pane's .height (both flex weights). A pane with .floating ({ x, y, w, h }) floats over the work
+   area instead. Keeping one flat list means every "panes[i]" in the app keeps working. */
+function paneColumns() {
+  const cols = [];
+  panes.forEach(function (p) {
+    if (p.floating) return;
+    if (p.down && cols.length) cols[cols.length - 1].push(p); else cols.push([p]);
+  });
+  return cols;
+}
 function layoutPanes() {
-  Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter")).forEach(function (g) { g.parentNode.removeChild(g); });
-  panes.forEach(function (p, i) {
-    workarea.appendChild(p.root);
-    p.root.style.flex = p.width + " 1 0px";
-    if (i < panes.length - 1) {
+  Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter, .pane-stack")).forEach(function (g) {
+    if (g.classList.contains("pane-stack")) while (g.firstChild) workarea.appendChild(g.firstChild);
+    g.remove();
+  });
+  const cols = paneColumns();
+  cols.forEach(function (col, ci) {
+    col[0].down = false;
+    const stack = document.createElement("div");
+    stack.className = "pane-stack";
+    stack.style.flex = (col[0].width || 1) + " 1 0px";
+    col.forEach(function (p, ri) {
+      stack.appendChild(p.root);
+      p.root.style.flex = (p.height || 1) + " 1 0px";
+      p.root.classList.remove("floating");
+      p.root.style.left = p.root.style.top = p.root.style.width = p.root.style.height = "";
+      if (ri < col.length - 1) {
+        const g = document.createElement("div");
+        g.className = "gutter pane-gutter row-gutter";
+        g.title = "Drag to resize";
+        wirePaneGutter(g, p, col[ri + 1], "y");
+        stack.appendChild(g);
+      }
+    });
+    workarea.appendChild(stack);
+    if (ci < cols.length - 1) {
       const g = document.createElement("div");
       g.className = "gutter pane-gutter";
       g.title = "Drag to resize";
-      wirePaneGutter(g, i);
+      wirePaneGutter(g, col[0], cols[ci + 1][0], "x");
       workarea.appendChild(g);
     }
   });
+  panes.forEach(function (p) {
+    if (!p.floating) return;
+    const f = p.floating, r = p.root, W = workarea.getBoundingClientRect();
+    if (W.width) { f.x = Math.max(0, Math.min(f.x, W.width - Math.min(f.w, W.width) - 8)); f.y = Math.max(0, Math.min(f.y, W.height - 60)); }   /* kept inside the window */
+    r.classList.add("floating");
+    r.style.flex = "";
+    r.style.left = f.x + "px"; r.style.top = f.y + "px"; r.style.width = f.w + "px"; r.style.height = f.h + "px";
+    workarea.appendChild(r);
+  });
   const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
-  dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its \u00d7 first" : "Split: another pane beside this one (Ctrl+\\)";
+  dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its × first" : "Split: another pane beside this one (Ctrl+\\). Alt+click splits down";
 }
 
-function wirePaneGutter(g, leftIndex) {
+/* drag between two columns (x: their widths) or two panes in a column (y: their heights) */
+function wirePaneGutter(g, a, b, axis) {
   g.addEventListener("mousedown", function (e) {
     e.preventDefault();
-    const left = panes[leftIndex], right = panes[leftIndex + 1];
-    if (!left || !right) return;
-    const lw = left.root.getBoundingClientRect().width;
-    const rw = right.root.getBoundingClientRect().width;
-    const startX = e.clientX;
+    const key = axis === "x" ? "width" : "height";
+    const boxA = (axis === "x" ? a.root.parentNode : a.root).getBoundingClientRect(), boxB = (axis === "x" ? b.root.parentNode : b.root).getBoundingClientRect();
+    const sa = axis === "x" ? boxA.width : boxA.height, sb = axis === "x" ? boxB.width : boxB.height, min = axis === "x" ? 220 : 120;
+    const start = axis === "x" ? e.clientX : e.clientY;
     g.classList.add("drag");
     document.body.classList.add("resizing");
     function move(ev) {
-      const d = ev.clientX - startX;
-      let nl = Math.max(220, lw + d), nr = Math.max(220, rw - d);
-      if (lw + d < 220) nr = lw + rw - 220;
-      if (rw - d < 220) nl = lw + rw - 220;
-      left.width = nl; right.width = nr;
-      left.root.style.flex = nl + " 1 0px";
-      right.root.style.flex = nr + " 1 0px";
+      const d = Math.max(min - sa, Math.min(sb - min, (axis === "x" ? ev.clientX : ev.clientY) - start));
+      a[key] = sa + d; b[key] = sb - d;
+      (axis === "x" ? a.root.parentNode : a.root).style.flex = a[key] + " 1 0px";
+      (axis === "x" ? b.root.parentNode : b.root).style.flex = b[key] + " 1 0px";
     }
     function up() {
       g.classList.remove("drag");
@@ -12164,6 +12290,118 @@ function wirePaneGutter(g, leftIndex) {
     window.addEventListener("mouseup", up);
   });
 }
+
+/* a new pane beside `target`: side "right", "left", "down" or "up". Returns it, or null at the most. */
+function splitPane(target, side, noteId) {
+  if (panes.length >= MAX_PANES) { pushToastLike(MAX_PANES + " panes is the most. Close one with the × at its top right."); return null; }
+  target = target || focusedPane || panes[panes.length - 1];
+  if (target.floating) { target.floating = null; target.down = false; }
+  /* no room for another column: below instead, rather than squeezing every pane under its minimum */
+  if ((side === "right" || side === "left") && workarea.clientWidth && workarea.clientWidth / (paneColumns().length + 1) < 220) side = "down";
+  const p = createPane(panes.length);
+  const col = paneColumns().filter(function (c) { return c.indexOf(target) !== -1; })[0] || [target];
+  if (side === "right" || side === "left") {
+    const w = col[0].root.parentNode && col[0].root.parentNode.getBoundingClientRect ? col[0].root.parentNode.getBoundingClientRect().width || 1 : 1;
+    col[0].width = w / 2; p.width = w / 2; p.down = false;
+    panes.splice(side === "right" ? panes.indexOf(col[col.length - 1]) + 1 : panes.indexOf(col[0]), 0, p);
+  } else {
+    const h = target.root.getBoundingClientRect().height || 1;
+    target.height = h / 2; p.height = h / 2;
+    if (side === "down") { p.down = true; panes.splice(panes.indexOf(target) + 1, 0, p); }
+    else { p.down = target.down; target.down = true; p.width = target.width; panes.splice(panes.indexOf(target), 0, p); }
+  }
+  layoutPanes();
+  p.open(noteId != null ? noteId : target.noteId);
+  renderPanes();
+  p.focusThis();
+  scheduleSession();
+  return p;
+}
+function addPane(after, noteId) { return splitPane(after, "right", noteId) || panes[panes.length - 1]; }
+
+/* float a pane over the work area, or put it back as a column at the right (double-click its bar) */
+function floatPane(p, on) {
+  if (on && !p.floating) {
+    const w = workarea.getBoundingClientRect(), r = p.root.getBoundingClientRect(), fw = Math.min(560, w.width * 0.6), fh = Math.min(460, w.height * 0.7);
+    if (paneColumns().length === 1 && paneColumns()[0].length === 1) { pushToastLike("Split first: the last docked pane can't float."); return; }
+    p.floating = { x: Math.round(r.left - w.left + 40), y: Math.round(r.top - w.top + 40), w: Math.round(fw), h: Math.round(fh) };
+  } else if (!on && p.floating) {
+    p.floating = null; p.down = false; p.width = p.width || 400;
+    panes.splice(panes.indexOf(p), 1); panes.push(p);
+  } else return;
+  layoutPanes();
+  p.focusThis();
+  scheduleSession();
+}
+/* a floating pane moves by its bar and is sized by its corner (CSS resize); both are remembered */
+function wireFloating(p) {
+  const bar = p.root.querySelector(".pane-bar");
+  bar.addEventListener("mousedown", function (e) {
+    if (!p.floating || e.button !== 0 || e.target.closest(".tab, button")) return;
+    e.preventDefault();
+    const f = p.floating, sx = e.clientX, sy = e.clientY, ox = f.x, oy = f.y, W = workarea.getBoundingClientRect();
+    const move = function (ev) {
+      f.x = Math.max(0, Math.min(W.width - 80, ox + ev.clientX - sx)); f.y = Math.max(0, Math.min(W.height - 36, oy + ev.clientY - sy));
+      p.root.style.left = f.x + "px"; p.root.style.top = f.y + "px";
+    };
+    const up = function () { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); scheduleSession(); };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  });
+  bar.addEventListener("dblclick", function (e) { if (p.floating && !e.target.closest(".tab, button")) floatPane(p, false); });
+  new ResizeObserver(function () {
+    if (!p.floating) return;
+    p.floating.w = p.root.offsetWidth; p.floating.h = p.root.offsetHeight;
+    scheduleSession();
+  }).observe(p.root);
+  /* right-click the empty part of the tab bar */
+  bar.addEventListener("contextmenu", function (e) {
+    if (e.target.closest(".tab")) return;
+    e.preventDefault();
+    const full = panes.length >= MAX_PANES;
+    floatMenu([
+      { label: "Split right", fn: function () { splitPane(p, "right"); }, off: full },
+      { label: "Split down", fn: function () { splitPane(p, "down"); }, off: full },
+      { label: p.floating ? "Dock" : "Float", fn: function () { floatPane(p, !p.floating); } },
+      { label: "Pop out into a new window", fn: function () { PopOut.open(p); }, off: !(p.type === "note" && p.noteId != null) }
+    ], e.clientX, e.clientY);
+  });
+}
+
+/* drag a tab onto a pane: near an edge (held there a moment) it splits that way; elsewhere it moves */
+const TabSplit = {
+  HOLD: 350, side: null, at: 0, pane: null, hint: null,
+  zone(col, x, y) {
+    const r = col.getBoundingClientRect(), fx = (x - r.left) / r.width, fy = (y - r.top) / r.height;
+    const d = Math.min(fx, 1 - fx, fy, 1 - fy);
+    if (d > 0.25) return null;
+    return d === fx ? "left" : d === 1 - fx ? "right" : d === fy ? "up" : "down";
+  },
+  over(p, e) {
+    const s = panes.length < MAX_PANES ? TabSplit.zone(p.root, e.clientX, e.clientY) : null;
+    if (s !== TabSplit.side || p !== TabSplit.pane) { TabSplit.side = s; TabSplit.pane = p; TabSplit.at = performance.now(); TabSplit.show(null); }
+    if (s && performance.now() - TabSplit.at >= TabSplit.HOLD) TabSplit.show(p, s);
+    return TabSplit.armed();
+  },
+  armed() { return !!(TabSplit.hint && TabSplit.hint.dataset.side); },
+  show(p, side) {
+    if (!p) { if (TabSplit.hint) TabSplit.hint.remove(); TabSplit.hint = null; return; }
+    if (!TabSplit.hint) { TabSplit.hint = document.createElement("div"); TabSplit.hint.className = "split-hint"; }
+    TabSplit.hint.dataset.side = side;
+    if (TabSplit.hint.parentNode !== p.root) p.root.appendChild(TabSplit.hint);
+  },
+  end() { TabSplit.side = TabSplit.pane = null; TabSplit.show(null); },
+  drop(src, id, dst) {
+    const side = TabSplit.armed() ? TabSplit.hint.dataset.side : null;
+    TabSplit.end();
+    if (!side) return false;
+    if (src === dst && src.tabs.length < 2) return true;
+    src.sync();
+    if (splitPane(dst, side, id)) src.closeTab(id);
+    return true;
+  }
+};
+document.addEventListener("dragend", function () { TabSplit.end(); });
 
 /* Move note tab `id` from pane src to pane dst at position `at` (same pane: reorder). The note
    opens in dst; src shows its neighbouring tab, or closes if it has none left (as VS Code does). */
@@ -12190,9 +12428,10 @@ function moveTab(src, id, dst, at) {
   renderPanes();
   scheduleSession();
 }
-function moveTabToNewSplit(src, id) {
+function moveTabToNewSplit(src, id, side) {
   if (panes.length >= MAX_PANES || src.tabs.length < 2) return;
-  const dst = addPane(src, id);
+  const dst = splitPane(src, side || "right", id);
+  if (!dst) return;
   src.closeTab(id);
   dst.focusThis();
 }
@@ -12361,6 +12600,8 @@ function tabMenu(p, id, x, y) {
     add("Move to " + name, function () { moveTab(p, id, q, q.tabs.length); }, false, panes.length === 2 ? (k > me ? "Ctrl+Alt+\u2192" : "Ctrl+Alt+\u2190") : "");
   });
   add("Move to a new split", function () { moveTabToNewSplit(p, id); }, panes.length >= MAX_PANES || p.tabs.length < 2);
+  add("Move to a split below", function () { moveTabToNewSplit(p, id, "down"); }, panes.length >= MAX_PANES || p.tabs.length < 2);
+  add("Move into a new window", function () { PopOut.open(p, id); }, false, "");
   const sep = document.createElement("div"); sep.className = "tab-menu-sep"; m.appendChild(sep);
   add("Close", function () { p.closeTab(id); }, false, "");
   document.body.appendChild(m);
@@ -12380,23 +12621,6 @@ function moveCurrentTab(dir) {
   if (k >= 0 && k < panes.length) moveTab(p, p.noteId, panes[k], panes[k].tabs.length);
   else if (dir > 0) moveTabToNewSplit(p, p.noteId);
 }
-function addPane(after, noteId) {
-  if (panes.length >= MAX_PANES) return panes[panes.length - 1];
-  const src = after || focusedPane || panes[panes.length - 1];
-  const p = createPane(panes.length);
-  const at = panes.indexOf(src) + 1;
-  panes.splice(at, 0, p);
-  /* new pane takes half of the source pane's width */
-  const w = src.root.getBoundingClientRect().width || 1;
-  src.width = w / 2; p.width = w / 2;
-  layoutPanes();
-  p.open(noteId != null ? noteId : src.noteId);
-  renderPanes();
-  p.focusThis();
-  scheduleSession();
-  return p;
-}
-
 /* switching a pane away from whatever isn't a note (a sheet, the board, a docked sketch, the graph),
    before it shows something else. One place, so every way of opening something handles all of them. */
 function leavePaneContent(p) {
@@ -12408,17 +12632,31 @@ function leavePaneContent(p) {
 }
 
 function closePane(p) {
-  if (panes.length < 2) return;
+  if (panes.filter(function (q) { return !q.floating; }).length < 2 && !p.floating) return;
   if (p === graphPane) closeGraph();                       /* the graph goes with its pane */
   if (sk && sk.dockedIn === p) { closeSketch(); return; }   /* closeSketch comes back here */
   if (p.type === "sheet") flushSheets();
   p.sync();
   const i = panes.indexOf(p);
+  /* the freed room goes to a neighbour: the pane above or below in its column, else the column beside */
+  const col = paneColumns().filter(function (c) { return c.indexOf(p) !== -1; })[0] || [];
+  const k = col.indexOf(p);
+  let neighbour = null;
+  if (col.length > 1) {
+    neighbour = col[k > 0 ? k - 1 : 1];
+    neighbour.height = (neighbour.height || 1) + (p.height || 1);
+    if (k === 0) { neighbour.down = false; neighbour.width = p.width; }
+  }
   panes = panes.filter(function (q) { return q !== p; });
   if (p.root.parentNode) p.root.parentNode.removeChild(p.root);
-  /* hand the freed width to the neighbour */
-  const neighbour = panes[Math.max(0, i - 1)];
-  neighbour.width += p.width;
+  if (!neighbour) {
+    const docked = panes.filter(function (q) { return !q.floating; });
+    neighbour = docked[Math.max(0, Math.min(docked.length - 1, i - 1))] || panes[0];
+    if (!p.floating && col.length === 1) {
+      const cols = paneColumns(), nc = cols.filter(function (c) { return c.indexOf(neighbour) !== -1; })[0];
+      if (nc) nc[0].width = (nc[0].width || 1) + (p.width || 1);
+    }
+  }
   layoutPanes();
   if (focusedPane === p) focusedPane = neighbour;
   renderPanes();
@@ -12427,11 +12665,21 @@ function closePane(p) {
   scheduleSession();
 }
 
-/* Split (the button, Ctrl+\\): another pane beside the one you're in. It never closes one: each pane
-   has its own close button. At the most panes there's nothing to add, so it says so. */
-function toggleDual() {
-  if (panes.length >= MAX_PANES) { pushToastLike(MAX_PANES + " panes is the most. Close one with the \u00d7 at its top right."); return; }
-  addPane(focusedPane || panes[0]);
+/* Split (the button, Ctrl+\): another pane beside the one you're in (Alt: below it). It never
+   closes one: each pane has its own close button. */
+function toggleDual(down) {
+  splitPane(focusedPane || panes[0], down ? "down" : "right");
+}
+
+/* everything back where it started: one pane, the sidebar on the left at its usual width */
+function resetLayout() {
+  panes.slice().forEach(function (p) { p.floating = null; });
+  while (panes.length > 1) closePane(panes[panes.length - 1]);
+  panes[0].down = false; panes[0].width = panes[0].height = 1;
+  SideDock.set(false);
+  sideWidth = 300; sideEl.style.setProperty("--side-w", "300px");
+  layoutPanes();
+  scheduleSession();
 }
 
 /* sidebar drag */
@@ -12444,7 +12692,7 @@ document.getElementById("sideGutter").addEventListener("mousedown", function (e)
   g.classList.add("drag");
   document.body.classList.add("resizing");
   function move(ev) {
-    sideWidth = Math.max(220, Math.min(680, startW + (ev.clientX - startX)));
+    sideWidth = Math.max(220, Math.min(680, startW + (ev.clientX - startX) * (SideDock.right ? -1 : 1)));
     sideEl.style.setProperty("--side-w", sideWidth + "px");
   }
   function up() {
@@ -12458,6 +12706,32 @@ document.getElementById("sideGutter").addEventListener("mousedown", function (e)
   window.addEventListener("mouseup", up);
 });
 
+
+/* the sidebar on the right: drag its title past the middle of the window (the activity bar goes too) */
+const SideDock = {
+  right: false,
+  set(on) {
+    SideDock.right = !!on;
+    document.body.classList.toggle("side-right", SideDock.right);
+    scheduleSession();
+  },
+  init() {
+    sideEl.addEventListener("mousedown", function (e) {
+      if (e.button !== 0 || !e.target.closest(".side-head") || e.target.closest("button, input, a, [role=button]")) return;
+      const sx = e.clientX;
+      let moved = false;
+      const move = function (ev) { if (Math.abs(ev.clientX - sx) > 8) { moved = true; document.body.classList.add("side-moving"); } };
+      const up = function (ev) {
+        window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up);
+        document.body.classList.remove("side-moving");
+        if (moved) SideDock.set(ev.clientX > window.innerWidth / 2);
+      };
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", up);
+    });
+  }
+};
+SideDock.init();
 /* ============================================================
    note ops
    ============================================================ */
@@ -12484,6 +12758,8 @@ function revealPane(q) {
   return q;
 }
 function openInPane(id, pane, opts) {
+  if (PopOut.sat && id != null && !sameId(id, PopOut.satId)) { PopOut.post(window.opener, { cf: "pop-open", id: PopOut.satId, to: id }); return null; }
+  if (!PopOut.sat && id != null && !(opts && opts.here) && PopOut.reveal(id)) return null;
   const target = pane || focusedPane || panes[0];
   if (!(opts && opts.here) && id != null) {
     const shown = paneShowing("note", id);
@@ -13672,13 +13948,15 @@ const SimpleGraph = {
   bar(g) {
     const simple = !!g.simple;
     const title = document.getElementById("graphTitle"), hint = document.getElementById("graphHint"), b = document.getElementById("graphMode");
-    if (title) title.textContent = simple ? "Graph" : "Solar system";
+    if (title) title.textContent = simple ? "Network" : "Solar system";
+    const list = document.getElementById("graphFindList");
+    if (list) list.innerHTML = g.nodes.slice(0, 3000).map(function (n) { return '<option value="' + esc(n.title) + '">'; }).join("");
     if (hint) hint.innerHTML = simple
       ? "Scroll to zoom &middot; drag to pan &middot; drag a dot to move it &middot; click a note to read it &middot; double-click opens it &middot; Esc backs out"
       : "Scroll to zoom &middot; drag to pan &middot; click a body to read it &middot; double-click opens it &middot; Esc backs out";
     if (b) {
       b.hidden = !SimpleGraph.choosable();
-      b.textContent = simple ? "Show as planets" : "Show as simple graph";
+      b.textContent = simple ? "Show as planets" : "Show as network";
     }
   },
 
@@ -13818,16 +14096,24 @@ const SimpleGraph = {
       disc(p[0], p[1], r);
       if (n === g.sun && !hot) { gctx.strokeStyle = acc; gctx.lineWidth = 1.5; gctx.beginPath(); gctx.arc(p[0], p[1], r + 3, 0, Math.PI * 2); gctx.stroke(); }
     });
-    /* names: always for the hot note and its neighbours; for everyone in a small vault or once zoomed in */
+    /* names wherever they fit: the hot note and its neighbours first, then the most linked; a name
+       that would overlap one already drawn (or run off screen) is left out until you zoom in */
     gctx.font = "12px " + GRAPH_FONT;
     gctx.textAlign = "center"; gctx.textBaseline = "top";
-    g.order.forEach(function (n) {
+    const placed = [], order = g.order.slice().sort(function (a, b) {
+      const la = a === hot ? 2 : near[a.id] ? 1 : 0, lb = b === hot ? 2 : near[b.id] ? 1 : 0;
+      return lb - la || b.deg - a.deg;
+    });
+    order.forEach(function (n) {
+      const p = P(n), tw = gctx.measureText(n.title).width, y = p[1] + screenRadius(n) + 4;
+      const r = [p[0] - tw / 2 - 3, y - 1, p[0] + tw / 2 + 3, y + 15];
+      if (r[2] < 0 || r[0] > w || r[3] < 0 || r[1] > h) return;
+      if (placed.some(function (q) { return q[0] < r[2] && r[0] < q[2] && q[1] < r[3] && r[1] < q[3]; })) return;
+      placed.push(r);
       const lit = n === hot || near[n.id];
-      if (!lit && cam.k < 0.9 && n.deg < 6 && g.order.length > 80) return;
-      const p = P(n);
       gctx.globalAlpha = hot && !lit ? 0.3 : 1;
-      gctx.fillStyle = n === hot ? txt : (lit ? txt : dim);
-      gctx.fillText(n.title, p[0], p[1] + screenRadius(n) + 4);
+      gctx.fillStyle = lit ? txt : dim;
+      gctx.fillText(n.title, p[0], y);
     });
     gctx.globalAlpha = 1;
   },
@@ -13835,6 +14121,21 @@ const SimpleGraph = {
   init() {
     const b = document.getElementById("graphMode");
     if (b) b.addEventListener("click", function () { SimpleGraph.setMode(!(graphData && graphData.simple)); });
+    /* Find a note: Enter (or picking from the list) flies to the best match */
+    const f = document.getElementById("graphFind");
+    if (!f) return;
+    const go = function () {
+      const q = f.value.trim().toLowerCase();
+      if (!q || !graphData) return;
+      const all = graphData.nodes, hit = all.filter(function (n) { return n.title.toLowerCase() === q; })[0] ||
+        all.filter(function (n) { return n.title.toLowerCase().indexOf(q) === 0; })[0] || all.filter(function (n) { return n.title.toLowerCase().indexOf(q) !== -1; })[0];
+      if (hit) graphSelect(hit); else pushToastLike("No note called \u201c" + f.value.trim() + "\u201d in the graph.");
+    };
+    f.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); go(); }
+      else if (e.key === "Escape") { e.stopPropagation(); f.value = ""; f.blur(); }
+    });
+    f.addEventListener("input", function (e) { if (!e.inputType || e.inputType === "insertReplacementText") go(); });   /* picked from the list */
   }
 };
 SimpleGraph.init();
@@ -23202,6 +23503,12 @@ function palCommands() {
     { label: "Toggle live preview and source", run: function () {
         const p = fp(); if (p && p.type === "note") p.root.querySelector(p.mode === "live" ? ".md-split" : ".md-live").click(); } },
     { label: "Split editor", key: "Ctrl+\\", run: click("#btnDual") },
+    { label: "Split editor down", run: function () { splitPane(fp(), "down"); } },
+    { label: "Float this pane (or dock it)", run: function () { const p = fp(); if (p) floatPane(p, !p.floating); } },
+    { label: "Pop out this note into a new window", run: function () { PopOut.open(fp()); } },
+    { label: "Move the sidebar to the other side", run: function () { SideDock.set(!SideDock.right); } },
+    { label: "Reset the layout", run: function () { resetLayout(); } },
+    { label: "Toggle vim mode", run: function () { Vim.toggle(); } },
     { label: "Show notes", key: "Ctrl+Shift+E", run: function () { showView("notes"); } },
     { label: "Show open tabs", key: "Alt+O", run: function () { showView("tabs"); } },
     { label: "Sketch library (drawings in the sketch folder)", key: "Alt+K", run: function () { openSketchLibrary(); } },
@@ -24726,6 +25033,204 @@ function mermaidBlockFor(p) {
   return -1;
 }
 /* ============================================================
+   Mermaid diagrams drawn in the note, under their code. Flowcharts, state, class, ER and mind maps
+   go through the same layout as "convert to sketch" (mermaidToElements) and are drawn by the sketch
+   preview; pie charts and sequence diagrams are drawn here. Click a diagram to open it full window
+   (drag to pan, scroll to zoom, Fit, Esc closes). Gantt, timeline and git graphs say they can't be drawn.
+   ============================================================ */
+const MermaidView = {
+  cache: new Map(),
+
+  /* a picture of the diagram: { url } or { error } */
+  picture(src) {
+    const key = (isLight() ? "L" : "D") + src;
+    if (MermaidView.cache.has(key)) return MermaidView.cache.get(key);
+    let out;
+    const head = (src.trim().split("\n")[0] || "").trim().toLowerCase();
+    try {
+      if (/^pie\b/.test(head)) out = { url: MermaidView.svgUrl(MermaidView.pie(src)) };
+      else if (/^sequencediagram\b/.test(head)) out = { url: MermaidView.svgUrl(MermaidView.sequence(src)) };
+      else if (/^(gantt|timeline|gitgraph|journey|quadrantchart|xychart|sankey|requirementdiagram|c4)/.test(head)) out = { error: "This kind of diagram (" + head.split(/\s/)[0] + ") can't be drawn here yet." };
+      else {
+        const res = mermaidToElements(src);
+        const url = res.elements.length ? sketchPreviewUrl(JSON.stringify(skDoc(res.elements))) : "";
+        out = url ? { url: url } : { error: "Nothing to draw yet." };
+      }
+    } catch (e) { out = { error: "Can't draw this: " + ((e && e.message) || e) }; }
+    if (MermaidView.cache.size > 60) MermaidView.cache.clear();
+    MermaidView.cache.set(key, out);
+    return out;
+  },
+  svgUrl(svg) { return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); },
+  ink() { return isLight() ? { txt: "#1f2328", dim: "#59636e", line: "#8c959f", box: "#f6f8fa" } : { txt: "#e6e6e6", dim: "#a1a1aa", line: "#71717a", box: "#27272a" }; },
+  x(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); },
+  FONT: "font-family=\"system-ui, sans-serif\"",
+  SLICES: ["#5b8def", "#f59e0b", "#10b981", "#ef4444", "#a855f7", "#14b8a6", "#f97316", "#64748b", "#ec4899", "#84cc16"],
+
+  /* pie [showData] / title ... / "Label" : value */
+  pie(src) {
+    const ink = MermaidView.ink(), X = MermaidView.x;
+    let title = "";
+    const rows = [];
+    src.split("\n").forEach(function (l, i) {
+      const t = l.trim();
+      if (!t || t.indexOf("%%") === 0) return;
+      const tm = /^(?:pie\b.*?\btitle\s+|title\s+)(.+)$/i.exec(t);
+      if (tm && (i === 0 || /^title\s/i.test(t))) { title = tm[1].trim(); return; }
+      const m = /^"([^"]*)"\s*:\s*([\d.]+)\s*$/.exec(t);
+      if (m && parseFloat(m[2]) > 0) rows.push({ label: m[1], v: parseFloat(m[2]) });
+    });
+    if (!rows.length) throw new Error("a pie chart needs lines like \"Label\" : 10");
+    const total = rows.reduce(function (a, r) { return a + r.v; }, 0), R = 110, cx = 130, cy = (title ? 40 : 14) + R;
+    let a0 = -Math.PI / 2, body = "";
+    rows.forEach(function (r, i) {
+      const a1 = a0 + r.v / total * Math.PI * 2, col = MermaidView.SLICES[i % MermaidView.SLICES.length];
+      if (rows.length === 1) body += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="' + col + '"/>';
+      else {
+        const big = a1 - a0 > Math.PI ? 1 : 0, p0 = [cx + R * Math.cos(a0), cy + R * Math.sin(a0)], p1 = [cx + R * Math.cos(a1), cy + R * Math.sin(a1)];
+        body += '<path d="M' + cx + " " + cy + "L" + p0[0].toFixed(1) + " " + p0[1].toFixed(1) + "A" + R + " " + R + " 0 " + big + " 1 " + p1[0].toFixed(1) + " " + p1[1].toFixed(1) + 'Z" fill="' + col + '" stroke="' + ink.box + '" stroke-width="1.5"/>';
+      }
+      const am = (a0 + a1) / 2, pct = Math.round(r.v / total * 100);
+      if (pct >= 6) body += '<text x="' + (cx + R * 0.62 * Math.cos(am)).toFixed(1) + '" y="' + (cy + R * 0.62 * Math.sin(am) + 4).toFixed(1) + '" text-anchor="middle" font-size="12" fill="#fff" ' + MermaidView.FONT + ">" + pct + "%</text>";
+      body += '<rect x="270" y="' + (cy - rows.length * 11 + i * 22) + '" width="12" height="12" rx="2" fill="' + col + '"/>' +
+        '<text x="290" y="' + (cy - rows.length * 11 + i * 22 + 11) + '" font-size="13" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(r.label) + " (" + r.v + ")</text>";
+      a0 = a1;
+    });
+    const w = 290 + Math.max.apply(null, rows.map(function (r) { return (r.label.length + String(r.v).length + 3) * 7.5; })) + 16, h = cy + R + 16;
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + Math.round(w) + '" height="' + Math.max(h, 40 + rows.length * 22) + '">' +
+      (title ? '<text x="' + cx + '" y="22" text-anchor="middle" font-size="15" font-weight="600" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(title) + "</text>" : "") + body + "</svg>";
+  },
+
+  /* sequenceDiagram: participant / actor (as alias), A->>B: text (->, -->, ->>, -->>, -x, --x, -), notes, autonumber.
+     loop / alt / opt / par blocks draw as a labelled band. */
+  sequence(src) {
+    const ink = MermaidView.ink(), X = MermaidView.x, people = [], byId = {}, steps = [];
+    let auto = false;
+    const who = function (id, label) {
+      id = id.trim();
+      if (!byId[id]) { byId[id] = { id: id, label: label || id, i: people.length }; people.push(byId[id]); }
+      else if (label) byId[id].label = label;
+      return byId[id];
+    };
+    src.split("\n").slice(1).forEach(function (l) {
+      const t = l.trim();
+      let m;
+      if (!t || t.indexOf("%%") === 0) return;
+      if (/^autonumber\b/i.test(t)) { auto = true; return; }
+      if ((m = /^(participant|actor)\s+(.+?)(?:\s+as\s+(.+))?$/i.exec(t))) { who(m[2], m[3] ? m[3].trim() : null); return; }
+      if ((m = /^note\s+(left of|right of|over)\s+([^:]+):\s*(.*)$/i.exec(t))) {
+        const ids = m[2].split(",").map(function (s) { return who(s); });
+        steps.push({ note: m[3], where: m[1].toLowerCase(), a: ids[0], b: ids[ids.length - 1] }); return;
+      }
+      if ((m = /^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/i.exec(t))) { steps.push({ open: m[1].toLowerCase() + (m[2] ? " " + m[2] : "") }); return; }
+      if ((m = /^(else|and)\b\s*(.*)$/i.exec(t))) { steps.push({ mid: m[1].toLowerCase() + (m[2] ? " " + m[2] : "") }); return; }
+      if (/^end$/i.test(t)) { steps.push({ close: true }); return; }
+      if ((m = /^([^-:]+?)\s*(-->>|->>|-->|->|--x|-x|--\)|-\))\s*([+-]?)([^:]+?)\s*:\s*(.*)$/.exec(t))) {
+        steps.push({ a: who(m[1]), b: who(m[4]), dashed: m[2].indexOf("--") === 0, head: /x$/.test(m[2]) ? "x" : />>$/.test(m[2]) || /\)$/.test(m[2]) ? "arrow" : "open", text: m[5] });
+      }
+    });
+    if (!people.length) throw new Error("a sequence diagram needs messages like Alice->>Bob: Hi");
+    const GAP = 170, BOX_W = 130, BOX_H = 34, top = 10, colX = function (p) { return 20 + BOX_W / 2 + p.i * GAP; };
+    let y = top + BOX_H + 30, body = "", n = 0;
+    const open = [];
+    steps.forEach(function (s) {
+      if (s.open) { open.push({ label: s.open, y: y, mids: [] }); y += 26; return; }
+      if (s.mid) { if (open.length) open[open.length - 1].mids.push({ label: s.mid, y: y }); y += 26; return; }
+      if (s.close) {
+        const b = open.pop(); if (!b) return;
+        const x1 = 8, x2 = 32 + BOX_W + (people.length - 1) * GAP;
+        body += '<rect x="' + x1 + '" y="' + (b.y - 14) + '" width="' + (x2 - x1) + '" height="' + (y - b.y + 6) + '" fill="none" stroke="' + ink.line + '" stroke-dasharray="4 3" rx="4"/>' +
+          '<text x="' + (x1 + 6) + '" y="' + (b.y + 2) + '" font-size="11" font-weight="600" fill="' + ink.dim + '" ' + MermaidView.FONT + ">" + X(b.label) + "</text>";
+        b.mids.forEach(function (m) { body += '<line x1="' + x1 + '" x2="' + x2 + '" y1="' + (m.y - 14) + '" y2="' + (m.y - 14) + '" stroke="' + ink.line + '" stroke-dasharray="4 3"/><text x="' + (x1 + 6) + '" y="' + (m.y + 2) + '" font-size="11" fill="' + ink.dim + '" ' + MermaidView.FONT + ">" + X(m.label) + "</text>"; });
+        y += 14; return;
+      }
+      if (s.note) {
+        const xa = colX(s.a), xb = colX(s.b), w = Math.max(110, s.note.length * 7 + 16);
+        const x = s.where === "left of" ? xa - w - 10 : s.where === "right of" ? xa + 10 : Math.min(xa, xb) - (s.a === s.b ? w / 2 : 20);
+        const ww = s.where === "over" && s.a !== s.b ? Math.abs(xb - xa) + 40 : w;
+        body += '<rect x="' + x + '" y="' + (y - 14) + '" width="' + ww + '" height="26" rx="3" fill="' + (isLight() ? "#fff8c5" : "#3f3a1c") + '" stroke="' + ink.line + '"/>' +
+          '<text x="' + (x + ww / 2) + '" y="' + (y + 3) + '" text-anchor="middle" font-size="12" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(s.note) + "</text>";
+        y += 38; return;
+      }
+      n++;
+      const xa = colX(s.a), xb = colX(s.b), label = (auto ? n + ". " : "") + s.text, dash = s.dashed ? ' stroke-dasharray="6 4"' : "";
+      if (s.a === s.b) {
+        body += '<path d="M' + xa + " " + y + "h40v22h-40" + '" fill="none" stroke="' + ink.txt + '" stroke-width="1.4"' + dash + "/>" +
+          MermaidView.head(xa, y + 22, -1, s.head, ink.txt) +
+          '<text x="' + (xa + 46) + '" y="' + (y + 14) + '" font-size="12" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(label) + "</text>";
+        y += 44; return;
+      }
+      const dir = xb > xa ? 1 : -1;
+      body += '<line x1="' + xa + '" y1="' + y + '" x2="' + (xb - dir * 2) + '" y2="' + y + '" stroke="' + ink.txt + '" stroke-width="1.4"' + dash + "/>" +
+        MermaidView.head(xb, y, dir, s.head, ink.txt) +
+        '<text x="' + ((xa + xb) / 2) + '" y="' + (y - 7) + '" text-anchor="middle" font-size="12" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(label) + "</text>";
+      y += 40;
+    });
+    const bottom = y + 4, W = 40 + BOX_W + (people.length - 1) * GAP;
+    let heads = "";
+    people.forEach(function (p) {
+      const x = colX(p);
+      heads += '<line x1="' + x + '" y1="' + (top + BOX_H) + '" x2="' + x + '" y2="' + bottom + '" stroke="' + ink.line + '" stroke-dasharray="3 3"/>';
+      [top, bottom].forEach(function (yy) {
+        heads += '<rect x="' + (x - BOX_W / 2) + '" y="' + yy + '" width="' + BOX_W + '" height="' + BOX_H + '" rx="5" fill="' + ink.box + '" stroke="' + ink.line + '"/>' +
+          '<text x="' + x + '" y="' + (yy + 21) + '" text-anchor="middle" font-size="13" fill="' + ink.txt + '" ' + MermaidView.FONT + ">" + X(p.label.length > 18 ? p.label.slice(0, 17) + "…" : p.label) + "</text>";
+      });
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + (bottom + BOX_H + 10) + '">' + heads + body + "</svg>";
+  },
+  head(x, y, dir, kind, col) {
+    if (kind === "x") return '<path d="M' + (x - dir * 10 - 4) + " " + (y - 5) + "l8 10m0 -10l-8 10" + '" stroke="' + col + '" stroke-width="1.6"/>';
+    if (kind === "open") return "";
+    return '<path d="M' + x + " " + y + "l" + (-dir * 9) + " -4.5v9z" + '" fill="' + col + '"/>';
+  },
+
+  /* the card under the code (04-find.js lineHtml, on the closing ``` line) */
+  html(src, openIdx) {
+    const pic = MermaidView.picture(src);
+    if (pic.error) return '<span data-deco="1" class="mmd mmd-err">' + esc(pic.error) + "</span>";
+    const sketchable = !/^\s*(pie|sequencediagram)\b/i.test(src);   /* those two have no sketch form */
+    return '<span data-deco="1" class="mmd" data-mm-view="' + openIdx + '" title="Click to open it full window">' +
+      '<img class="mmd-img" src="' + pic.url + '" alt="Mermaid diagram" draggable="false">' +
+      '<span class="skp-bar"><span class="skp-btn" data-mm-view="' + openIdx + '">Expand</span>' +
+      (sketchable ? '<span class="skp-btn" data-mermaid="' + openIdx + '" title="Add an editable sketch of this diagram below it">Edit as sketch</span>' : "") + "</span></span>";
+  },
+
+  /* full window: drag pans, the wheel zooms round the pointer, Fit, Esc or the backdrop closes */
+  expand(src) {
+    const pic = MermaidView.picture(src);
+    if (!pic.url) return;
+    const box = document.createElement("div");
+    box.className = "mmd-full"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "Diagram"); box.tabIndex = -1;
+    box.innerHTML = '<div class="mmd-tools"><button type="button" data-a="fit">Fit</button><button type="button" data-a="in" aria-label="Zoom in">+</button><button type="button" data-a="out" aria-label="Zoom out">−</button><button type="button" data-a="x" aria-label="Close">' + ico("x") + "</button></div>" +
+      '<div class="mmd-stage"><img alt="Mermaid diagram" draggable="false"></div>';
+    document.body.appendChild(box);
+    const img = box.querySelector("img"), stage = box.querySelector(".mmd-stage"), v = { x: 0, y: 0, k: 1 };
+    const paint = function () { img.style.transform = "translate(" + v.x + "px," + v.y + "px) scale(" + v.k + ")"; };
+    const fit = function () {
+      const W = stage.clientWidth, H = stage.clientHeight, w = img.naturalWidth || 400, h = img.naturalHeight || 300;
+      v.k = Math.min(4, Math.max(0.1, Math.min((W - 40) / w, (H - 40) / h))); v.x = (W - w * v.k) / 2; v.y = (H - h * v.k) / 2; paint();
+    };
+    const zoom = function (f, cx, cy) { const k = Math.max(0.1, Math.min(8, v.k * f)); v.x = cx - (cx - v.x) * k / v.k; v.y = cy - (cy - v.y) * k / v.k; v.k = k; paint(); };
+    const close = function () { box.remove(); document.removeEventListener("keydown", key, true); };
+    const key = function (e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
+    img.onload = fit; img.src = pic.url;
+    document.addEventListener("keydown", key, true);
+    box.addEventListener("click", function (e) {
+      const a = e.target.closest("[data-a]");
+      if (a) { const r = stage.getBoundingClientRect(); ({ fit: fit, in: function () { zoom(1.25, r.width / 2, r.height / 2); }, out: function () { zoom(0.8, r.width / 2, r.height / 2); }, x: close })[a.dataset.a](); }
+    });
+    stage.addEventListener("wheel", function (e) { e.preventDefault(); const r = stage.getBoundingClientRect(); zoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+    stage.addEventListener("pointerdown", function (e) {
+      const sx = e.clientX - v.x, sy = e.clientY - v.y;
+      stage.setPointerCapture(e.pointerId);
+      const mv = function (ev) { v.x = ev.clientX - sx; v.y = ev.clientY - sy; paint(); };
+      const up = function () { stage.removeEventListener("pointermove", mv); stage.removeEventListener("pointerup", up); };
+      stage.addEventListener("pointermove", mv); stage.addEventListener("pointerup", up);
+    });
+    box.querySelector('[data-a="x"]').focus();
+  }
+};
+/* ============================================================
    session - what was open, restored after a refresh
    ============================================================ */
 
@@ -24739,12 +25244,12 @@ function saveSession() {
       backend: state.backend,
       folder: state.dirHandle ? state.dirHandle.name : null,
       panes: panes.map(function (p) {
-        return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, type: p.type,
+        return { tabs: p.tabs, noteId: p.noteId, mode: p.mode, width: p.width, height: p.height || 1, down: !!p.down, floating: p.floating || null, type: p.type,
           sketchOpen: p.parked ? p.parked.open : p.sketchOpen, sheetId: p.type === "sheet" ? p.sheetId : null, graph: !!p.graphTab,
           scroll: p.type === "note" ? (p.mode === "live" ? p.editorEl.scrollTop : p.srcEl.scrollTop) : 0 };
       }),
       focused: panes.indexOf(focusedPane),
-      view: currentView, sideClosed: sideEl.classList.contains("side-closed"), sideWidth: sideWidth,
+      view: currentView, sideClosed: sideEl.classList.contains("side-closed"), sideWidth: sideWidth, sideRight: SideDock.right,
       collapsed: collapsedFolders, sort: sortMode
     }));
   } catch (e) {}
@@ -24760,7 +25265,8 @@ function restoreSession() {
   if (state.backend === "folder" && ss.folder && state.dirHandle && ss.folder !== state.dirHandle.name) return false;
   const wanted = ss.panes.map(function (sp) {
     return { tabs: (sp.tabs || []).filter(function (t) { return findNote(t); }), noteId: sp.noteId,
-      mode: sp.mode || "live", width: sp.width || 1, scroll: sp.scroll || 0,
+      mode: sp.mode || "live", width: sp.width || 1, height: sp.height || 1, down: !!sp.down, scroll: sp.scroll || 0,
+      floating: sp.floating && typeof sp.floating.x === "number" ? { x: sp.floating.x, y: sp.floating.y, w: sp.floating.w || 480, h: sp.floating.h || 360 } : null,
       type: sp.type === "sketch" || sp.type === "sheet" || sp.type === "taskboard" || sp.type === "graph" ? sp.type : "note",
       sketchOpen: sp.sketchOpen, sheetId: sp.sheetId, graph: !!sp.graph };
   }).filter(function (sp) { return sp.tabs.length; }).slice(0, MAX_PANES);
@@ -24773,6 +25279,7 @@ function restoreSession() {
     p.tabs = sp.tabs.slice();
     p.mode = sp.mode;
     p.width = sp.width;
+    p.height = sp.height; p.down = sp.down; p.floating = sp.floating;
     p.open(findNote(sp.noteId) ? sp.noteId : sp.tabs[0]);
   });
   layoutPanes();
@@ -24780,6 +25287,7 @@ function restoreSession() {
   const fp = panes[Math.max(0, Math.min(panes.length - 1, ss.focused || 0))];
   fp.focusThis();
   if (ss.collapsed) collapsedFolders = ss.collapsed;
+  SideDock.set(!!ss.sideRight);
   if (ss.sideWidth) { sideWidth = ss.sideWidth; sideEl.style.setProperty("--side-w", sideWidth + "px"); }
   if (ss.sort) setSort(ss.sort);
   if (ss.view === "notes" || ss.view === "search") showView(ss.view);
@@ -24989,7 +25497,7 @@ document.getElementById("btnReconnect").addEventListener("click", function () {
     });
   }).catch(function (e) { console.error(e); });
 });
-document.getElementById("btnDual").addEventListener("click", toggleDual);
+document.getElementById("btnDual").addEventListener("click", function (e) { toggleDual(e.altKey); });
 document.getElementById("btnSketch").addEventListener("click", insertSketch);
 
 window.addEventListener("keydown", function (e) {
@@ -25511,6 +26019,584 @@ const Tips = {
 };
 Tips.init();
 /* ============================================================
+   Pop out: a note in its own window, as VS Code's "Move into new window". The window runs this same
+   app (index.html#popout=<id>) showing just that note. It never saves anything itself: its storage is
+   a read-only copy (html/02-body.html), and every edit goes back to this window, which saves it as
+   usual. Edits made here go to it, so both show the same text. Works in every browser that opens
+   pop-ups, and in the desktop app (desktop/main.js lets these windows open).
+   ============================================================ */
+const PopOut = {
+  sat: /^#popout=/.test(location.hash) && !!window.opener,   /* this window is a popped-out note */
+  satId: null,
+  wins: new Map(),                                  /* main window: note id -> its window */
+  applying: null,
+  timers: new Map(),
+
+  /* main window: pop the note out (the pane's current one, or `id`), moving it out of the pane */
+  open(p, id) {
+    if (id == null) id = p && p.type === "note" ? p.noteId : null;
+    const n = id != null ? findNote(id) : null;
+    if (!n) { pushToastLike("Open a note first."); return; }
+    const key = String(n.id), had = PopOut.wins.get(key);
+    if (had && !had.closed) { had.focus(); return; }
+    syncAllPanes();
+    const w = window.open(location.href.split("#")[0] + "#popout=" + encodeURIComponent(key), "cfpop" + key.replace(/\W/g, "_"), "popup,width=760,height=860");
+    if (!w) { pushToastLike("The browser blocked the new window. Allow pop-ups for this page, then try again."); return; }
+    PopOut.wins.set(key, w);
+    if (p && p.tabs.some(function (t) { return sameId(t, n.id); })) p.closeTab(n.id);
+  },
+  /* main window: a popped-out note is shown by focusing its window instead of opening it again */
+  reveal(id) {
+    const w = PopOut.wins.get(String(id));
+    if (!w || w.closed) { PopOut.wins.delete(String(id)); return false; }
+    w.focus();
+    return true;
+  },
+  winOf(source) {
+    let key = null;
+    PopOut.wins.forEach(function (w, k) { if (w === source) key = k; });
+    return key;
+  },
+  post(w, msg) { try { w.postMessage(msg, "*"); } catch (e) { /* closed */ } },
+
+  /* markDirty calls this: the edit goes to the other window, a moment later (typing stays smooth) */
+  changed(n) {
+    const key = String(n.id);
+    if (PopOut.applying === key) return;
+    const target = PopOut.sat ? (key === PopOut.satId ? window.opener : null) : PopOut.wins.get(key);
+    if (!target || target.closed) return;
+    clearTimeout(PopOut.timers.get(key));
+    PopOut.timers.set(key, setTimeout(function () { PopOut.flush(key); }, 150));
+  },
+  flush(key) {
+    clearTimeout(PopOut.timers.get(key)); PopOut.timers.delete(key);
+    syncAllPanes();
+    const n = findNote(key), target = PopOut.sat ? window.opener : PopOut.wins.get(key);
+    if (n && target && !target.closed) PopOut.post(target, { cf: PopOut.sat ? "pop-edit" : "pop-update", id: key, content: n.content });
+  },
+  /* text from the other window: taken, and panes showing it are redrawn unless you're typing in one */
+  take(key, content) {
+    const n = findNote(key);
+    if (!n || typeof content !== "string" || n.content === content) return;
+    syncAllPanes();
+    PopOut.applying = key;
+    n.content = content;
+    if (!PopOut.sat) markDirty(n);
+    PopOut.applying = null;
+    panes.forEach(function (q) {
+      if (q.type !== "note" || !sameId(q.noteId, n.id)) return;
+      if (q.activeLine !== null && document.hasFocus()) return;
+      q.deactivate(); q.reload(); q.render();
+    });
+  },
+
+  /* the popped-out window starts here instead of loading notes (45-boot.js) */
+  boot(first) {
+    PopOut.satId = decodeURIComponent(location.hash.slice("#popout=".length));
+    document.body.classList.add("cf-popout");
+    PopOut.post(window.opener, { cf: "pop-ready", id: PopOut.satId });
+    window.addEventListener("pagehide", function () {
+      if (PopOut.timers.has(PopOut.satId)) PopOut.flush(PopOut.satId);
+      PopOut.post(window.opener, { cf: "pop-closed", id: PopOut.satId });
+    });
+    PopOut.first = first;
+  },
+  start(d) {
+    if (!d.note) { document.title = "Note not found"; return; }
+    if (d.theme === "light") document.documentElement.setAttribute("data-theme", "light"); else document.documentElement.removeAttribute("data-theme");
+    /* other notes are known by name only, so [[links]] show as links; opening one asks the main window */
+    state.notes = (d.titles || []).filter(function (t) { return String(t.id) !== String(d.note.id); })
+      .map(function (t) { return { id: t.id, title: t.title, path: t.path || t.title, content: "" }; })
+      .concat([{ id: d.note.id, title: d.note.title, path: d.note.path || d.note.title, content: d.note.content }]);
+    document.title = d.note.title + " — CarbonFibre";
+    PopOut.first.tabs = [];
+    PopOut.first.open(d.note.id);
+    renderPanes();
+  },
+
+  init() {
+    window.addEventListener("message", function (e) {
+      const d = e.data;
+      if (!d || typeof d.cf !== "string" || d.cf.indexOf("pop-") !== 0) return;
+      if (PopOut.sat) {
+        if (e.source !== window.opener) return;                 /* only the window that opened this one */
+        if (d.cf === "pop-note") PopOut.start(d);
+        else if (d.cf === "pop-update" && String(d.id) === PopOut.satId) PopOut.take(PopOut.satId, d.content);
+        return;
+      }
+      const key = PopOut.winOf(e.source);
+      if (key === null || String(d.id) !== key) return;       /* only windows this one opened, about their own note */
+      const n = findNote(key);
+      if (d.cf === "pop-ready") {
+        syncAllPanes();
+        PopOut.post(e.source, { cf: "pop-note", theme: document.documentElement.getAttribute("data-theme") || "",
+          note: n ? { id: n.id, title: n.title, path: n.path, content: n.content } : null,
+          titles: state.notes.map(function (x) { return { id: x.id, title: x.title, path: x.path }; }) });
+      } else if (d.cf === "pop-edit") PopOut.take(key, d.content);
+      else if (d.cf === "pop-open" && findNote(d.to)) { window.focus(); openInPane(findNote(d.to).id); }
+      else if (d.cf === "pop-closed") setTimeout(function () { if (e.source.closed) PopOut.wins.delete(key); }, 500);   /* a reload says it too */
+    });
+  }
+};
+PopOut.init();
+/* ============================================================
+   Vim keys in the editor (Live mode). Off until "Toggle vim mode" in the command palette; the choice
+   is kept, and the mode shows in the status bar.
+   Normal: h j k l w b e 0 ^ $ gg G { } f F t T ; , with counts; x X D C s S Y r J ~ p P u Ctrl+R .
+   operators d c y > < with a motion, doubled (dd), or a text object (iw aw i" a" i' a' i( a( i[ a[
+   i{ a{ i< a<); i a I A o O; v and V with the same motions and d c y > < ~; / ? n N search; :w :q
+   :wq :<line> :s/a/b/g :%s/a/b/g. Not here: macros, marks, named registers; "." repeats the
+   command but not text typed after it in insert mode.
+   Edits go through the pane's own applyLines, so each is one undo step like any other edit.
+   ============================================================ */
+const Vim = {
+  KEY: "carbonfibre-vim",
+  on: false, mode: "normal", keys: "", reg: { text: "", lines: false }, last: null, rec: [],
+  find: null, search: null, vis: null, replaying: false,
+
+  toggle() {
+    Vim.on = !Vim.on;
+    storeSet(Vim.KEY, Vim.on ? "1" : "0");
+    Vim.mode = "normal"; Vim.keys = "";
+    Vim.show();
+    pushToastLike(Vim.on ? "Vim mode on. Esc for normal mode, i to type." : "Vim mode off.");
+  },
+  show() {
+    let el = document.getElementById("sbVim");
+    if (!el) {
+      el = document.createElement("span");
+      el.id = "sbVim"; el.className = "sb-item sb-vim";
+      const right = document.querySelector("#statusbar .sb-right");
+      if (right) right.insertBefore(el, right.firstChild);
+    }
+    el.hidden = !Vim.on;
+    el.textContent = Vim.on ? "-- " + { normal: "NORMAL", insert: "INSERT", visual: "VISUAL", vline: "VISUAL LINE" }[Vim.mode] + " --" + (Vim.keys ? "  " + Vim.keys : "") : "";
+    document.body.classList.toggle("vim-normal", Vim.on && Vim.mode !== "insert");
+  },
+
+  /* the editor's keydown hands every key here first; true: it was a vim key, nothing else runs */
+  key(p, ta, e) {
+    if (!Vim.on || e.isComposing || e.keyCode === 229 || p.mode !== "live") return false;
+    if (Vim.mode === "insert") {
+      if (e.key !== "Escape" && !(e.ctrlKey && e.key === "[")) return false;
+      e.preventDefault();
+      Vim.mode = "normal";
+      const c = Vim.pos(p);
+      Vim.go(p, c.l, c.c - 1);
+      Vim.show();
+      return true;
+    }
+    if (e.metaKey || (e.ctrlKey && e.key !== "r" && e.key !== "[") || e.altKey) return false;   /* the app's own shortcuts */
+    if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return true;
+    const k = e.ctrlKey ? "C-" + e.key : e.key === "Escape" ? "Esc" : e.key === "Enter" ? "Enter" : e.key === "Backspace" ? "BS" : e.key.length === 1 ? e.key : null;
+    e.preventDefault(); e.stopPropagation();
+    if (k) Vim.feed(p, k);
+    return true;
+  },
+
+  /* ---- positions ---- */
+  pos(p) {
+    if (Vim.vis) return { l: Vim.vis.f.l, c: Vim.vis.f.c };
+    return { l: p.activeLine, c: p.ta ? p.ta.selectionStart : 0 };
+  },
+  clampC(p, l, c, ins) { const n = p.lines[l].length; return Math.max(0, Math.min(c, ins ? n : Math.max(0, n - 1))); },
+  go(p, l, c, ins) {
+    l = Math.max(0, Math.min(p.lines.length - 1, l));
+    c = Vim.clampC(p, l, c, ins);
+    if (Vim.vis) { Vim.vis.f = { l: l, c: c }; Vim.paintVis(p); p.keepVisible(l); return; }
+    if (l !== p.activeLine) p.setActive(l, c); else if (p.ta) p.ta.setSelectionRange(c, c);
+    p.keepVisible(l);
+  },
+  at(p, l, c) { const s = p.lines[l]; return c < s.length ? s.charAt(c) : "\n"; },
+  cls(ch) { return /\s/.test(ch) ? 0 : /\w/.test(ch) ? 1 : 2; },
+  fwd(p, q) { if (q.c < p.lines[q.l].length) return { l: q.l, c: q.c + 1 }; return q.l < p.lines.length - 1 ? { l: q.l + 1, c: 0 } : null; },
+  back(p, q) { if (q.c > 0) return { l: q.l, c: q.c - 1 }; return q.l > 0 ? { l: q.l - 1, c: p.lines[q.l - 1].length } : null; },
+  firstNonBlank(p, l) { const m = /^\s*/.exec(p.lines[l]); return Math.min(m[0].length, Math.max(0, p.lines[l].length - 1)); },
+
+  /* ---- motions: where `count` of `m` goes from q; { l, c, lw: whole lines, inc: takes the last char } ---- */
+  motion(p, m, count, q, forOp) {
+    let r = { l: q.l, c: q.c }, nx;
+    const n = p.lines.length;
+    const rep = function (fn) { for (let i = 0; i < count; i++) { const t = fn(r); if (!t) break; r = t; } };
+    switch (m) {
+      case "h": case "BS": return { l: q.l, c: Math.max(0, q.c - count) };
+      case "l": case " ": return { l: q.l, c: Math.min(q.c + count, forOp ? p.lines[q.l].length : Math.max(0, p.lines[q.l].length - 1)) };
+      case "j": case "Enter": case "+": return { l: Math.min(n - 1, q.l + count), c: m === "j" ? Vim.goal(p, q) : Vim.firstNonBlank(p, Math.min(n - 1, q.l + count)), lw: true };
+      case "k": case "-": return { l: Math.max(0, q.l - count), c: m === "k" ? Vim.goal(p, q) : Vim.firstNonBlank(p, Math.max(0, q.l - count)), lw: true };
+      case "0": return { l: q.l, c: 0 };
+      case "^": return { l: q.l, c: Vim.firstNonBlank(p, q.l) };
+      case "$": { const L = Math.min(n - 1, q.l + count - 1); return { l: L, c: Math.max(0, p.lines[L].length - 1), inc: true, eol: true }; }
+      case "gg": return { l: Math.min(n - 1, (Vim.counted ? count : 1) - 1), c: 0, lw: true };
+      case "G": return { l: Vim.counted ? Math.min(n - 1, count - 1) : n - 1, c: 0, lw: true };
+      case "w":
+        rep(function (s) {
+          const k = Vim.cls(Vim.at(p, s.l, s.c)), startL = s.l;
+          let t = s;
+          if (k !== 0) while (t && t.l === startL && Vim.cls(Vim.at(p, t.l, t.c)) === k && Vim.at(p, t.l, t.c) !== "\n") t = Vim.fwd(p, t);
+          while (t && /\s/.test(Vim.at(p, t.l, t.c)) && !(t.l !== s.l && p.lines[t.l] === "")) {
+            if (forOp && count === 1 && t.l !== s.l) return { l: s.l, c: p.lines[s.l].length };   /* cw / dw stop at the line's end */
+            nx = Vim.fwd(p, t); if (!nx) return { l: t.l, c: p.lines[t.l].length };
+            t = nx;
+          }
+          return t;
+        });
+        return r;
+      case "e":
+        rep(function (s) {
+          let t = Vim.fwd(p, s);
+          while (t && /\s/.test(Vim.at(p, t.l, t.c))) t = Vim.fwd(p, t);
+          if (!t) return null;
+          const k = Vim.cls(Vim.at(p, t.l, t.c));
+          while ((nx = Vim.fwd(p, t)) && nx.l === t.l && Vim.cls(Vim.at(p, nx.l, nx.c)) === k && Vim.at(p, nx.l, nx.c) !== "\n") t = nx;
+          return t;
+        });
+        r.inc = true;
+        return r;
+      case "b":
+        rep(function (s) {
+          let t = Vim.back(p, s);
+          while (t && /\s/.test(Vim.at(p, t.l, t.c)) && !(p.lines[t.l] === "" && t.l !== s.l)) t = Vim.back(p, t);
+          if (!t) return { l: 0, c: 0 };
+          const k = Vim.cls(Vim.at(p, t.l, t.c));
+          while ((nx = Vim.back(p, t)) && nx.l === t.l && Vim.cls(Vim.at(p, nx.l, nx.c)) === k) t = nx;
+          return t;
+        });
+        return r;
+      case "}": case "{": {
+        let L = q.l;
+        for (let i = 0; i < count; i++) {
+          const d = m === "}" ? 1 : -1;
+          L += d;
+          while (L > 0 && L < n - 1 && p.lines[L].trim() !== "") L += d;
+          L = Math.max(0, Math.min(n - 1, L));
+        }
+        return { l: L, c: 0 };
+      }
+      default: return null;
+    }
+  },
+  goal(p, q) { if (Vim.goalCol == null) Vim.goalCol = q.c; return Vim.goalCol; },
+  findChar(p, how, ch, count, q) {
+    const s = p.lines[q.l];
+    let c = q.c;
+    for (let i = 0; i < count; i++) {
+      const f = how === "f" || how === "t" ? s.indexOf(ch, c + 1 + (how === "t" && i === 0 ? 1 : 0)) : s.lastIndexOf(ch, c - 1 - (how === "T" && i === 0 ? 1 : 0));
+      if (f < 0) return null;
+      c = f;
+    }
+    if (how === "t") c--; else if (how === "T") c++;
+    return { l: q.l, c: c, inc: how === "f" || how === "t" };
+  },
+  /* iw aw i" a( ...: the range on this line, or null */
+  object(p, kind, ch, q) {
+    const s = p.lines[q.l], c = q.c;
+    if (ch === "w" || ch === "W") {
+      if (!s.length) return null;
+      const k = Vim.cls(s.charAt(c) || " ");
+      let a = c, b = c;
+      while (a > 0 && Vim.cls(s.charAt(a - 1)) === k) a--;
+      while (b < s.length - 1 && Vim.cls(s.charAt(b + 1)) === k) b++;
+      if (kind === "a") { let b2 = b; while (b2 < s.length - 1 && /\s/.test(s.charAt(b2 + 1))) b2++; if (b2 > b) b = b2; else while (a > 0 && /\s/.test(s.charAt(a - 1))) a--; }
+      return { a: { l: q.l, c: a }, b: { l: q.l, c: b + 1 } };
+    }
+    const pairs = { "(": "()", ")": "()", b: "()", "[": "[]", "]": "[]", "{": "{}", "}": "{}", B: "{}", "<": "<>", ">": "<>", '"': '""', "'": "''", "`": "``" };
+    const pr = pairs[ch];
+    if (!pr) return null;
+    let open = -1, close = -1;
+    if (pr[0] === pr[1]) {
+      const marks = [];
+      for (let i = 0; i < s.length; i++) if (s.charAt(i) === pr[0] && s.charAt(i - 1) !== "\\") marks.push(i);
+      for (let i = 0; i + 1 < marks.length; i += 2) if (c >= marks[i] && c <= marks[i + 1]) { open = marks[i]; close = marks[i + 1]; }
+      if (open < 0) { const nx = marks.filter(function (m) { return m > c; }); if (nx.length >= 2) { open = nx[0]; close = nx[1]; } }
+    } else {
+      let d = 0;
+      for (let i = c; i >= 0; i--) { const x = s.charAt(i); if (x === pr[1] && i !== c) d++; else if (x === pr[0]) { if (!d) { open = i; break; } d--; } }
+      d = 0;
+      if (open >= 0) for (let i = open + 1; i < s.length; i++) { const x = s.charAt(i); if (x === pr[0]) d++; else if (x === pr[1]) { if (!d) { close = i; break; } d--; } }
+    }
+    if (open < 0 || close < 0) return null;
+    return kind === "i" ? { a: { l: q.l, c: open + 1 }, b: { l: q.l, c: close } } : { a: { l: q.l, c: open }, b: { l: q.l, c: close + 1 } };
+  },
+
+  /* ---- edits ---- */
+  textOf(p, a, b) {   /* chars from a up to (not including) b */
+    if (a.l === b.l) return p.lines[a.l].slice(a.c, b.c);
+    return [p.lines[a.l].slice(a.c)].concat(p.lines.slice(a.l + 1, b.l), [p.lines[b.l].slice(0, b.c)]).join("\n");
+  },
+  /* op over chars a..b (b not included) or whole lines a.l..b.l */
+  apply(p, op, a, b, lw) {
+    if (lw) {
+      const from = Math.min(a.l, b.l), to = Math.max(a.l, b.l), block = p.lines.slice(from, to + 1);
+      if (op === "y") { Vim.reg = { text: block.join("\n"), lines: true }; Vim.go(p, from, Vim.pos(p).c); return; }
+      if (op === "d") { Vim.reg = { text: block.join("\n"), lines: true }; p.applyLines(from, to, [], { line: from, col: 0 }); Vim.go(p, Math.min(from, p.lines.length - 1), Vim.firstNonBlank(p, Math.min(from, p.lines.length - 1))); return; }
+      if (op === "c") { Vim.reg = { text: block.join("\n"), lines: true }; const ind = /^\s*/.exec(block[0])[0]; p.applyLines(from, to, [ind], { line: from, col: ind.length }); Vim.insert(p, from, ind.length); return; }
+      if (op === ">" || op === "<") {
+        const out = block.map(function (s) { return op === ">" ? (s ? "  " + s : s) : s.replace(/^( {1,2}|\t)/, ""); });
+        p.applyLines(from, to, out, { line: from, col: 0 }); Vim.go(p, from, Vim.firstNonBlank(p, from)); return;
+      }
+      if (op === "~" || op === "u" || op === "U") { const out = block.map(function (s) { return Vim.recase(op, s); }); p.applyLines(from, to, out, { line: from, col: 0 }); return; }
+      return;
+    }
+    if (b.l < a.l || (b.l === a.l && b.c < a.c)) { const t = a; a = b; b = t; }
+    const text = Vim.textOf(p, a, b);
+    if (op === "y") { Vim.reg = { text: text, lines: false }; Vim.go(p, a.l, a.c); return; }
+    if (op === "~" || op === "u" || op === "U") {
+      const fresh = (p.lines[a.l].slice(0, a.c) + Vim.recase(op, text) + p.lines[b.l].slice(b.c)).split("\n");
+      p.applyLines(a.l, b.l, fresh, { line: a.l, col: a.c }); Vim.go(p, a.l, a.c); return;
+    }
+    if (op === ">" || op === "<") { Vim.apply(p, op, a, b, true); return; }
+    Vim.reg = { text: text, lines: false };
+    p.applyLines(a.l, b.l, [p.lines[a.l].slice(0, a.c) + p.lines[b.l].slice(b.c)], { line: a.l, col: a.c });
+    if (op === "c") Vim.insert(p, a.l, a.c); else Vim.go(p, a.l, a.c);
+  },
+  recase(op, s) { return op === "u" ? s.toLowerCase() : op === "U" ? s.toUpperCase() : s.replace(/./g, function (ch) { const u = ch.toUpperCase(); return ch === u ? ch.toLowerCase() : u; }); },
+  insert(p, l, c) {
+    Vim.mode = "insert";
+    Vim.vis = null;
+    p.clearSelectAll();
+    if (l !== p.activeLine) p.setActive(l, c); else if (p.ta) p.ta.setSelectionRange(c, c);
+    Vim.show();
+  },
+  put(p, before, count) {
+    const r = Vim.reg, q = Vim.pos(p);
+    if (!r.text && !r.lines) return;
+    if (r.lines) {
+      const block = []; for (let i = 0; i < count; i++) Array.prototype.push.apply(block, r.text.split("\n"));
+      const at = before ? q.l : q.l + 1;
+      p.applyLines(at, at - 1, block, { line: at, col: 0 });
+      Vim.go(p, at, Vim.firstNonBlank(p, at));
+      return;
+    }
+    const s = p.lines[q.l], c = before || !s.length ? q.c : q.c + 1;
+    const ins = new Array(count + 1).join(r.text), fresh = (s.slice(0, c) + ins + s.slice(c)).split("\n");
+    p.applyLines(q.l, q.l, fresh, { line: q.l, col: c });
+    const endL = q.l + fresh.length - 1;
+    Vim.go(p, endL, fresh.length > 1 ? fresh[fresh.length - 1].length - s.slice(c).length - 1 : c + ins.length - 1);
+  },
+
+  /* ---- visual ---- */
+  paintVis(p) {
+    const v = Vim.vis;
+    if (Vim.mode === "vline") { p.setRange(v.a.l, v.f.l); return; }
+    const fwd = v.f.l > v.a.l || (v.f.l === v.a.l && v.f.c >= v.a.c);
+    p.setPartial(v.a.l, fwd ? v.a.c : v.a.c + 1, v.f.l, fwd ? v.f.c + 1 : v.f.c);
+  },
+  visRange() {
+    const v = Vim.vis, fwd = v.f.l > v.a.l || (v.f.l === v.a.l && v.f.c >= v.a.c);
+    const a = fwd ? v.a : v.f, b = fwd ? v.f : v.a;
+    return { a: a, b: { l: b.l, c: b.c + 1 } };
+  },
+  endVis(p, keepAt) {
+    const f = keepAt || (Vim.vis && Vim.vis.f);
+    Vim.vis = null; Vim.mode = "normal";
+    p.clearSelectAll();
+    if (f) Vim.go(p, f.l, f.c);
+  },
+
+  /* ---- the command language ---- */
+  feed(p, k) {
+    if (!p.note() || p.activeLine === null || p.activeLine === undefined) return;
+    if (!Vim.replaying) Vim.rec.push(k);
+    Vim.keys += k.length > 1 ? "<" + k + ">" : k;
+    const done = Vim.run(p, Vim.keys);
+    if (done) {
+      if (done === "change" && !Vim.replaying) Vim.last = Vim.rec.slice();
+      Vim.keys = ""; Vim.rec = [];
+      if (done !== "motion-keepgoal") Vim.goalCol = Vim.goalKeep ? Vim.goalCol : null;
+      Vim.goalKeep = false;
+    }
+    Vim.show();
+  },
+  /* the keys so far: false while more are needed, else what kind of command it was */
+  run(p, keys) {
+    if (keys === "<Esc>") { if (Vim.vis) Vim.endVis(p); return "motion"; }
+    const m = /^(\d*)(.*)$/.exec(keys), countStr = m[1] === "0" ? "" : m[1], rest = m[1] === "0" ? "0" + m[2] : m[2];
+    if (!rest) return false;
+    const count = Math.max(1, parseInt(countStr || "1", 10));
+    Vim.counted = !!countStr;
+    const q = Vim.pos(p), visual = !!Vim.vis;
+    const motionOf = function (s, forOp) {
+      if (/^[fFtT]$/.test(s)) return false;
+      const fm = /^([fFtT])(.)$/.exec(s);
+      if (fm) { Vim.find = { how: fm[1], ch: fm[2] }; return Vim.findChar(p, fm[1], fm[2], count, q) || "none"; }
+      if (s === ";" || s === ",") {
+        if (!Vim.find) return "none";
+        const flip = { f: "F", F: "f", t: "T", T: "t" }, how = s === ";" ? Vim.find.how : flip[Vim.find.how];
+        return Vim.findChar(p, how, Vim.find.ch, count, q) || "none";
+      }
+      if (s === "g") return false;
+      const r = Vim.motion(p, s, count, q, forOp);
+      return r || null;
+    };
+
+    if (visual) {
+      const mv = motionOf(rest, false);
+      if (mv === false) return false;
+      if (mv && mv !== "none") { if (mv.lw && (rest === "j" || rest === "k")) Vim.goalKeep = true; Vim.go(p, mv.l, mv.c); return "motion"; }
+      if (mv === "none") return "motion";
+      const ops = { d: "d", x: "d", c: "c", s: "c", y: "y", ">": ">", "<": "<", "~": "~", u: "u", U: "U" };
+      if (ops[rest]) {
+        const op = ops[rest], lw = Vim.mode === "vline", r = Vim.visRange(), at = r.a;
+        Vim.vis = null; Vim.mode = "normal"; p.clearSelectAll();
+        if (op === "y" && !lw) { Vim.reg = { text: Vim.textOf(p, r.a, r.b), lines: false }; Vim.go(p, at.l, at.c); return "motion"; }
+        Vim.apply(p, op, r.a, r.b, lw);
+        return op === "y" ? "motion" : "change";
+      }
+      if (rest === "v" || rest === "V") {
+        if ((rest === "v") === (Vim.mode === "visual")) Vim.endVis(p);
+        else { Vim.mode = rest === "v" ? "visual" : "vline"; p.clearSelectAll(); Vim.paintVis(p); }
+        return "motion";
+      }
+      if (rest === "o") { const t = Vim.vis.a; Vim.vis.a = Vim.vis.f; Vim.vis.f = t; Vim.paintVis(p); return "motion"; }
+      if (rest === "i" || rest === "a") return false;
+      const ob = /^([ia])(.)$/.exec(rest);
+      if (ob) { const r = Vim.object(p, ob[1], ob[2], q); if (r) { Vim.vis.a = r.a; Vim.vis.f = { l: r.b.l, c: r.b.c - 1 }; Vim.paintVis(p); } return "motion"; }
+      return "motion";
+    }
+
+    /* operators: d c y > < ~(g~) with a motion, a text object, or doubled */
+    const om = /^(d|c|y|>|<|g~|gu|gU)(.*)$/.exec(rest);
+    if (om) {
+      const op = om[1] === "g~" ? "~" : om[1] === "gu" ? "u" : om[1] === "gU" ? "U" : om[1], tail = om[2];
+      if (!tail) return false;
+      const tm = /^(\d*)(.*)$/.exec(tail), mult = Math.max(1, parseInt(tm[1] || "1", 10)), mrest = tm[2];
+      if (!mrest) return false;
+      const total = count * mult;
+      if (mult > 1) Vim.counted = true;
+      if (mrest === om[1].slice(-1) || (om[1].length === 2 && mrest === om[1])) {     /* dd cc yy >> << g~~ */
+        Vim.apply(p, op, q, { l: Math.min(p.lines.length - 1, q.l + total - 1), c: 0 }, true);
+        return op === "y" ? "motion" : "change";
+      }
+      if (mrest === "i" || mrest === "a") return false;
+      const ob = /^([ia])(.)$/.exec(mrest);
+      if (ob) { const r = Vim.object(p, ob[1], ob[2], q); if (r) Vim.apply(p, op, r.a, r.b, false); return op === "y" ? "motion" : "change"; }
+      const mv = motionOf(op === "c" && mrest === "w" ? "e" : mrest, true);   /* cw changes to the word's end, as in vim */
+      if (mv === false) return false;
+      if (!mv || mv === "none") return "motion";
+      if (mv.lw) Vim.apply(p, op, q, mv, true);
+      else Vim.apply(p, op, q, mv.inc ? { l: mv.l, c: mv.c + 1 } : mv, false);
+      return op === "y" ? "motion" : "change";
+    }
+
+    switch (rest) {
+      case "i": Vim.insert(p, q.l, q.c); return "change";
+      case "a": Vim.insert(p, q.l, Math.min(q.c + 1, p.lines[q.l].length)); return "change";
+      case "I": Vim.insert(p, q.l, /^\s*/.exec(p.lines[q.l])[0].length); return "change";
+      case "A": Vim.insert(p, q.l, p.lines[q.l].length); return "change";
+      case "o": case "O": {
+        const ind = /^\s*/.exec(p.lines[q.l])[0], at = rest === "o" ? q.l + 1 : q.l;
+        p.applyLines(at, at - 1, [ind], { line: at, col: ind.length });
+        Vim.insert(p, at, ind.length);
+        return "change";
+      }
+      case "x": if (p.lines[q.l].length) Vim.apply(p, "d", q, { l: q.l, c: Math.min(p.lines[q.l].length, q.c + count) }, false); return "change";
+      case "X": if (q.c) Vim.apply(p, "d", { l: q.l, c: Math.max(0, q.c - count) }, q, false); return "change";
+      case "D": Vim.apply(p, "d", q, { l: q.l, c: p.lines[q.l].length }, false); return "change";
+      case "C": Vim.apply(p, "c", q, { l: q.l, c: p.lines[q.l].length }, false); return "change";
+      case "s": Vim.apply(p, "c", q, { l: q.l, c: Math.min(p.lines[q.l].length, q.c + count) }, false); return "change";
+      case "S": Vim.apply(p, "c", q, { l: Math.min(p.lines.length - 1, q.l + count - 1), c: 0 }, true); return "change";
+      case "Y": Vim.apply(p, "y", q, { l: Math.min(p.lines.length - 1, q.l + count - 1), c: 0 }, true); return "motion";
+      case "p": Vim.put(p, false, count); return "change";
+      case "P": Vim.put(p, true, count); return "change";
+      case "J": {
+        if (q.l >= p.lines.length - 1) return "motion";
+        const to = Math.min(p.lines.length - 1, q.l + Math.max(1, count - 1));
+        let s = p.lines[q.l], col = s.length;
+        for (let i = q.l + 1; i <= to; i++) { const t = p.lines[i].replace(/^\s+/, ""); col = s.length; s = s.replace(/\s+$/, "") + (t ? " " + t : ""); }
+        p.applyLines(q.l, to, [s], { line: q.l, col: col });
+        return "change";
+      }
+      case "~": {
+        const s = p.lines[q.l], e = Math.min(s.length, q.c + count);
+        if (!s.length) return "motion";
+        p.applyLines(q.l, q.l, [s.slice(0, q.c) + Vim.recase("~", s.slice(q.c, e)) + s.slice(e)], { line: q.l, col: Math.min(e, s.length - 1) });
+        return "change";
+      }
+      case "u": for (let i = 0; i < count; i++) histUndo(p); return "motion";
+      case "<C-r>": for (let i = 0; i < count; i++) histRedo(p); return "motion";
+      case ".": {
+        if (!Vim.last) return "motion";
+        const seq = Vim.last.slice();
+        Vim.keys = ""; Vim.replaying = true;
+        try { seq.forEach(function (key) { Vim.feed(p, key); }); } finally { Vim.replaying = false; }
+        if (Vim.mode === "insert") { Vim.mode = "normal"; Vim.show(); }
+        return "motion";
+      }
+      case "v": case "V":
+        Vim.mode = rest === "v" ? "visual" : "vline";
+        Vim.vis = { a: { l: q.l, c: q.c }, f: { l: q.l, c: q.c } };
+        Vim.paintVis(p);
+        return "motion";
+      case "n": case "N": Vim.next(p, rest === "N"); return "motion";
+      case "/": case "?":
+        Dialogs.prompt(rest === "/" ? "Search forward:" : "Search backward:", Vim.search ? Vim.search.q : "").then(function (s) {
+          if (!s) return;
+          Vim.search = { q: s, back: rest === "?" };
+          Vim.next(p, false);
+        });
+        return "motion";
+      case ":": Dialogs.prompt(":", "").then(function (c) { if (c) Vim.ex(p, c.trim()); }); return "motion";
+      case "r": return false;
+      case "Esc": return "motion";
+    }
+    if (/^r.$/.test(rest)) {
+      const s = p.lines[q.l], e = q.c + count;
+      if (e > s.length) return "motion";
+      p.applyLines(q.l, q.l, [s.slice(0, q.c) + new Array(count + 1).join(rest.charAt(1)) + s.slice(e)], { line: q.l, col: e - 1 });
+      return "change";
+    }
+    if (rest === "g") return false;
+    const mv = motionOf(rest, false);
+    if (mv === false) return false;
+    if (mv && mv !== "none") {
+      if (rest === "j" || rest === "k") Vim.goalKeep = true;
+      Vim.go(p, mv.l, mv.c);
+      return "motion";
+    }
+    return "motion";                      /* not a command: dropped, as vim does */
+  },
+  /* n / N: the next match of the last search, wrapping round */
+  next(p, reverse) {
+    if (!Vim.search) return;
+    const q = Vim.pos(p), back = Vim.search.back !== reverse, n = p.lines.length;
+    const ci = Vim.search.q === Vim.search.q.toLowerCase(), needle = ci ? Vim.search.q.toLowerCase() : Vim.search.q;
+    for (let i = 0; i <= n; i++) {
+      const L = back ? (q.l - i + n * 2) % n : (q.l + i) % n, hay = ci ? p.lines[L].toLowerCase() : p.lines[L];
+      let c;
+      if (back) c = hay.lastIndexOf(needle, i === 0 ? q.c - 1 : hay.length); else c = hay.indexOf(needle, i === 0 ? q.c + 1 : 0);
+      if (i === 0 && back && q.c === 0) c = -1;
+      if (c >= 0) { Vim.go(p, L, c); return; }
+    }
+    pushToastLike("Not found: " + Vim.search.q);
+  },
+  /* : commands */
+  ex(p, c) {
+    if (/^\d+$/.test(c)) { Vim.go(p, parseInt(c, 10) - 1, 0); return; }
+    if (c === "w" || c === "write") { flushPersist(); pushToastLike("Saved."); return; }
+    if (c === "q" || c === "q!" || c === "wq" || c === "x") { if (c !== "q!") flushPersist(); if (p.noteId != null) p.closeTab(p.noteId); return; }
+    if (c === "noh" || c === "nohlsearch") return;
+    const sm = /^(%?)s(.)(.*?)\2(.*?)(?:\2([gi]*))?$/.exec(c);
+    if (sm) {
+      const flags = sm[5] || "", from = sm[1] ? 0 : Vim.pos(p).l, to = sm[1] ? p.lines.length - 1 : from;
+      let re;
+      try { re = new RegExp(sm[3], (flags.indexOf("g") >= 0 ? "g" : "") + (flags.indexOf("i") >= 0 ? "i" : "")); } catch (e) { pushToastLike("Not a valid pattern: " + sm[3]); return; }
+      let hits = 0;
+      const out = p.lines.slice(from, to + 1).map(function (s) { return s.replace(re, function () { hits++; return sm[4].replace(/\\\//g, "/"); }); });
+      if (!hits) { pushToastLike("Not found: " + sm[3]); return; }
+      p.applyLines(from, to, out, { line: Vim.pos(p).l, col: 0 });
+      pushToastLike(hits + (hits === 1 ? " replacement" : " replacements"));
+      return;
+    }
+    pushToastLike("Not a command here: :" + c);
+  },
+
+  init() {
+    try { Vim.on = localStorage.getItem(Vim.KEY) === "1"; } catch (e) { Vim.on = false; }
+    Vim.show();
+  }
+};
+Vim.init();
+/* ============================================================
    boot
    ============================================================ */
 
@@ -25521,6 +26607,7 @@ Tips.init();
   layoutPanes();
   focusedPane = first;
   first.root.classList.add("focused");
+  if (PopOut.sat) { PopOut.boot(first); return; }        /* a popped-out note: its text comes from the main window */
   updateStorageUI();
   NarrowLayout.settle();                               /* before anything loads, so a phone never flashes the panel */
   PluginManager.init();                                /* the Plugins button; plugins themselves run only in the desktop app */

@@ -84,7 +84,7 @@ with sync_playwright() as p:
     for name, src in (("mindmap", MIND), ("er", ER), ("class", CLS)):
         pg.evaluate("s => { localStorage.clear(); localStorage.setItem('carbonfibre-v1', s); }", json.dumps({"notes": [{"id": 1, "title": name, "content": "# " + name + "\n\n```mermaid\n" + src + "\n```\n"}], "seq": 2}))
         pg.reload(); pg.wait_for_timeout(400)
-        pg.get_by_text("convert to sketch", exact=False).first.click(); pg.wait_for_timeout(500)
+        pg.get_by_text("Edit as sketch", exact=True).first.click(); pg.wait_for_timeout(500)
         r = E("""() => { const sk0 = panes[0].lines.join('\\n').match(/```excalidraw\\n([\\s\\S]*?)\\n```/); if (!sk0) return null;
             const els = JSON.parse(sk0[1]).elements.filter(e => !e.isDeleted), st = els.filter(e => e.type === 'stencil');
             let ov = 0; st.forEach((a, i) => st.forEach((c, j) => { if (j > i && a.x < c.x + c.width && c.x < a.x + a.width && a.y < c.y + c.height && c.y < a.y + a.height) ov++; }));

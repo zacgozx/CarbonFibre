@@ -97,6 +97,38 @@ disabled with the reason. Switch any time from the bottom-left of the window.
 
 Turn suggestions off with `COMPLETE_ON` in `carbonfibre-src/src/js/07-editing-aids.js`.
 
+## Layout
+
+| To | Do this |
+|---|---|
+| Split a pane | **Split** (or the split button in a pane's bar) adds one to the right; **Alt+click** adds one below. Up to 6 panes; when there's no room for another column it goes below |
+| Split by dragging | Drag a tab onto a pane and hold it near an edge for a moment: the highlighted half is where it goes. Drop in the middle (or quickly) to move the tab as before |
+| More | Right-click the empty part of a pane's tab bar: Split right, Split down, Float, Pop out |
+| Float a pane | The float button in its bar lifts it over the others. Drag it by its bar, size it from its corner, double-click the bar to dock it again |
+| Pop a note out | Tab right-click **Move into a new window**, or **Pop out** in the bar menu: the note opens in its own window (as in VS Code) and leaves the pane. Edits in either window show in both; only the main window saves. Opening that note again goes to its window. Needs pop-ups allowed for the page |
+| Move the sidebar | Drag its title past the middle of the window to dock it on the right (the icon bar goes too) |
+| Start over | **Reset the layout** in the command palette |
+
+The whole layout comes back after a reload.
+
+## Vim keys
+
+Off by default: **Toggle vim mode** in the command palette (the choice is kept). The mode shows in the status bar.
+Live mode only. Movement (`h j k l w b e 0 ^ $ gg G { } f t ; ,`), counts, `d c y > <` with a motion, doubled or
+a text object (`iw aw i" a" i( a( i[ i{ i<`), `x X D C s S Y r J ~ p P`, `u` and **Ctrl+R**, `.`, `i a I A o O`,
+`v` and `V`, `/ ? n N`, and `:w :q :wq :<line> :s/a/b/g :%s/a/b/g`. Not there: macros, marks and named registers;
+`.` repeats a command but not text typed after it. **Ctrl** and **Cmd** shortcuts still go to the app.
+
+## Diagrams
+
+A ```` ```mermaid ```` block is drawn under its code: flowcharts, state, class, ER, mind maps, pie charts and
+sequence diagrams. Click one (or **Expand**) to open it full window: drag to pan, scroll to zoom, **Fit**, Esc to
+close. **Edit as sketch** adds an editable sketch of it (not for pie or sequence). Gantt, timeline and git graphs
+say they can't be drawn yet.
+
+The graph opens as the **Network**: every note and link, names wherever they fit, hover to light up a note's
+links, drag notes about, and **Find a note** in its bar. The desktop app can still show it as a solar system.
+
 ## Good to know
 
 - **The address is public.** On Free, Pro and Team plans a Pages site can be opened by anyone who has the
