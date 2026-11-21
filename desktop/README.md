@@ -158,7 +158,7 @@ and their secrets are in the app's database (below). Plugin views open in a pane
   removed from there. The website and the app can open the same folder. Settings (theme, pins, layout)
   are still remembered by the app itself.
 - **The app's own data is one SQLite file**, `carbonfibre.db` in the app's data folder (`db.js`). Everything
-  the website keeps in browser storage (settings, the task board, the timer, sessions, completion picks)
+  the website keeps in browser storage (settings, the Notes panel, the timer, sessions, completion picks)
   goes there instead, with no 5 MB browser limit; so do the plugin and theme settings that used to be JSON
   files. What the browser storage or those files held is copied in once on first start and the originals are
   left alone. Notes are never in it: they stay `.md` files in your folder. SQLite is Electron's own

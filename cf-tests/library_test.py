@@ -28,7 +28,7 @@ with sync_playwright() as p:
     E = lambda js, *a: pg.evaluate(js, *a)
     E(VAULT); pg.wait_for_timeout(200)
     E("() => document.querySelector('.pane-col').dispatchEvent(new KeyboardEvent('keydown', { key: '\u02dc', code: 'KeyN', altKey: true, bubbles: true, cancelable: true }))"); pg.wait_for_timeout(300)
-    check("Alt+N / Option+N opens All notes", E("() => tb.view === 'notes' && tb.notesMode === 'all' && !!document.querySelector('.tb.show .tbn-table')"))
+    check("Alt+N / Option+N opens All notes", E("() => tb.notesMode === 'all' && !!document.querySelector('.tb.show .tbn-table')"))
     check("...with the search box ready to type in", E("() => document.activeElement && document.activeElement.classList.contains('tbn-search')"))
     rows = lambda: E("() => [...document.querySelectorAll('.tb.show .tbn-table tbody tr[data-open]')].map(r => r.querySelector('.tbn-tt').childNodes[r.querySelector('.tbn-pin') ? 1 : 0].textContent.trim() + '|' + r.querySelector('.tbn-type').textContent)")
     types = dict(r.split("|") for r in rows())

@@ -9,7 +9,7 @@ const PluginManager = {
   checks: new Map(), queue: [], checking: 0, settingsOf: null, busy: new Set(),
 
   init() {
-    const bar = document.getElementById("activity"), before = document.getElementById("actBoard");
+    const bar = document.getElementById("activity"), before = document.getElementById("actGraph");
     if (!bar || document.getElementById("actPlugins")) return;
     const b = document.createElement("button");
     b.className = "act-btn";

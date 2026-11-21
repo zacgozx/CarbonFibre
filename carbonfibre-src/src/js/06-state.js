@@ -633,7 +633,7 @@ function loadFolder() {
     restoreSession();
     if (state.sketchHandle) sketchScan();                /* a chosen sketch folder wins over the vault's sketch/ */
     PluginHost.notesReady();
-    return tbLoadVault().then(function () { tbLaunchPin(); });
+    tbLaunchPin();
   }).catch(function (e) {
     console.error(e);
     alert("Couldn't read that folder: " + e.message);

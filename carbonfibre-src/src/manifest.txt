@@ -8,8 +8,8 @@ css/04-panes.css
 css/05-lines.css
 css/06-sketch-library.css
 css/07-graph.css
-css/08-sketch-board.css
-css/09-board-lanes.css
+css/08-notes-panel.css
+css/09-notes-panel-head.css
 css/10-the-notes-view.css
 css/11-all-notes.css
 css/12-activity-bar-base.css
@@ -96,7 +96,7 @@ js/grid/07-clipboard.js
 js/grid/08-find.js
 js/grid/09-fill.js
 js/34-after-makegrid.js
-js/35-taskboard.js
+js/35-notes-panel.js
 js/36-all-notes.js
 js/37-timer-chime.js
 js/38-workbench.js

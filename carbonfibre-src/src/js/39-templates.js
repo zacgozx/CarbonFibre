@@ -92,16 +92,6 @@ function openDailyNote() {
   const c = tplCursor(tplFill(t.body, title));
   createNoteWithText(title, c.text, null, c.line, c.col);
 }
-/* open the palette to pick a note ("note") or an open task ("task"); fn gets the choice */
-let PAL_PLACEHOLDER = null;
-function palPick(kind, fn, hint) {
-  palOpen("");
-  pal.pick = { kind: kind, fn: fn };
-  const inp = document.getElementById("cmdIn");
-  if (PAL_PLACEHOLDER === null) PAL_PLACEHOLDER = inp.placeholder;
-  inp.placeholder = hint || (kind === "task" ? "Pick a task" : "Pick a note");
-  palRender();
-}
 /* colour from the palette: opening it took focus from the note, so the caret and selection it had
    (captured when the palette opened) go back first, then the colour is applied to them */
 function colourAfterPalette(q, colour) {
@@ -119,8 +109,6 @@ function palOpen(prefix, tplAction) {
   const fpS = focusedPane || panes[0];
   pal.textSel = fpS && fpS.allSelected && fpS.selEnds ? { pane: fpS, hl: fpS.selEnds() }
     : fpS && fpS.ta && fpS.activeLine !== null ? { pane: fpS, line: fpS.activeLine, start: fpS.ta.selectionStart, end: fpS.ta.selectionEnd } : null;
-  pal.pick = null;
-  if (PAL_PLACEHOLDER !== null) document.getElementById("cmdIn").placeholder = PAL_PLACEHOLDER;
   pal.tplAction = tplAction || null;
   pal.back = document.activeElement;
   const fp0 = focusedPane || panes[0];
@@ -147,10 +135,7 @@ function palClose(restore) {
 }
 function palRun(i, newPane) {
   const r = pal.rows[i]; if (!r) return;
-  const pick = pal.pick; pal.pick = null;
   palClose(false);
-  if (pick && r.kind === "note" && pick.kind === "note") { pick.fn(r.n); return; }
-  if (pick && r.kind === "tbtask") { pick.fn(r.t); return; }
   if (r.kind === "cmd") { r.c.run(); return; }
   if (r.kind === "tpl") { const act = pal.tplAction || "new", spot = pal.spot; pal.tplAction = null; if (act === "insert") insertTemplate(r.t, spot); else newFromTemplate(r.t); return; }
   if (r.kind === "head") {

@@ -19,6 +19,6 @@
 :where(button, [role="button"]):is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
 
 /* cards you can click: a slight lift */
-:where(.tbn-card, .tb-card, .tbd-kpi, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
-:where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
-@media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }
+:where(.tbn-card, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
+:where(.tbn-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
+@media (prefers-reduced-motion: reduce) { :where(.tbn-card):hover { translate: none; } }

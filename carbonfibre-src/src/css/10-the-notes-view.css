@@ -12,10 +12,6 @@
 .tbn-card-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; }
 .tbn-when { margin-left: auto; font-size: 11.5px; color: var(--tb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tbn-dir { color: var(--tb-mute); }
-.tbn-ticket { display: inline-flex; align-items: center; gap: 5px; font: 600 11px var(--mono); color: var(--tb-blu); white-space: nowrap; }
-.tbn-ticket i { width: 6px; height: 6px; border-radius: 50%; background: var(--tb-blu); }
-.tbn-ticket--run { color: var(--tb-acc-text); } .tbn-ticket--run i { background: var(--tb-acc-text); box-shadow: 0 0 0 3px rgba(var(--tb-acc-rgb), .2); }
-.tbn-ticket--held { color: var(--tb-ora); } .tbn-ticket--held i { background: var(--tb-ora); }
 .tbn-todo { font-size: 11px; font-weight: 600; color: var(--tb-mute); background: var(--tb-raised); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
 .tb .tbn-unpin, .tb .tbn-pinme { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--tb-ora); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; opacity: 0; }
 .tbn-unpin .ico, .tbn-pinme .ico, .tbn-unpinf .ico { width: 14px; height: 14px; }

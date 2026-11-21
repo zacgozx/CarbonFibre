@@ -61,9 +61,8 @@ disabled with the reason. Switch any time from the bottom-left of the window.
 - **Only its own code runs.** The policy allows the page's two script blocks by their SHA-256 hash
   (`build.py` fills these in). An injected `<script>`, an `onerror=` handler or a `javascript:` link is
   refused by the browser even if a bug let one into the page. `cf-tests/csp_test.py` checks both halves.
-- **Text stays text.** Everything a note, folder, sheet or task board can contain is escaped for both element
-  text and attributes, so a title like `Plan" onmouseover=...` can't add markup. A task board read from a
-  vault (`.carbonfibre/taskboard.json`, which anyone sharing the folder can edit) is cleaned field by field.
+- **Text stays text.** Everything a note, folder or sheet can contain is escaped for both element text and
+  attributes, so a title like `Plan" onmouseover=...` can't add markup.
   `cf-tests/security_test.py` plants hostile text everywhere and checks nothing becomes markup.
 - **Links open web pages and email only.** `http:`, `https:` and `mailto:` become links; `javascript:`,
   `data:`, `file:`, `smb:` and app handlers (such as `ms-msdt:`) are shown as text, so clicking a link in a

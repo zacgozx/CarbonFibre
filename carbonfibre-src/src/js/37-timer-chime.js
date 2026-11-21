@@ -23,7 +23,6 @@ function timerNotify(title, body) {
 
 /* ---- start, pause, extend, finish ---- */
 function timerStart(task, minutes, noteId) {
-  if (timer && timer.boardUid) { tbPending[timer.boardUid] = "open"; timerFinish(true); }   /* a board task in progress is logged, not lost */
   timer = { task: task || "Focus", noteId: noteId == null ? null : noteId, planned: minutes * 60000,
             startedAt: Date.now(), pausedMs: 0, pausedAt: null, alerted: false };
   timePrefs.minutes = minutes; timePrefsSave();
@@ -49,7 +48,7 @@ function timerExtend(minutes) {
 /* Done logs the block; discard throws it away. Either way the timer stops. */
 function timerFinish(keep) {
   if (!timer) return;
-  const actual = timerElapsed(), boardUid = timer.boardUid;
+  const actual = timerElapsed();
   if (keep && actual >= 30000) {                     /* under half a minute is a mis-click, not a block */
     const entry = { task: timer.task, noteId: timer.noteId, start: timer.startedAt, end: Date.now(),
                   planned: timer.planned, actual: actual };
@@ -61,7 +60,6 @@ function timerFinish(keep) {
   timerSave(); timerHideAlert();
   if (timerTick) { clearInterval(timerTick); timerTick = null; }
   timerRender();
-  if (boardUid) tbTimerEnded(boardUid, actual, keep);     /* the task board gets the time */
 }
 
 /* one line at the end of the task's note: when, how long, and how that compared to the plan */
@@ -104,7 +102,6 @@ function timerRun() {
 
 const BASE_TITLE = document.title;
 function timerRender() {
-  if (typeof tbTickAll === "function") tbTickAll();
   const pill = document.getElementById("btnTimer"), bar = document.getElementById("timerBar");
   if (!pill) return;
   const label = pill.querySelector(".tm-label");

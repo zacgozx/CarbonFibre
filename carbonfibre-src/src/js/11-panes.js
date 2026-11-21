@@ -254,7 +254,7 @@ function renderTabTree() {
   panes.forEach(function (p, pi) {
     const name = panes.length === 1 ? "Pane" : panes.length === 2 ? (pi === 0 ? "Left pane" : "Right pane") : "Pane " + (pi + 1);
     const focused = p === focusedPane;
-    const extra = p.type === "taskboard" ? "Task board" : p.type === "sheet" ? "Sheet" : "";
+    const extra = p.type === "taskboard" ? "Notes" : p.type === "sheet" ? "Sheet" : "";
     /* tabs grouped by folder, folders in name order, tabs in tab order */
     const groups = {}, order = [];
     p.tabs.forEach(function (id) {

@@ -115,8 +115,8 @@
     if (p.tbRoot) p.tbRoot.classList.toggle("show", p.type === "taskboard");
     if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" || p.type === "graph" ? "none" : "";   /* the note's breadcrumbs don't belong there */
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
-    const ab = document.getElementById("actBoard");
-    if (ab) ab.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
+    const al = document.getElementById("actLibrary");
+    if (al) al.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
   };
 
   p.renderNote = function () {

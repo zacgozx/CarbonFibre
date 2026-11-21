@@ -10,7 +10,7 @@ function followLink(url) {
 
 /* ---- showing things: reveal what's open, open what isn't ----
    One rule for everything you click (a note in the sidebar or search, a link, the graph, the palette,
-   a sheet, the task board): if it's already on screen in some pane, that pane takes the focus and its
+   a sheet, the Notes panel): if it's already on screen in some pane, that pane takes the focus and its
    tab flashes; if it's a tab in some pane, that pane switches to it; only otherwise does it open, in
    the pane asked for. So nothing opens twice and nothing you clicked closes. Two panes on the same
    note happen only when you ask (Split, Ctrl+\). opts.here: open in that pane regardless. */

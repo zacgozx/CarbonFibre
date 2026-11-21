@@ -5,7 +5,7 @@
 | Part | Protection |
 |---|---|
 | Website | No server and no network: a Content-Security-Policy blocks every request (`connect-src 'none'`), external scripts, frames and form posts. Only the page's own two scripts run, allowed by their SHA-256. |
-| Notes, folders, sheets, task boards | Escaped wherever they are shown, in text and in attributes. A vault's `.carbonfibre/taskboard.json` is cleaned field by field when it is read. |
+| Notes, folders, sheets | Escaped wherever they are shown, in text and in attributes. |
 | Links | Only `http:`, `https:` and `mailto:` open. Other schemes are shown as text. |
 | Framing | The app hides itself inside another site's frame (no clickjacking). |
 | Desktop app | The page has no Node access (`contextIsolation`, `sandbox`) unless a plugin you allowed Node.js is on; only the main window's own page may call the main process. Plugins get the internet or Node.js only after you allow it in the app's own dialog; internet requests never reach link-local or reserved addresses. Updates are checked against each release's SHA-256. Electron fuses switch off run-as-Node, `NODE_OPTIONS` and `--inspect`. |

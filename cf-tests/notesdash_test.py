@@ -18,9 +18,8 @@ VAULT = """() => {
   ].concat(Array.from({ length: 10 }, (_, i) => mk('Incidents/2026/INC00490' + i + '.md', '# INC00490' + i + '\\nIncident note ' + i, 3 + i)));
   Object.keys(pinned).forEach(k => delete pinned[k]);
   pinned['Exchange troubleshooting log.md'] = 1; pinned['Shift handover.md'] = 1; pinned['folder:Runbooks'] = 1; pinned['folder:Incidents'] = 1; savePins();
-  tb.tasks = []; const t = tbAdd('INC0048812', 'Exchange node not reporting', 45); t.noteId = 'Exchange troubleshooting log.md'; tbStart(t);
   window.createNote = function (dir) { window.__made = dir; };
-  renderSidebar(); tb.view = 'notes'; tbShow(); tbRenderAll(); }"""
+  renderSidebar(); openLibrary('overview'); }"""
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1500, "height": 950}, color_scheme=os.environ.get("CF_SCHEME", "light"))
     pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
@@ -28,13 +27,14 @@ with sync_playwright() as p:
     pg.goto("file://" + CF); pg.evaluate("() => localStorage.clear()"); pg.reload(); pg.wait_for_timeout(400)
     E = lambda js, *a: pg.evaluate(js, *a)
     E(VAULT); pg.wait_for_timeout(300)
-    check("the switch reads Dashboard, Notes, Board", E("() => [...document.querySelectorAll('.tb.show .tb-view')].map(v => v.textContent)") == ["Dashboard", "Notes", "Board"])
-    check("the tab is titled Notes while that view shows", E("() => document.querySelector('.tab-board .tab-lbl').textContent.trim()") == "Notes")
+    check("no task board left: no Board or Dashboard switch, no + Task", E("() => !document.querySelector('.tb.show .tb-view, .tb.show [data-qa=task], .tb.show .tb-board, .tb.show .tb-dash')"))
+    check("the panel and its tab are titled Notes", E("() => document.querySelector('.tab-board .tab-lbl').textContent.trim()") == "Notes" and E("() => document.querySelector('.tb.show h2').textContent") == "Notes")
+    check("the Incident, Change and Daily note buttons and the pin are kept", E("() => ['inc', 'chg', 'daily'].every(k => !!document.querySelector('.tb.show [data-qa=' + k + ']')) && !!document.querySelector('.tb.show .tb-pin')"))
     cards = E("() => [...document.querySelectorAll('.tb.show .tbn-card h4')].map(h => h.textContent)")
     check("pinned notes as cards, most recently edited first", cards == ["Exchange troubleshooting log", "Shift handover"], str(cards))
-    c0 = E("() => { const c = document.querySelector('.tb.show .tbn-card'); return { pv: c.querySelector('.tbn-pv').textContent, todo: (c.querySelector('.tbn-todo') || {}).textContent, ticket: (c.querySelector('.tbn-ticket') || {}).textContent, when: c.querySelector('.tbn-when').textContent }; }")
+    c0 = E("() => { const c = document.querySelector('.tb.show .tbn-card'); return { pv: c.querySelector('.tbn-pv').textContent, todo: (c.querySelector('.tbn-todo') || {}).textContent, when: c.querySelector('.tbn-when').textContent }; }")
     check("a card shows a preview without markdown", c0["pv"] == "Forwarders queued for 40 minutes after HEC restart.", c0["pv"])
-    check("...its open checkboxes and its ticket", c0["todo"] == "2 open tasks" and c0["ticket"] == "INC0048812", str(c0))
+    check("...its open checkboxes (and no ticket badge)", c0["todo"] == "2 open tasks" and E("() => !document.querySelector('.tbn-ticket')"), str(c0))
     check("...and when it was edited", c0["when"] == "1h ago", c0["when"])
     check("a heading-only note previews its first real line", E("() => document.querySelectorAll('.tb.show .tbn-card .tbn-pv')[1].textContent") == "INC0048812 still open")
     fs = E("() => [...document.querySelectorAll('.tb.show .tbn-folder')].map(f => f.querySelector('.tbn-fname').textContent + ':' + f.querySelector('.tbd-count').textContent + ':' + f.querySelectorAll('.tbn-row').length)")
@@ -58,7 +58,7 @@ with sync_playwright() as p:
     pg.locator(".tb.show .tbn-card").first.click(); pg.wait_for_timeout(300)
     check("clicking a card opens the note", E("() => panes.some(q => q.type === 'note' && q.note() && q.note().title === 'Exchange troubleshooting log')"))
     pg.keyboard.press("Control+p"); pg.keyboard.type(">notes dashboard"); pg.wait_for_timeout(100); pg.keyboard.press("Enter"); pg.wait_for_timeout(300)
-    check("Ctrl+P 'Open notes dashboard' goes straight there", E("() => tb.view === 'notes' && !document.querySelector('.tb.show .tb-notes').hidden"))
+    check("Ctrl+P 'Open notes dashboard' goes straight there", E("() => tb.notesMode === 'overview' && !!document.querySelector('.tb.show .tbn-pinned')"))
     E("() => { state.backend = 'browser'; Object.keys(pinned).filter(k => k.startsWith('folder:')).forEach(k => delete pinned[k]); tbRenderAll(); }")
     check("in browser storage, the folders panel says folders come with a vault", "vault folder" in E("() => document.querySelector('.tb.show .tbn-nofolders').textContent"))
     print("  errors:", errs or "none"); ok &= not errs

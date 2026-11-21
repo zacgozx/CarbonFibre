@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-ZnSHgTTd1S93bjvbG4tH+kKwWwu7gYruDlISCABMKM8='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-4l7kdD3rfIZ2jJj/h5sJgjPFVG6iX1dUrju3JwD3XzM='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -937,9 +937,8 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 #graphRecentre { margin-left: 10px; flex: none; }
 /* a narrow pane: the help line goes, the bar stays on one line */
 @container (max-width: 620px) { .graph-hint { display: none; } #graphRecentre { margin-left: auto; } }
-/* ---------- sketch board ---------- */
-/* ---- task board: CarbonFibre palette. Accent = the task you are on and your day's numbers,
-   blue = navigation and selection, red = urgency, green = done, grey = inactive. ---- */
+/* ---- the Notes panel (js/35-notes-panel.js): CarbonFibre palette. Accent = titles and pinned,
+   blue = navigation and selection, grey = inactive. ---- */
 .tb {
   --tb-carbon: #1a1a1f; --tb-panel: #202027; --tb-raised: #26262e; --tb-line: #32323b; --tb-hover: #4a4a55;
   --tb-ink: #e4e4e8; --tb-mute: #9a9ca2; --tb-acc-text: #d48795; --tb-acc-rgb: 155, 61, 75;
@@ -961,138 +960,17 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tb.show { display: flex; }
 .tb button, .tb input { font: inherit; color: inherit; }
 .tb :focus-visible { outline: 2px solid var(--tb-blu); outline-offset: 2px; }
-.tb .id { font: 12.5px/1.2 var(--mono); color: var(--tb-mute); }
 /* header */
 .tb-top { border-bottom: 1px solid var(--tb-line); background: var(--tb-panel); display: flex; flex-direction: column;}
 .tb-titlerow { display: flex; gap: 12px;}
 .tb-titlerow h2 { margin: 0; font: 600 19px/1.2 var(--sans); color: var(--tb-acc-text); }
 .tb-date { color: var(--tb-mute); font-size: 13px; }
-.tb-summary { color: var(--tb-mute); font-size: 13px;}
-.tb-summary b { color: var(--tb-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-.tb-ghost { background: none; border: 1px solid var(--tb-line); border-radius: 6px; color: var(--tb-mute); padding: 4px 12px; min-height: 28px; cursor: pointer; font-size: 13px; }
-.tb-ghost:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
 .tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); border-color: rgba(var(--tb-acc-rgb), .55); }
-/* what you are working on now */
-.tb-now { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 1px solid var(--tb-run-line); background: linear-gradient(180deg, var(--tb-run-tint), transparent);}
-.tb-now::after { content: ""; position: absolute; inset: -1px; border-radius: 10px; pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(var(--tb-acc-rgb), .25), 0 0 22px rgba(var(--tb-acc-rgb), .14) inset; animation: tb-breathe 4.5s ease-in-out infinite; }
-@keyframes tb-breathe { 0%, 100% { opacity: .45 } 50% { opacity: 1 } }
-.tb-now.idle { border-color: var(--tb-line); background: transparent;}
-.tb-now.idle::after { animation: none; opacity: 0; }
-.tb-lbl { font-size: 12.5px; font-weight: 600; color: var(--tb-acc-text); }
-.tb-now.idle .tb-lbl { color: var(--tb-mute); }
-.tb-runname { margin: 2px 0; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
-.tb-now.idle .tb-runname { color: var(--tb-mute);}
-.tb-meta { font-size: 13px; color: var(--tb-mute); }
-.tb-now-clock { text-align: right; min-width: 170px; }
-.tb-now.idle .tb-now-clock { display: none; }
-.tb-clock { display: block; font: 600 30px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
-.tb-clock.over { color: var(--tb-flare); }
-.tb-est { font-size: 12.5px; color: var(--tb-mute); }
-.tb-bar { height: 4px; border-radius: 2px; background: var(--tb-line); margin-top: 6px; position: relative; overflow: hidden; }
-.tb-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: linear-gradient(90deg, var(--tb-acc-text), var(--tb-blu)); }
-.tb-bar.over i { background: var(--tb-flare); }
-.tb-ctl { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.tb-now.idle .tb-ctl { display: none; }
-.tb-btn { background: var(--tb-raised); border: 1px solid var(--tb-line); border-radius: 6px; padding: 5px 14px; min-height: 30px; cursor: pointer; font-size: 13px; }
-.tb-btn:hover:not(:disabled) { border-color: var(--tb-blu); color: var(--tb-blu); }
-.tb-btn:disabled { opacity: .45; cursor: default; }
-/* ".tb button" would otherwise win and make the text inherit the board's ink */
-.tb .tb-btn--primary { background: var(--tb-ok); border-color: var(--tb-ok); color: var(--tb-primary-ink); font-weight: 600; }
-:root[data-theme="light"] .tb .tb-btn--primary { color: #fff; }
-.tb .tb-btn--primary:hover:not(:disabled) { filter: brightness(1.08); color: var(--tb-primary-ink); border-color: var(--tb-ok); }
-:root[data-theme="light"] .tb .tb-btn--primary:hover:not(:disabled) { color: #fff; }
-.tb-undo { display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-radius: 8px; background: var(--tb-raised); border: 1px solid var(--tb-line); font-size: 13px; }
-.tb-undo[hidden] { display: none; }
-.tb-undo-msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tb-filters { display: flex;}
-.tb-chip { background: none; border: 1px solid var(--tb-line); border-radius: 999px; color: var(--tb-mute); cursor: pointer;}
-.tb-chip:hover { color: var(--tb-ink); }
-.tb-chip[aria-pressed="true"] { color: var(--tb-ink); border-color: var(--tb-blu); background: rgba(var(--tb-blu-rgb), .14); }
-/* lanes: the 1px gap over a line-coloured background draws the dividers */
-.tb-board { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(230px, 1fr)); overflow: hidden;}
-/* each lane has its own colour: header tint, top edge, dot, count and a faint wash down the lane,
-   so To do, Working on, Waiting and Done tell themselves apart at a glance */
-.tb-lane { --lane: var(--tb-blu); --lane-ink: var(--tb-ink); --lane-tint: rgba(var(--tb-blu-rgb), .14); --lane-wash: rgba(var(--tb-blu-rgb), .05);
-  display: flex; flex-direction: column; min-width: 0; min-height: 0; transition: background-color .12s;}
-.tb-lane--open { --lane: #8ea7b8; --lane-ink: #b9cad6; --lane-tint: rgba(142, 167, 184, .16); --lane-wash: rgba(142, 167, 184, .05); }
-.tb-lane--run  { --lane: #bf6a78; --lane-ink: #e3a2ad; --lane-tint: rgba(191, 106, 120, .2);  --lane-wash: rgba(191, 106, 120, .07); }
-.tb-lane--held { --lane: #d4917c; --lane-ink: #e6b3a3; --lane-tint: rgba(212, 145, 124, .17); --lane-wash: rgba(212, 145, 124, .05); }
-.tb-lane--done { --lane: #5cb87a; --lane-ink: #9cd6ae; --lane-tint: rgba(92, 184, 122, .15);  --lane-wash: rgba(92, 184, 122, .05); }
-:root[data-theme="light"] .tb-lane--open { --lane: #5ba3c9; --lane-ink: #1f6f94; --lane-tint: #e3f1f9; --lane-wash: rgba(91, 163, 201, .07); }
-:root[data-theme="light"] .tb-lane--run  { --lane: #1a6585; --lane-ink: #134e68; --lane-tint: #cfe6f2; --lane-wash: rgba(26, 101, 133, .07); }
-:root[data-theme="light"] .tb-lane--held { --lane: #d9822b; --lane-ink: #8a4c0c; --lane-tint: #fdf0df; --lane-wash: rgba(217, 130, 43, .06); }
-:root[data-theme="light"] .tb-lane--done { --lane: #3f9a5f; --lane-ink: #22643a; --lane-tint: #e2f3e8; --lane-wash: rgba(63, 154, 95, .06); }
-.tb-lane__head { display: flex; align-items: center;}
-.tb-lane__head h4 { margin: 0;}
-.tb-count { margin-left: auto; border-radius: 999px; text-align: center; font-variant-numeric: tabular-nums;}
-.tb-count:empty { display: none; }
-.tb-lane__head .dot { border-radius: 50%; background: var(--lane);}
-.tb-lane .tb-empty { border-color: var(--lane); border-color: color-mix(in srgb, var(--lane) 45%, transparent);}
-.tb-quick-in { width: 100%; box-sizing: border-box; border: 1px dashed var(--tb-hover); outline: none;}
-.tb-quick-in:focus { border-style: solid; border-color: var(--tb-blu); }
-.tb-quick-in::placeholder { color: var(--tb-mute); }
-.tb-cards { display: flex; flex-direction: column; overflow: auto; flex: 1; min-height: 0;}
-/* cards */
-.tb-card { grid-template-columns: 4px 1fr; flex: none; overflow: hidden; outline: none;}
-.tb-card:focus-visible { outline: 2px solid var(--tb-blu); outline-offset: 1px; }
-.tb-card.dragging { opacity: .45; }
-.tb-card.link-on { border-color: var(--tb-blu); box-shadow: 0 0 0 2px rgba(var(--tb-blu-rgb), .35); }
-.tb-card[draggable="true"] { cursor: grab; }
-.tb-cardbody { display: flex; flex-direction: column; min-width: 0;}
-.tb-cardtop { display: flex; min-width: 0;}
-.tb-card a.id { text-decoration: none; }
-.tb-card a.id:hover { color: var(--tb-blu); text-decoration: underline; }
-.tb-cardtop .kind { color: var(--tb-mute); white-space: nowrap;}
-.tb-cardtop .t { margin-left: auto; color: var(--tb-mute); white-space: nowrap; font-variant-numeric: tabular-nums;}
-.tb-cardtop .t.over { color: var(--tb-flare); font-weight: 600; }
-.tb-card .name { overflow-wrap: anywhere;}
-.tb-cardbar { border-radius: 2px; background: var(--tb-line); position: relative; overflow: hidden;}
-.tb-cardbar i { position: absolute; inset: 0 auto 0 0; background: var(--tb-acc-text); border-radius: 2px; }
-.tb-cardbar.over i { background: var(--tb-flare); }
-.tb-cardfoot { display: flex; align-items: center; gap: 4px 8px; min-width: 0; flex-wrap: wrap; }
-.tb-notelink { background: none; border: 0; padding: 2px 0; color: var(--tb-mute); cursor: pointer; text-align: left;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 80px; flex: 1 1 80px;}
-.tb-notelink:hover { color: var(--tb-blu); text-decoration: underline; }
-.tb-acts { display: flex;}
-.tb-act { background: none; border: 1px solid var(--tb-line); min-width: 26px; color: var(--tb-mute); cursor: pointer;}
-.tb-act.tb-more { font-weight: 700; letter-spacing: .05em;}
-.tb-card--held { opacity: .92; }
-.tb-edit { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.tb-edit-name { flex: 1 1 160px; min-width: 0; padding: 5px 8px; border: 1px solid var(--tb-blu); border-radius: 6px; background: var(--tb-carbon); outline: none; font-size: 14px; }
-.tb-edit-est { width: 64px; padding: 5px 6px; border: 1px solid var(--tb-line); border-radius: 6px; background: var(--tb-carbon); outline: none; order: 3; }
-.tb-edit-unit { order: 4; color: var(--tb-mute); font-size: 12.5px; }
-.tb-edit .tb-btn { order: 5; padding: 3px 10px;}
-.tb-empty { border: 1px dashed var(--tb-line); border-radius: 8px; color: var(--tb-mute); line-height: 1.45;}
-/* the card menu */
-.tb-menu { position: absolute; z-index: 30; min-width: 180px; padding: 5px; border-radius: 8px; background: var(--tb-panel); border: 1px solid var(--tb-line);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .3); display: flex; flex-direction: column; }
-.tb-menu[hidden] { display: none; }
-.tb-menu-item { background: none; border: 0; border-radius: 5px; padding: 6px 10px; min-height: 30px; text-align: left; font-size: 13.5px; cursor: pointer; }
-.tb-menu-item:hover, .tb-menu-item:focus-visible { background: rgba(var(--tb-blu-rgb), .14); outline: none; }
-.tb-menu-danger { color: var(--tb-flare); }
-/* sized to the pane, not the window */
-@container (max-width: 1100px) { .tb-board { grid-template-columns: repeat(2, 1fr); overflow: auto; } }
-@container (max-width: 760px) { .tb-board { grid-template-columns: 1fr; } .tb-now { grid-template-columns: 1fr; } .tb-now-clock { text-align: left; } .tb-summary { margin-left: 0; width: 100%; } }
-@media (prefers-reduced-motion: reduce) { .tb-now::after { animation: none; opacity: .6; } .tb-lane { transition: none; } }
-/* ---- the board's dashboard: compact figure cards and dense panels. Light: white cards with a
-   soft shadow; dark: near-black cards with thin borders and a soft glow on the key numbers ---- */
+/* ---- panels: light, white cards with a soft shadow; dark, near-black cards with thin borders ---- */
 .tb { --tbd-card: #17171c; --tbd-cardline: #2a2a33; --tbd-shadow: none; }
 :root[data-theme="light"] .tb { --tbd-card: #ffffff; --tbd-cardline: #dbe8f0; --tbd-shadow: 0 1px 2px rgba(15, 43, 61, .05), 0 4px 14px rgba(15, 43, 61, .06); }
-.tb-views { display: inline-flex; padding: 2px; border-radius: 7px; background: var(--tb-raised); border: 1px solid var(--tb-line); }
-.tb-view { border: 0; background: none; color: var(--tb-mute); font: 600 12.5px var(--sans); padding: 3px 12px; min-height: 26px; border-radius: 5px; cursor: pointer; }
-.tb-view:hover { color: var(--tb-ink); }
-.tb-view.on { background: var(--tbd-card); color: var(--tb-acc-text); box-shadow: 0 1px 3px rgba(0, 0, 0, .22); }
 .tb-qa { border: 1px solid var(--tb-line); background: var(--tbd-card); color: var(--tb-ink); font: 600 12.5px var(--sans); padding: 3px 11px; min-height: 28px; border-radius: 7px; cursor: pointer; }
 .tb-qa:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
-.tb-qa[data-qa="task"] { background: var(--tb-acc-text); border-color: var(--tb-acc-text); color: var(--tb-carbon); }
-:root[data-theme="light"] .tb-qa[data-qa="task"] { color: #fff; }
-.tb-qa[data-qa="task"]:hover { filter: brightness(1.08); color: var(--tb-carbon); }
-:root[data-theme="light"] .tb-qa[data-qa="task"]:hover { color: #fff; }
-.tb-summary { margin-left: 0; }
-.tb-on-dash .tb-summary { display: none; }
-.tb-summary { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-:root:not([data-theme="light"]) .tb-cardtop .t.over { color: #f2877c; }
 .tb-titlerow { align-items: center;}
 .tb-titlerow h2, .tb-date { flex: none; }
 .tb-date { white-space: nowrap; }
@@ -1103,183 +981,33 @@ mark.fnd-cur { background: var(--acc); color: #fff; box-shadow: 0 0 0 2px var(--
 .tb-pin:hover { color: var(--tb-ink); border-color: var(--tb-line); }
 .tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); }
 .tb-pin[aria-pressed="true"] .ico path { fill: currentColor; fill-opacity: .25; }
-/* header: tighter, and the idle "working on" box is one slim line */
+/* header: tighter */
 .tb-top { padding: 12px 20px 10px; gap: 10px; }
-.tb-titlerow h2 { font-size: 18px; }
-.tb-now { padding: 10px 14px; border-radius: 9px; gap: 4px 18px; }
-.tb-now .tb-runname { font-size: 15px; margin: 0; }
-.tb-now .tb-clock { font-size: 24px; }
-.tb-now .tb-ctl { margin-top: 2px; gap: 6px; }
-.tb-now .tb-btn { min-height: 26px; padding: 3px 11px; font-size: 12.5px; }
-.tb-now.idle { display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-style: dashed; }
-.tb-now.idle .tb-now-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.tb-now.idle .tb-runname { font-size: 13.5px; font-weight: 600; }
-.tb-now.idle .tb-meta { font-size: 12.5px; }
-.tb-dash { flex: 1; min-height: 0; overflow: auto; padding: 14px 20px 22px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; align-content: start; align-items: start; }
-.tb-dash[hidden], .tb-board[hidden] { display: none; }   /* their own display would otherwise win over hidden */
-/* figure cards */
-/* the five figure cards: as many per row as fit, and the last row stretches so no card sits alone beside a gap */
-.tbd-kpis { grid-column: span 12; display: flex; flex-wrap: wrap; gap: 12px; }
-.tbd-kpis > * { flex: 1 1 170px; min-width: 0; }
-.tbd-kpi { background: var(--tbd-card); border: 1px solid var(--tbd-cardline); border-radius: 10px; padding: 11px 14px 10px; box-shadow: var(--tbd-shadow); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.tbd-kpi-l { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--tb-mute); font-weight: 600; }
-.tbd-kpi-l i, .tbd-head h3 i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
-.tbd-kpi b { font: 700 24px/1.15 var(--sans); color: var(--tb-ink); font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
-.tbd-kpi.acc .tbd-kpi-l i { color: var(--tb-acc-text); } .tbd-kpi.ok .tbd-kpi-l i { color: var(--tb-ok); } .tbd-kpi.blu .tbd-kpi-l i { color: var(--tb-blu); }
-.tbd-kpi.ora .tbd-kpi-l i { color: var(--tb-ora); } .tbd-kpi.bad .tbd-kpi-l i { color: var(--tb-flare); } .tbd-kpi.mute .tbd-kpi-l i { color: var(--tb-mute); }
-.tbd-kpi.acc b { color: var(--tb-acc-text); } .tbd-kpi.ok b { color: var(--tb-ok); } .tbd-kpi.bad b { color: #f2877c; }
-:root[data-theme="light"] .tbd-kpi.bad b { color: var(--tb-flare); }
-:root:not([data-theme="light"]) .tbd-kpi.acc b { text-shadow: 0 0 18px rgba(212, 135, 149, .35); }
-:root:not([data-theme="light"]) .tbd-kpi.ok b { text-shadow: 0 0 18px rgba(92, 184, 122, .35); }
-.tbd-delta { font-size: 12px; color: var(--tb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tbd-delta.up { color: var(--tb-ok); } .tbd-delta.down { color: #f2877c; }
-:root[data-theme="light"] .tbd-delta.down { color: var(--tb-flare); }
-/* columns: tickets get the room, the side column holds the smaller panels */
-.tbd-main { grid-column: span 8; display: grid; gap: 14px; min-width: 0; }
-.tbd-sidecol { grid-column: span 4; display: grid; gap: 14px; min-width: 0; }
+.tb-titlerow h2 { font-size: 18px; }   /* the five figure cards: as many per row as fit, and the last row stretches so no card sits alone beside a gap */
+
+.tbd-head h3 i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+
 .tbd-panel { background: var(--tbd-card); border: 1px solid var(--tbd-cardline); border-radius: 10px; padding: 12px 16px 14px; box-shadow: var(--tbd-shadow); min-width: 0; }
 .tbd-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .tbd-head h3 { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 13.5px/1.3 var(--sans); color: var(--tb-ink); }
 .tbd-panel.blu h3 i { color: var(--tb-blu); } .tbd-panel.ok h3 i { color: var(--tb-ok); } .tbd-panel.ora h3 i { color: var(--tb-ora); } .tbd-panel.vio h3 i { color: var(--tb-vio); }
-:root:not([data-theme="light"]) .tbd-head h3 i, :root:not([data-theme="light"]) .tbd-kpi-l i { box-shadow: 0 0 8px currentColor; }
-.tbd-count, .tbd-side { margin-left: auto; font-size: 12px; color: var(--tb-mute); font-weight: 600; }
+:root:not([data-theme="light"]) .tbd-head h3 i { box-shadow: 0 0 8px currentColor; }
+.tbd-count { margin-left: auto; font-size: 12px; color: var(--tb-mute); font-weight: 600; }
 .tbd-count { min-width: 20px; padding: 0 7px; border-radius: 999px; background: var(--tb-raised); text-align: center; }
 .tbd-empty { margin: 2px 0; color: var(--tb-mute); font-size: 12.5px; line-height: 1.5; }
 .tbd-empty b { color: var(--tb-ink); }
-/* my tickets */
-.tbd-tablewrap { overflow-x: auto; margin: 0 -6px; }
-.tbd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tbd-table th { text-align: left; font-weight: 600; font-size: 11.5px; letter-spacing: .02em; color: var(--tb-mute); padding: 2px 6px 6px; border-bottom: 1px solid var(--tbd-cardline); white-space: nowrap; }
-.tbd-table td { padding: 6px; border-bottom: 1px solid var(--tbd-cardline); vertical-align: middle; }
-.tbd-table tr:last-child td { border-bottom: 0; }
-.tbd-table tbody tr { cursor: pointer; }
-.tbd-table tbody tr:hover td { background: rgba(var(--tb-blu-rgb), .06); }
-.tbd-table tbody tr.running td { background: rgba(var(--tb-acc-rgb), .08); }
-.tbd-k { white-space: nowrap; width: 1%; }
-.tbd-type { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: 0; }
-.tbd-key { font: 600 12px var(--mono); color: var(--tb-blu); text-decoration: none; }
-a.tbd-key:hover { text-decoration: underline; }
-.tbd-sum { min-width: 140px; }
-.tbd-name { color: var(--tb-ink); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
-.tbd-note { display: block; margin-top: 1px; padding: 0; border: 0; background: none; color: var(--tb-mute); font: 11.5px var(--sans); cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
-.tbd-note::before { content: "\21b3 "; }
-.tbd-note:hover { color: var(--tb-blu); text-decoration: underline; }
-.tbd-lane { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--tb-mute); }
-.tbd-lane i { width: 7px; height: 7px; border-radius: 50%; }
-.tbd-lane--run { color: var(--tb-acc-text); } .tbd-lane--run i { background: var(--tb-acc-text); box-shadow: 0 0 0 3px rgba(var(--tb-acc-rgb), .2); }
-.tbd-lane--open i { background: var(--tb-blu); } .tbd-lane--held { color: var(--tb-ora); } .tbd-lane--held i { background: var(--tb-ora); }
-.tbd-time { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--tb-ink); width: 1%; }
-.tbd-time span { color: var(--tb-mute); }
-.tbd-time.over { color: #f2877c; font-weight: 600; }
-:root[data-theme="light"] .tbd-time.over { color: var(--tb-flare); }
-.tbd-go { width: 1%; text-align: right; }
-.tbd-btn { width: 26px; height: 24px; border: 1px solid var(--tbd-cardline); border-radius: 6px; background: none; color: var(--tb-mute); font-size: 11px; cursor: pointer; line-height: 1; }
-.tbd-btn:hover { border-color: var(--tb-blu); color: var(--tb-blu); background: rgba(var(--tb-blu-rgb), .08); }
-.tbd-table tr.running .tbd-btn:hover { border-color: var(--tb-ok); color: var(--tb-ok); }
-/* last 7 days: a slim strip */
-.tbd-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
-.tbd-day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
-.tbd-bar { height: 52px; width: 100%; max-width: 40px; display: flex; align-items: flex-end; background: var(--tb-raised); border-radius: 5px; overflow: hidden; }
-.tbd-bar i { width: 100%; background: linear-gradient(180deg, var(--tb-acc-text), rgba(var(--tb-acc-rgb), .55)); border-radius: 5px 5px 0 0; }
-.tbd-day b { font-size: 12px; color: var(--tb-ink); font-variant-numeric: tabular-nums; white-space: nowrap; margin-top: 3px; }
-.tbd-day span { font-size: 11.5px; color: var(--tb-mute); white-space: nowrap; }
-/* time by type */
-.tbd-donutwrap { display: flex; align-items: center; gap: 14px; }
-.tbd-donut { width: 96px; height: 96px; flex: none; }
-.tbd-donut-n { font: 700 22px var(--sans); fill: var(--tb-ink); }
-.tbd-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; display: grid; gap: 4px; font-size: 12.5px; }
-.tbd-legend li { display: flex; align-items: center; gap: 7px; color: var(--tb-ink); min-width: 0; }
-.tbd-legend li span { width: 9px; height: 9px; border-radius: 2px; flex: none; }
-.tbd-legend li b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
-/* activity */
-.tbd-acts { list-style: none; margin: 0; padding: 0; }
-.tbd-act { display: grid; grid-template-columns: 40px 10px 1fr; gap: 6px; align-items: center; padding: 4px 0; font-size: 12.5px; color: var(--tb-ink); }
-.tbd-act time { color: var(--tb-mute); font-variant-numeric: tabular-nums; font-size: 12px; }
-.tbd-act .dot { width: 7px; height: 7px; border-radius: 50%; }
-.tbd-act-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tbd-act b { font-family: var(--mono); font-weight: 600; font-size: 12px; }
-.tbd-act--done b { color: var(--tb-ok); }
-.tb-card.flash { box-shadow: 0 0 0 3px var(--tb-blu); transition: box-shadow .3s; }
-@container (max-width: 1100px) { .tbd-main, .tbd-sidecol { grid-column: span 12; } .tbd-sidecol { grid-template-columns: 1fr 1fr; } .tbd-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@container (max-width: 760px) { .tbd-sidecol { grid-template-columns: 1fr; } .tbd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tb-qa-row { margin-left: 0; } }
-.tb-card { gap: 0 10px;}
-.tb-card .name { font-size: 13.5px; line-height: 1.35; }
-.tb-cardtop .kind, .tb-cardtop .t, .tb-card .id { font-size: 12px; }
-.tb-notelink { font-size: 12px; min-height: 22px; }
-.tb-act { min-height: 24px; padding: 0 9px; font-size: 12px; border-radius: 5px; }
-.tb-act.tb-more { min-width: 24px; padding: 0 5px; }
-.tb-empty { padding: 10px 12px; font-size: 12.5px; }
-.tb-lane__head h4 { font-size: 13.5px; }
-/* ---- the board in the dashboard's style: lanes as panels with a dot title, compact two-row cards ---- */
+/* ---- the Notes panel's header ---- */
 .tb { --tbl-lane: #121216; }
 :root[data-theme="light"] .tb { --tbl-lane: #f3f8fb; }
-.tb-filters { gap: 5px; }
-.tb-chip { min-height: 26px; padding: 2px 11px; font-size: 12.5px; }
-.tb-board { gap: 12px; padding: 12px 20px 16px; background: none; }
-.tb-lane { background: var(--tbl-lane); border: 1px solid var(--tbd-cardline); border-radius: 10px; box-shadow: var(--tbd-shadow); overflow: hidden; }
-.tb-lane.drop-on { background: var(--tbl-lane); box-shadow: 0 0 0 2px var(--lane), var(--tbd-shadow); }
-.tb-lane__head { background: transparent; box-shadow: none; border-bottom: 0; padding: 11px 12px 4px; gap: 8px; }
-.tb-lane__head h4 { color: var(--tb-ink); font: 600 13px/1.3 var(--sans); }
-.tb-lane__head .dot { width: 7px; height: 7px; box-shadow: none; }
-:root:not([data-theme="light"]) .tb-lane__head .dot { box-shadow: 0 0 8px var(--lane); }
-.tb-count { background: var(--tb-raised); border: 0; color: var(--tb-mute); font-size: 12px; font-weight: 600; min-width: 20px; padding: 0 7px; }
-.tb-quick { padding: 6px 10px 0; }
-.tb-quick-in { min-height: 30px; padding: 5px 10px; font-size: 12.5px; border-radius: 7px; border-style: solid; border-color: var(--tbd-cardline); background: var(--tbd-card); }
-.tb-cards { padding: 8px 10px 12px; gap: 6px; }
-.tb-lane .tb-empty { border: 0; padding: 6px 2px; font-size: 12.5px; color: var(--tb-mute); background: none; }
-/* cards */
-.tb-card { display: block; padding: 8px 10px; border-radius: 8px; background: var(--tbd-card); border: 1px solid var(--tbd-cardline); box-shadow: var(--tbd-shadow); }
-.tb-card:hover { border-color: var(--tb-hover); }
-.tb-cardbody { gap: 3px; }
-.tb-cardtop { gap: 2px 7px; align-items: center; flex-wrap: nowrap; }
-.tb-typesq { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-.tb-card .id { font: 600 11.5px var(--mono); color: var(--tb-blu); }
-.tb-card a.id { color: var(--tb-blu); }
-.tb-cardtop .kind { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }
-.tb-cardtop .t { font-size: 11.5px; flex: none; }
-.tb-cardmid { display: flex; align-items: center; gap: 8px; min-width: 0; position: relative; }
-.tb-cardmid .name { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-/* the buttons appear on hover (or keyboard focus) over the end of the name row, so names use the
-   full width and cards stay two rows; the running card always shows its Pause and Done */
-.tb-acts { gap: 3px; margin-left: 0; flex: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-  padding-left: 18px; background: linear-gradient(90deg, transparent, var(--tbd-card) 16px); opacity: 0; pointer-events: none; transition: opacity .12s; }
-.tb-card:hover .tb-acts, .tb-card:focus-within .tb-acts, .tb-card--run .tb-acts { opacity: 1; pointer-events: auto; }
-.tb-card--run .tb-cardmid .name { padding-right: 110px; }
-@media (hover: none) { .tb-acts { opacity: 1; pointer-events: auto; position: static; transform: none; padding: 0; background: none; } }
-.tb .tb-act { width: 24px; height: 22px; min-height: 22px; min-width: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; border-radius: 5px;
-  border: 1px solid var(--tbd-cardline); background: none; color: var(--tb-mute); }
-.tb-act:hover { color: var(--tb-ink); border-color: var(--tb-hover); }
-.tb-act.tb-start { color: var(--tb-blu); border-color: rgba(var(--tb-blu-rgb), .45); }
-.tb-act.tb-start:hover { background: rgba(var(--tb-blu-rgb), .1); color: var(--tb-blu); }
-.tb-act.tb-todone:hover { color: var(--tb-ok); border-color: var(--tb-ok); }
-.tb .tb-act.tb-cardpause { font-size: 8px; letter-spacing: -1px; }
-.tb .tb-act.tb-more { font-weight: 700; font-size: 12px; letter-spacing: 0; }
-.tb-cardbar { height: 2px; margin-top: 2px; }
-.tb-cardfoot { min-height: 0; }
-.tb .tb-notelink { font-size: 11.5px; min-height: 0; padding: 0; color: var(--tb-mute); flex: 1; }
-.tb-notelink:not(.none)::before { content: "\21b3 "; }
-.tb-notelink.none { display: none; font-style: normal; }
-/* an unlinked card offers linking as the ↳ button among its hover buttons, so the card never grows under the pointer */
-.tb-card--run { background: var(--tbd-card); border-color: rgba(var(--tb-acc-rgb), .6); box-shadow: 0 0 0 1px rgba(var(--tb-acc-rgb), .25), var(--tbd-shadow); }
-:root:not([data-theme="light"]) .tb-card--run { box-shadow: 0 0 14px rgba(var(--tb-acc-rgb), .25); }
-.tb-card--done { opacity: .85; }
-.tb-card--done .name { text-decoration: line-through; color: var(--tb-mute); }
-.tb-card--done .tb-cardtop .t { color: var(--tb-ok); }
-.tb-edit .tb-btn { min-height: 26px; }
-/* ---- the header's buttons: one height, + Task first, the note buttons joined into one group; in a
-   narrow pane (split view) labels shorten and the actions wrap below the title, never past the pane ---- */
+/* the header's buttons: one height, the note buttons joined into one group; in a narrow pane
+   labels shorten and the actions wrap below the title, never past the pane */
 .tb-top { overflow: hidden; }
 .tb-titlerow { flex-wrap: wrap; row-gap: 8px; column-gap: 12px; }
 .tb-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; min-width: 0; }
-.tb-titlerow .tb-summary { flex: 1 1 0; min-width: 120px; }   /* shortens with "..." first; the buttons wrap only when they really don't fit */
-.tb-qa-row { display: inline-flex; align-items: center; gap: 8px; margin-left: 0; flex-wrap: nowrap; flex: none; }
-.tb .tb-qa, .tb .tb-view, .tb .tb-pin { height: 28px; min-height: 28px; box-sizing: border-box; font: 600 12.5px/1 var(--sans); display: inline-flex; align-items: center; gap: 6px; }
+
+.tb .tb-qa, .tb .tb-pin { height: 28px; min-height: 28px; box-sizing: border-box; font: 600 12.5px/1 var(--sans); display: inline-flex; align-items: center; gap: 6px; }
 .tb .tb-qa { padding: 0 11px; border-radius: 7px; border: 1px solid var(--tbd-cardline); background: var(--tbd-card); color: var(--tb-ink); }
 .tb .tb-qa:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
-.tb .tb-qa--primary { background: var(--tb-acc-text); border-color: var(--tb-acc-text); color: var(--tb-carbon); padding: 0 12px; }
-:root[data-theme="light"] .tb .tb-qa--primary { color: #fff; }
-.tb .tb-qa--primary:hover { filter: brightness(1.08); color: var(--tb-carbon); border-color: var(--tb-acc-text); }
-:root[data-theme="light"] .tb .tb-qa--primary:hover { color: #fff; }
 /* the joined group: a quiet label, then three buttons sharing their borders */
 .tb-qa-group { display: inline-flex; align-items: center; border: 1px solid var(--tbd-cardline); border-radius: 7px; background: var(--tbd-card); overflow: hidden; }
 .tb-qa-lbl { padding: 0 8px 0 10px; font-size: 12px; color: var(--tb-mute); white-space: nowrap; border-right: 1px solid var(--tbd-cardline); height: 26px; display: inline-flex; align-items: center; }
@@ -1287,15 +1015,8 @@ a.tbd-key:hover { text-decoration: underline; }
 .tb .tb-qa-group .tb-qa + .tb-qa { border-left: 1px solid var(--tbd-cardline); }
 .tb .tb-qa-group .tb-qa:hover { background: rgba(var(--tb-blu-rgb), .1); color: var(--tb-blu); }
 .tb-short { display: none; }
-.tb .tb-views { height: 28px; box-sizing: border-box; padding: 2px; border-radius: 7px; border-color: var(--tbd-cardline); }
-.tb .tb-view { height: 22px; min-height: 22px; padding: 0 11px; border-radius: 5px; }
 .tb .tb-pin { padding: 0 11px; border-radius: 7px; border-color: var(--tbd-cardline); background: var(--tbd-card); }
 .tb .tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); border-color: rgba(var(--tb-acc-rgb), .55); }
-/* filter chips: one row, scrolling sideways when they don't fit */
-.tb-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); padding-bottom: 1px; }
-.tb-filters::-webkit-scrollbar { display: none; }
-.tb .tb-chip { flex: none; height: 26px; min-height: 26px; display: inline-flex; align-items: center; }
-@container (max-width: 1150px) { .tb-summary { display: none; } }
 @container (max-width: 980px) { .tb-long { display: none; } .tb-short { display: inline; } .tb-qa-lbl { display: none; } }
 @container (max-width: 720px) { .tb-actions { margin-left: 0; width: 100%; } .tb-date { display: none; } }
 @container (max-width: 520px) { .tb-qa-group { display: none; } }
@@ -1313,10 +1034,6 @@ a.tbd-key:hover { text-decoration: underline; }
 .tbn-card-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; }
 .tbn-when { margin-left: auto; font-size: 11.5px; color: var(--tb-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tbn-dir { color: var(--tb-mute); }
-.tbn-ticket { display: inline-flex; align-items: center; gap: 5px; font: 600 11px var(--mono); color: var(--tb-blu); white-space: nowrap; }
-.tbn-ticket i { width: 6px; height: 6px; border-radius: 50%; background: var(--tb-blu); }
-.tbn-ticket--run { color: var(--tb-acc-text); } .tbn-ticket--run i { background: var(--tb-acc-text); box-shadow: 0 0 0 3px rgba(var(--tb-acc-rgb), .2); }
-.tbn-ticket--held { color: var(--tb-ora); } .tbn-ticket--held i { background: var(--tb-ora); }
 .tbn-todo { font-size: 11px; font-weight: 600; color: var(--tb-mute); background: var(--tb-raised); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
 .tb .tbn-unpin, .tb .tbn-pinme { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--tb-ora); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; opacity: 0; }
 .tbn-unpin .ico, .tbn-pinme .ico, .tbn-unpinf .ico { width: 14px; height: 14px; }
@@ -2349,17 +2066,6 @@ input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
   --tb-raised: #ffffff; --tb-hover: #d4d4d8; --tb-ora: #a16207; --tb-flare: #b42318; --tb-flare-rgb: 180, 35, 24; --tb-ok: #2f7d4f;
   --tb-vio: #52525b; --tb-vio-rgb: 82, 82, 91; --tbd-card: #ffffff; --tbl-lane: #fafafa;
 }
-.tb .tb-btn--primary, .tb-qa[data-qa="task"], .tb .tb-qa--primary { background: var(--acc); border-color: var(--acc); color: #ffffff; }
-.tb-lane--open { --lane: #a1a1aa; --lane-ink: var(--txt); --lane-tint: rgba(161, 161, 170, .12); --lane-wash: transparent; }
-.tb-lane--run  { --lane: var(--acc); --lane-ink: var(--acc-text); --lane-tint: var(--acc-soft); --lane-wash: transparent; }
-.tb-lane--held { --lane: #d6a64f; --lane-ink: #e2c07f; --lane-tint: rgba(214, 166, 79, .12); --lane-wash: transparent; }
-.tb-lane--done { --lane: #4fa36c; --lane-ink: #8cc9a1; --lane-tint: rgba(79, 163, 108, .12); --lane-wash: transparent; }
-:root[data-theme="light"] .tb-lane--run  { --lane: var(--acc); --lane-ink: var(--acc-text); --lane-tint: var(--acc-soft); --lane-wash: transparent; }
-:root[data-theme="light"] .tb-lane--open { --lane: #a1a1aa; --lane-ink: #3f3f46; --lane-tint: #f4f4f5; }
-:root[data-theme="light"] .tb-lane--held { --lane: #ca8a04; --lane-ink: #854d0e; --lane-tint: #fef9e7; }
-:root[data-theme="light"] .tb-lane--done { --lane: #2f7d4f; --lane-ink: #1e5b37; --lane-tint: #e8f5ec; }
-:root:not([data-theme="light"]) .tbd-kpi.acc b, :root:not([data-theme="light"]) .tbd-kpi.ok b { text-shadow: none; }
-:root:not([data-theme="light"]) .tb-card--run { box-shadow: none; }
 .tb-top { background: var(--chrome); }
 
 #graphMode[hidden] { display: none; }
@@ -2718,9 +2424,9 @@ body.cf-obs-theme .wl, body.cf-obs-theme .xl { color: var(--link-color); }
 :where(button, [role="button"]):is(:disabled, [aria-disabled="true"]) { cursor: not-allowed; }
 
 /* cards you can click: a slight lift */
-:where(.tbn-card, .tb-card, .tbd-kpi, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
-:where(.tbn-card, .tb-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
-@media (prefers-reduced-motion: reduce) { :where(.tbn-card, .tb-card):hover { translate: none; } }
+:where(.tbn-card, .cfp-row) { transition: translate 140ms ease-out, box-shadow 140ms ease-out; }
+:where(.tbn-card):hover { translate: 0 -1px; box-shadow: 0 4px 14px rgba(var(--shd-rgb, 0, 0, 0), calc(.18 * var(--shd-k, 1))); }
+@media (prefers-reduced-motion: reduce) { :where(.tbn-card):hover { translate: none; } }
 /* ---------- the movable layout (js/11-panes.js) ---------- */
 .pane-stack { display: flex; flex-direction: column; min-width: 220px; min-height: 0; }
 .pane-stack > .pane-col { min-height: 120px; }
@@ -2876,7 +2582,6 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="13" height="12" rx="2.5"/><path d="M7.5 4.5h10.5a2.5 2.5 0 0 1 2.5 2.5v9"/></svg>
     </button>
     <div class="act-spacer"></div>
-    <button class="act-btn" id="actBoard" title="Task board" aria-label="Task board"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="4.5" height="15" rx="1.5"/><rect x="9.75" y="4.5" width="4.5" height="10.5" rx="1.5"/><rect x="15.5" y="4.5" width="4.5" height="6.5" rx="1.5"/></svg></button>
     <button class="act-btn" id="actGraph" title="Graph (Ctrl+G)">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.25"/><circle cx="18" cy="7" r="2.25"/><circle cx="12" cy="17.5" r="2.25"/><path d="M8.25 7h7.5M7.15 9l3.7 6.5M16.85 9l-3.7 6.5"/></svg>
     </button>
@@ -7346,7 +7051,7 @@ const PluginManager = {
   checks: new Map(), queue: [], checking: 0, settingsOf: null, busy: new Set(),
 
   init() {
-    const bar = document.getElementById("activity"), before = document.getElementById("actBoard");
+    const bar = document.getElementById("activity"), before = document.getElementById("actGraph");
     if (!bar || document.getElementById("actPlugins")) return;
     const b = document.createElement("button");
     b.className = "act-btn";
@@ -9607,7 +9312,7 @@ function loadFolder() {
     restoreSession();
     if (state.sketchHandle) sketchScan();                /* a chosen sketch folder wins over the vault's sketch/ */
     PluginHost.notesReady();
-    return tbLoadVault().then(function () { tbLaunchPin(); });
+    tbLaunchPin();
   }).catch(function (e) {
     console.error(e);
     alert("Couldn't read that folder: " + e.message);
@@ -10369,16 +10074,16 @@ function createPane(index) {
   p.renderTabs = function () {
     tabTreeSoon();
     p.tabsEl.innerHTML = "";
-    if (p.type === "taskboard" || p.type === "sheet") {   /* the board's or sheet's own tab: closing it goes back to the note */
+    if (p.type === "taskboard" || p.type === "sheet") {   /* the Notes panel's or sheet's own tab: closing it goes back to the note */
       const isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
       const bt = document.createElement("div");
       bt.className = "tab on tab-board";
       const bl = document.createElement("span");
       bl.className = "tab-lbl";
       if (isSheet) bl.innerHTML = ico("table");
-      bl.appendChild(document.createTextNode((isSheet ? " " + (shObj ? shObj.title : "Sheet") : tb.view === "notes" ? "Notes" : "Task board")));
+      bl.appendChild(document.createTextNode((isSheet ? " " + (shObj ? shObj.title : "Sheet") : "Notes")));
       const bx = document.createElement("button");
-      bx.className = "tab-x"; bx.innerHTML = ico("x"); bx.title = isSheet ? "Close the sheet" : "Close the task board";
+      bx.className = "tab-x"; bx.innerHTML = ico("x"); bx.title = isSheet ? "Close the sheet" : "Close the Notes panel";
       bx.addEventListener("mousedown", function (e) { e.stopPropagation(); });
       bx.addEventListener("click", function (e) { e.stopPropagation(); if (isSheet) closeSheetPane(p); else tbClosePane(p); });
       bt.appendChild(bl); bt.appendChild(bx);
@@ -12145,8 +11850,8 @@ function createPane(index) {
     if (p.tbRoot) p.tbRoot.classList.toggle("show", p.type === "taskboard");
     if (p.crumbEl) p.crumbEl.style.display = p.type === "taskboard" || p.type === "graph" ? "none" : "";   /* the note's breadcrumbs don't belong there */
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
-    const ab = document.getElementById("actBoard");
-    if (ab) ab.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
+    const al = document.getElementById("actLibrary");
+    if (al) al.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
   };
 
   p.renderNote = function () {
@@ -12457,7 +12162,7 @@ function renderTabTree() {
   panes.forEach(function (p, pi) {
     const name = panes.length === 1 ? "Pane" : panes.length === 2 ? (pi === 0 ? "Left pane" : "Right pane") : "Pane " + (pi + 1);
     const focused = p === focusedPane;
-    const extra = p.type === "taskboard" ? "Task board" : p.type === "sheet" ? "Sheet" : "";
+    const extra = p.type === "taskboard" ? "Notes" : p.type === "sheet" ? "Sheet" : "";
     /* tabs grouped by folder, folders in name order, tabs in tab order */
     const groups = {}, order = [];
     p.tabs.forEach(function (id) {
@@ -12748,7 +12453,7 @@ function followLink(url) {
 
 /* ---- showing things: reveal what's open, open what isn't ----
    One rule for everything you click (a note in the sidebar or search, a link, the graph, the palette,
-   a sheet, the task board): if it's already on screen in some pane, that pane takes the focus and its
+   a sheet, the Notes panel): if it's already on screen in some pane, that pane takes the focus and its
    tab flashes; if it's a tab in some pane, that pane switches to it; only otherwise does it open, in
    the pane asked for. So nothing opens twice and nothing you clicked closes. Two panes on the same
    note happen only when you ask (Split, Ctrl+\). opts.here: open in that pane regardless. */
@@ -14429,9 +14134,8 @@ function renderList(listEl, q) {
     });
     item.addEventListener("dblclick", function () { state.renamingId = n.id; renderSidebar(); });
 
-    item.draggable = true;                     /* onto the task board: a task for this note */
-    item.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-cf-note", String(n.id)); e.dataTransfer.effectAllowed = "copyMove"; });
     if (state.backend === "folder") {          /* drag a note onto a folder to move it */
+      item.draggable = true;
       item.addEventListener("dragstart", function (e) {
         e.dataTransfer.setData("text/plain", String(n.id));
         e.dataTransfer.effectAllowed = "copyMove";
@@ -14600,8 +14304,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
   b.addEventListener("click", function () { showView(b.dataset.view, true); });
 });
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
-/* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
-document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
+/* the graph: clicking shows it (closing is its own ×, or Esc) */
 document.getElementById("actGraph").addEventListener("click", function () { openGraph(); });
 
 /* ---------------- search input ---------------- */
@@ -22057,379 +21760,29 @@ function sheetIntoNote(g) {
    ============================================================ */
 
 /* ============================================================
-   Task board: tickets in four lanes (open, running, held, cleared today). It owns no clock:
-   starting a task starts CarbonFibre's timer, and stopping, holding or clearing it finishes
-   the timer, which writes the Today log. Elapsed time comes from the timer's wall clock, so
-   it survives reloads and background tabs. Task names are only ever set as text.
+   The Notes panel (opened in a pane): Overview (pinned notes, pinned folders, recent notes) and All
+   notes. This keeps its few settings; js/36-all-notes.js draws it. (The task board, its dashboard and
+   its ServiceNow links were removed; old saved board data is ignored and dropped on the next save.
+   The pane type is still called "taskboard" inside, so layouts saved before keep opening it.)
    ============================================================ */
 const TB_KEY = "carbonfibre-taskboard";
-let tb = { tasks: [], filter: "all", pinned: false, pinnedPane: 0, seq: 1, snowBase: "" };                      /* no ServiceNow address until you set one (board menu) */
-/* A board read from storage or from a vault's .carbonfibre/taskboard.json (which anyone who shares the
-   folder can edit) is checked field by field: names that become class names or links are kept to the
-   known values, text stays text, and the ServiceNow address must be a plain https address. */
+let tb = { pinned: false, pinnedPane: 0, notesMode: "overview", libGroup: "none" };
+/* settings read from storage are checked field by field */
 function tbClean(v) {
-  const str = function (x, n) { return String(x == null ? "" : x).slice(0, n || 500); };
-  const num = function (x) { const k = Number(x); return isFinite(k) && k >= 0 ? k : 0; };
-  const lanes = ["open", "run", "held", "done"], whats = ["added", "started", "done", "waiting", "paused", "reopened", "moved"];
   const out = {};
-  out.tasks = (Array.isArray(v.tasks) ? v.tasks : []).filter(function (t) { return t && typeof t === "object"; }).map(function (t) {
-    const id = str(t.id, 80);
-    return { uid: str(t.uid, 60).replace(/[^\w-]/g, "") || "t" + Math.random().toString(36).slice(2), id: id, type: tbType(id), name: str(t.name, 500),
-      noteId: t.noteId == null ? null : typeof t.noteId === "number" ? t.noteId : str(t.noteId, 1000), mins: num(t.mins), est: num(t.est), state: lanes.indexOf(t.state) !== -1 ? t.state : "open",
-      clearedAt: t.clearedAt == null ? null : num(t.clearedAt), startedAt: t.startedAt == null ? undefined : num(t.startedAt) };
-  });
-  out.events = (Array.isArray(v.events) ? v.events : []).filter(function (e) { return e && whats.indexOf(e.what) !== -1; }).slice(-400).map(function (e) {
-    return { at: num(e.at), uid: str(e.uid, 60).replace(/[^\w-]/g, ""), id: str(e.id, 80), name: str(e.name, 500), type: tbType(e.id), what: e.what };
-  });
-  ["filter", "snowStyle", "view", "notesMode"].forEach(function (k) { if (typeof v[k] === "string") out[k] = str(v[k], 40).replace(/[^\w-]/g, ""); });
   if (typeof v.pinned === "boolean") out.pinned = v.pinned;
-  ["pinnedPane", "seq", "savedAt"].forEach(function (k) { if (v[k] != null) out[k] = Math.floor(num(v[k])); });
-  out.snowBase = typeof v.snowBase === "string" && /^https:\/\/[^\s/"'<>]+$/i.test(v.snowBase) ? v.snowBase : "";
+  if (isFinite(Number(v.pinnedPane)) && Number(v.pinnedPane) >= 0) out.pinnedPane = Math.floor(Number(v.pinnedPane));
+  if (v.notesMode === "all" || v.notesMode === "overview") out.notesMode = v.notesMode;
+  if (["none", "type", "folder", "month"].indexOf(v.libGroup) !== -1) out.libGroup = v.libGroup;
   return out;
 }
-let tbSaveTimer = null; const tbPending = {};
-function tbSave() {                                  /* on every change, debounced; never on clock ticks */
+let tbSaveTimer = null;
+function tbSave() {
   if (tbSaveTimer) clearTimeout(tbSaveTimer);
-  tb.savedAt = Date.now();
-  tbSaveTimer = setTimeout(function () { tbSaveTimer = null; storeSet(TB_KEY, JSON.stringify(tb)); tbWriteVault(); }, 500);
+  tbSaveTimer = setTimeout(function () { tbSaveTimer = null; storeSet(TB_KEY, JSON.stringify(tb)); }, 300);
 }
-/* With a vault folder open, the board is also kept in it (.carbonfibre/taskboard.json), so it
-   lives with your notes and survives clearing the browser's data. Browser storage stays as the
-   quick local copy. The note reader skips folders starting with a dot. */
-const TB_VAULT_DIR = ".carbonfibre", TB_VAULT_FILE = "taskboard.json";
-function tbWriteVault() {
-  if (state.backend !== "folder" || !state.dirHandle) return Promise.resolve(false);
-  return state.dirHandle.getDirectoryHandle(TB_VAULT_DIR, { create: true })
-    .then(function (d) { return writeFile(d, TB_VAULT_FILE, JSON.stringify(tb, null, 1)); })
-    .then(function () { return true; }, function (e) { console.error("task board: vault save failed", e); return false; });
-}
-/* on opening a vault: whichever copy was saved last wins */
-function tbLoadVault() {
-  if (state.backend !== "folder" || !state.dirHandle) return Promise.resolve();
-  return state.dirHandle.getDirectoryHandle(TB_VAULT_DIR)
-    .then(function (d) { return d.getFileHandle(TB_VAULT_FILE); })
-    .then(function (fh) { return fh.getFile(); })
-    .then(function (f) { return f.text(); })
-    .then(function (txt) {
-      const raw = JSON.parse(txt);
-      const v = raw && typeof raw === "object" && Array.isArray(raw.tasks) ? tbClean(raw) : null;
-      if (v && (v.savedAt || 0) > (tb.savedAt || 0)) {
-        Object.keys(v).forEach(function (k) { tb[k] = v[k]; });
-        storeSet(TB_KEY, JSON.stringify(tb));
-        if (typeof tbRenderAll === "function") tbRenderAll();
-      } else if (tb.tasks.length) tbWriteVault();
-    })
-    .catch(function () { if (tb.tasks.length) tbWriteVault(); });   /* no copy in the vault yet: put this one there */
-}
-function tbDay(t) { const d = t ? new Date(t) : new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
-/* ticket type from its number prefix; longer prefixes are tried first (SCTASK before others) */
-const TB_PREFIXES = ["SCTASK", "PTASK", "CTASK", "STSK", "STRY", "RITM", "INC", "CHG", "PRB"];
-function tbType(id) {
-  const u = String(id || "").toUpperCase();
-  for (let i = 0; i < TB_PREFIXES.length; i++) if (u.indexOf(TB_PREFIXES[i]) === 0) return TB_PREFIXES[i].toLowerCase();
-  return "other";
-}
-/* the saved board, read once tbType (above) exists: tbClean uses it */
-try { const tbStored = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (tbStored && Array.isArray(tbStored.tasks)) tb = Object.assign(tb, tbClean(tbStored)); }
-catch (e) { console.error("CarbonFibre: couldn't read the saved task board", e); }
-/* A ticket link uses no API: it opens the record in ServiceNow in a new tab, through the
-   login you already have. Next Experience shows classic records under /now/nav/ui/classic. */
-const TB_TABLES = { inc: "incident", chg: "change_request", ctask: "change_task", prb: "problem", ptask: "problem_task",
-                  sctask: "sc_task", ritm: "sc_req_item", stry: "rm_story", stsk: "rm_scrum_task" };
-/* Three ways to open a ticket by its number. "search" is ServiceNow's own exact-number search
-   (what global search does with a ticket number): it jumps straight to the record whatever its
-   table. "form" opens the classic form through nav_to.do; "next" is the Next Experience path. */
-const TB_LINK_STYLES = { direct: "table form: <table>.do?sysparm_query=number=<ticket>", search: "exact-number search", next: "Next Experience path" };
-function tbTicketUrl(t) {
-  const base = String(tb.snowBase || "").replace(/\/+$/, "");
-  if (!/^https:\/\/[^\s/"'<>]+$/i.test(base) || !t || !t.id || t.id === "TASK") return "";   /* an https address only (see tbClean) */
-  const table = TB_TABLES[t.type], style = TB_LINK_STYLES[tb.snowStyle] ? tb.snowStyle : "direct", num = encodeURIComponent(t.id);
-  /* an unknown prefix has no table to name, so it always uses the exact-number search */
-  if (style === "search" || !table) return base + "/text_search_exact_match.do?sysparm_search=" + num;
-  if (style === "direct") return base + "/" + table + ".do?sysparm_query=number=" + num;     /* the classic form URL */
-  return base + "/now/nav/ui/classic/params/target/" + encodeURIComponent(table + ".do?sysparm_query=number=" + t.id);
-}
-function tbSetSnowStyle() {
-  const keys = Object.keys(TB_LINK_STYLES), cur = TB_LINK_STYLES[tb.snowStyle] ? tb.snowStyle : "direct";
-  Dialogs.prompt("How ticket links open (type 1, 2 or 3):\n" + keys.map(function (k, i) { return (i + 1) + "  " + TB_LINK_STYLES[k] + (k === cur ? "   (current)" : ""); }).join("\n"), String(keys.indexOf(cur) + 1)).then(function (v) { tbSetSnowStyleTo(keys, v); });
-}
-function tbSetSnowStyleTo(keys, v) {
-  if (v === null) return;
-  const k = keys[parseInt(v, 10) - 1];
-  if (!k) { pushToastLike("Pick 1, 2 or 3."); return; }
-  tb.snowStyle = k; tbSave(); tbRenderAll();
-  pushToastLike("Ticket links now use " + TB_LINK_STYLES[k] + ".");
-}
-function tbSetSnowBase() {
-  Dialogs.prompt("ServiceNow address (the start of a ticket URL), for example https://yourcompany.service-now.com:", tb.snowBase || "https://").then(tbSetSnowBaseTo);
-}
-function tbSetSnowBaseTo(v) {
-  if (v === null) return;
-  v = v.trim().replace(/\/+$/, "");
-  if (v && !/^https:\/\/[^\s/]+$/i.test(v)) {
-    const m = /^(https:\/\/[^\s/]+)/i.exec(v);           /* a full ticket URL was pasted: keep just the address */
-    if (!m) { pushToastLike("That doesn't look like an https address."); return; }
-    v = m[1];
-  }
-  tb.snowBase = v; tbSave(); tbRenderAll();
-  pushToastLike(v ? "Ticket links open on " + v.replace(/^https:\/\//, "") + "." : "Ticket links turned off.");
-}
-function tbFind(uid) { return tb.tasks.filter(function (t) { return t.uid === uid; })[0] || null; }
-/* cleared tasks drop off the board at midnight; history older than 30 days is let go */
-(function () {
-  const cutoff = Date.now() - 30 * 864e5;
-  tb.tasks = tb.tasks.filter(function (t) { return t.state !== "done" || !t.clearedAt || new Date(t.clearedAt + "T00:00").getTime() >= cutoff; });
-})();
-function tbRunning() { return timer && timer.boardUid ? tbFind(timer.boardUid) : null; }
-/* minutes on a task: earlier sessions plus the one running now */
-function tbMinutes(t) { return t.mins + (timer && timer.boardUid === t.uid ? timerElapsed() / 60000 : 0); }
-/* the timer finished (from the board or the status bar): its time goes onto the task */
-function tbTimerEnded(uid, actualMs, keep) {
-  const t = tbFind(uid);
-  if (!t) return;
-  if (keep) t.mins += Math.round(actualMs / 60000);
-  const next = tbPending[uid] || "open";
-  tbEvent(t, next === "done" ? "done" : next === "held" ? "waiting" : "paused");
-  delete tbPending[uid];
-  if (t.state === "run") {
-    t.state = next;
-    if (next === "done") t.clearedAt = tbDay();
-  }
-  tbSave(); tbRenderAll();
-}
-function tbStart(t) {
-  if (!t || t.state === "done") return;
-  if (timer && timer.boardUid === t.uid) { if (timer.pausedAt) timerPause(); return; }
-  if (timer) {                                       /* park whatever is running, logging it */
-    if (timer.boardUid) tbPending[timer.boardUid] = "open";
-    timerFinish(true);
-  }
-  tbEvent(t, "started");
-  const left = t.est > 0 ? Math.max(5, Math.round(t.est - t.mins)) : timePrefs.minutes;
-  timerStart(t.id + " " + t.name, left, t.noteId);
-  timer.boardUid = t.uid; timerSave();
-  t.state = "run";
-  tbSave(); tbRenderAll();
-}
-function tbStopAs(state) {                           /* stop the running task, into a lane */
-  const t = tbRunning();
-  if (!t) { if (timer) timerFinish(true); return; }
-  tbPending[t.uid] = state;
-  timerFinish(true);
-}
-function tbAdd(id, name, est, noteId) {
-  id = String(id || "").trim().toUpperCase(); name = String(name || "").trim();
-  if (!id && !name) return null;
-  const t = { uid: "t" + Date.now().toString(36) + (tb.seq++), id: id || "TASK", type: tbType(id), name: name || id,
-            noteId: noteId == null ? null : noteId, mins: 0, est: Math.max(0, parseInt(est, 10) || 0), state: "open", clearedAt: null };
-  if (t.noteId == null) {                            /* link a note that already mentions the ticket */
-    const hit = id && state.notes.filter(function (n) { return (n.title + "\n" + n.content.slice(0, 400)).toUpperCase().indexOf(id) !== -1; })[0];
-    if (hit) t.noteId = hit.id;
-  }
-  tb.tasks.push(t);
-  tbEvent(t, "added");
-  tbSave(); tbRenderAll();
-  return t;
-}
-function tbRemove(t) {
-  if (!t) return;
-  if (timer && timer.boardUid === t.uid) { tbPending[t.uid] = "open"; timerFinish(true); }
-  tb.tasks = tb.tasks.filter(function (x) { return x !== t; });
-  tbSave(); tbRenderAll();
-}
-/* the note for a task: the linked one, or a new one named after the ticket */
-function tbOpenNote(t, fromPane) {
-  if (!t) return;
-  let n = t.noteId != null ? findNote(t.noteId) : null;
-  if (!n) {
-    const title = (t.id + " " + t.name).replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
-    const body = "# " + title + "\n\n";
-    if (state.backend === "folder") {
-      const base = uniqueBasename(title, "");
-      n = { id: base, path: base, title: base.replace(/\.md$/i, ""), content: body, handle: null, parent: folderHandle(""), mtime: 0 };
-      state.notes.push(n); sortNotes();
-      writeNoteFile(n).catch(function (e) { console.error(e); setSaveState("error"); });
-    } else {
-      n = { id: noteSeq++, title: title, content: body, path: null, handle: null, parent: null };
-      state.notes.push(n); schedulePersist();
-    }
-    t.noteId = n.id; tbSave(); renderSidebar();
-  }
-  /* beside the board, so it stays in view; already open somewhere: shown there (openInPane) */
-  const target = panes.filter(function (q) { return q !== fromPane && q.type === "note"; })[0] || fromPane || focusedPane || panes[0];
-  openInPane(n.id, target);
-}
-
-/* ---- the board as a pane ---- */
+try { const st = JSON.parse(localStorage.getItem(TB_KEY) || "null"); if (st && typeof st === "object") tb = Object.assign(tb, tbClean(st)); } catch (e) { /* storage off */ }
 function tbEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
-const TB_KIND = { inc: "Incident", chg: "Change", ctask: "Change task", prb: "Problem", ptask: "Problem task",
-                sctask: "Catalog task", ritm: "Request item", stry: "Story", stsk: "Story task", other: "Task" };
-const TB_LANES = [["open", "To do", "Nothing to do. Add a task above."],
-                ["run", "Working on", "Press Start on a card when you begin. The clock runs from there."],
-                ["held", "Waiting", "Drag a card here while you wait on someone."],
-                ["done", "Done today", "Finished tasks land here and clear at midnight."]];
-/* "38m", "1h 05m": the compact form, for cards, tables and figures (tbMin is the long form) */
-function tbMinShort(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + "h " + String(m % 60).padStart(2, "0") + "m" : m + "m"; }
-function tbMin(m) {                                  /* "38 min", "1 h 05 min" */
-  m = Math.max(0, Math.round(m));
-  return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min";
-}
-/* one line in, a task out: "INC0012345 Splunk HEC down 30m" -> ticket, name, estimate */
-function tbParseQuick(text) {
-  let s = String(text || "").trim();
-  if (!s) return null;
-  const idm = /\b(SCTASK|PTASK|CTASK|STSK|STRY|RITM|INC|CHG|PRB)\d+\b/i.exec(s), id = idm ? idm[0].toUpperCase() : "";
-  if (idm) s = (s.slice(0, idm.index) + " " + s.slice(idm.index + idm[0].length)).trim();
-  let est = 30; const em = /(?:^|\s)(\d+(?:\.\d+)?)\s*(m|min|mins|minutes|h|hr|hrs|hour|hours)\s*$/i.exec(s);
-  if (em) { est = Math.round(parseFloat(em[1]) * (/^h/i.test(em[2]) ? 60 : 1)); s = s.slice(0, em.index).trim(); }
-  const name = s.replace(/^[\s\-:\u2013\u2014|]+|[\s\-:\u2013\u2014|]+$/g, "");
-  if (!id && !name) return null;
-  return { id: id || "TASK", name: name || id, est: est };
-}
-/* move a card to a lane; into Working on starts its clock, out of it stops the clock */
-function tbMove(t, lane) {
-  if (!t || t.state === lane) return;
-  if (lane === "run") { if (t.state === "done") { t.state = "open"; t.clearedAt = null; } tbStart(t); return; }
-  if (timer && timer.boardUid === t.uid) { tbStopAs(lane); return; }
-  tbEvent(t, lane === "done" ? "done" : lane === "held" ? "waiting" : t.state === "done" ? "reopened" : "moved");
-  t.state = lane;
-  t.clearedAt = lane === "done" ? tbDay() : null;
-  tbSave(); tbRenderAll();
-}
-/* removing is undoable for a few seconds instead of asking first */
-let tbUndo = null;
-function tbRemoveWithUndo(t) {
-  if (!t) return;
-  const at = tb.tasks.indexOf(t);
-  tbRemove(t);
-  if (tbUndo && tbUndo.timer) clearTimeout(tbUndo.timer);
-  tbUndo = { task: t, at: at, timer: setTimeout(function () { tbUndo = null; tbRenderAll(); }, 8000) };
-  tbRenderAll();
-}
-function tbUndoRemove() {
-  if (!tbUndo) return;
-  const u = tbUndo; tbUndo = null; clearTimeout(u.timer);
-  if (u.task.state === "run") u.task.state = "open";
-  tb.tasks.splice(Math.min(u.at, tb.tasks.length), 0, u.task);
-  tbSave(); tbRenderAll();
-}
-let tbEditing = null; /* the card being edited in place */ // eslint-disable-line prefer-const -- reassigned in 36-all-notes.js
-
-/* ---- task board events: what happened when, for the dashboard's activity panel (7 days kept) ---- */
-function tbEvent(t, what) {
-  if (!t) return;
-  tb.events = (tb.events || []).filter(function (e) { return e.at > Date.now() - 7 * 864e5; });
-  tb.events.push({ at: Date.now(), uid: t.uid, id: t.id, name: t.name, type: t.type, what: what });
-  if (tb.events.length > 400) tb.events = tb.events.slice(-400);
-}
-/* ---- the dashboard: panels that summarise the day, as a team board does ---- */
-const TB_TYPE_HEX_DARK = { inc: "#e5534b", chg: "#8ea7b8", ctask: "#6f8da3", prb: "#c46a64", ptask: "#f08a80", sctask: "#d4917c", ritm: "#5cb87a", stry: "#b08ae6", stsk: "#9070c8", other: "#9a9ca2" };
-const TB_TYPE_HEX_LIGHT = { inc: "#b4323f", chg: "#1f6f94", ctask: "#5ba3c9", prb: "#d0606a", ptask: "#e08890", sctask: "#b45309", ritm: "#2e7d4f", stry: "#6b4fa8", stsk: "#9d86cf", other: "#46606f" };
-function tbTypeHex(type) { return (isLight() ? TB_TYPE_HEX_LIGHT : TB_TYPE_HEX_DARK)[type] || "#9a9ca2"; }
-/* minutes of work per ticket type on a given day, from the time log (and the clock now running) */
-function tbMinutesByType(dayStart, dayEnd) {
-  const out = {};
-  timeLog.forEach(function (e) {
-    if (e.start < dayStart || e.start >= dayEnd) return;
-    const tk = /\b(SCTASK|PTASK|CTASK|STSK|STRY|RITM|INC|CHG|PRB)\d+/i.exec(e.task || ""), ty = tk ? tbType(tk[0]) : "other";
-    out[ty] = (out[ty] || 0) + (e.actual || (e.end - e.start)) / 60000;
-  });
-  if (timer && timer.startedAt >= dayStart && timer.startedAt < dayEnd) {
-    const run = tbRunning(), ty2 = run ? run.type : "other";
-    out[ty2] = (out[ty2] || 0) + timerElapsed() / 60000;
-  }
-  return out;
-}
-function tbDayBounds(offset) {
-  const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - offset);
-  const e = new Date(s); e.setDate(e.getDate() + 1);
-  return [s.getTime(), e.getTime(), s];
-}
-function tbDonut(parts, total) {
-  const R = 56, C = 2 * Math.PI * R; let off = 0, segs = "";
-  if (total <= 0) return '<svg viewBox="0 0 140 140" class="tbd-donut" aria-hidden="true"><circle cx="70" cy="70" r="' + R + '" fill="none" stroke="var(--tb-line)" stroke-width="16"/></svg>';
-  parts.forEach(function (p) {
-    const len = C * p.v / total;
-    segs += '<circle cx="70" cy="70" r="' + R + '" fill="none" stroke="' + p.color + '" stroke-width="16" stroke-dasharray="' + len.toFixed(2) + " " + (C - len).toFixed(2) +
-      '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)" stroke-linecap="butt"><title>' + esc(p.label) + ": " + tbMin(p.v) + "</title></circle>";
-    off += len;
-  });
-  return '<svg viewBox="0 0 140 140" class="tbd-donut" role="img" aria-label="Time by ticket type">' + segs +
-    '<text x="70" y="76" text-anchor="middle" class="tbd-donut-n">' + (total >= 60 ? Math.floor(total / 60) + "h" + String(Math.round(total % 60)).padStart(2, "0") : Math.round(total) + "m") + "</text></svg>";
-}
-function tbRenderDash(p) {
-  const root = p.tbRoot, dash = root.querySelector(".tb-dash");
-  if (!dash) return;
-  const today = tbDay(), b0 = tbDayBounds(0), b1 = tbDayBounds(1), yday = tbDay(b1[0]);
-  const open = tb.tasks.filter(function (t) { return t.state !== "done"; });
-  const todo = open.filter(function (t) { return t.state === "open" || t.state === "run"; });
-  const waiting = tb.tasks.filter(function (t) { return t.state === "held"; });
-  const doneT = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === today; }).length;
-  const doneY = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === yday; }).length;
-  const over = open.filter(function (t) { return t.est > 0 && tbMinutes(t) > t.est; });
-  const byType = tbMinutesByType(b0[0], b0[1]), minsT = Object.keys(byType).reduce(function (s, k) { return s + byType[k]; }, 0);
-  const byY = tbMinutesByType(b1[0], b1[1]), minsY = Object.keys(byY).reduce(function (s, k) { return s + byY[k]; }, 0);
-  const short = tbMinShort;
-  /* change since yesterday: time logged is neither good nor bad, so it stays neutral; more done is green */
-  const delta = function (d, unit) {
-    if (!d) return '<span class="tbd-delta flat">same as yesterday</span>';
-    const cls = unit === "m" ? "flat" : d > 0 ? "up" : "flat";
-    return '<span class="tbd-delta ' + cls + '">' + (d > 0 ? "\u2191 " : "\u2193 ") + (unit === "m" ? short(Math.abs(d)) : Math.abs(d)) + " vs yesterday</span>";
-  };
-  /* ---- figures ---- */
-  const kpi = function (cls, label, value, foot) { return '<div class="tbd-kpi ' + cls + '"><span class="tbd-kpi-l"><i></i>' + label + '</span><b>' + value + "</b>" + (foot || "") + "</div>"; };
-  const kpis = '<div class="tbd-kpis">' +
-    kpi("acc", "Logged today", short(minsT), delta(Math.round(minsT - minsY), "m")) +
-    kpi("ok", "Done today", doneT, delta(doneT - doneY)) +
-    kpi("blu", "To do", todo.length, '<span class="tbd-delta flat">' + (todo.length ? short(todo.reduce(function (s, t) { return s + Math.max(0, t.est - tbMinutes(t)); }, 0)) + " estimated left" : "all clear") + "</span>") +
-    kpi("ora", "Waiting", waiting.length, '<span class="tbd-delta flat">' + (waiting.length ? "on someone else" : "nothing blocked") + "</span>") +
-    kpi(over.length ? "bad" : "mute", "Over estimate", over.length, '<span class="tbd-delta ' + (over.length ? "down" : "flat") + '">' + (over.length ? esc(over.map(function (t) { return t.id; }).slice(0, 2).join(", ")) : "on track") + "</span>") +
-    "</div>";
-  const panel = function (cls, title, body, side) { return '<section class="tbd-panel ' + cls + '"><header class="tbd-head"><h3><i></i>' + esc(title) + "</h3>" + (side || "") + "</header>" + body + "</section>"; };
-  /* ---- my tickets: dense rows, start straight from here ---- */
-  const laneName = { run: "Working on", open: "To do", held: "Waiting" }, laneOrd = { run: 0, open: 1, held: 2 };
-  const rows = open.slice().sort(function (a, c) { return laneOrd[a.state] - laneOrd[c.state]; }).map(function (t) {
-    const m = tbMinutes(t), url = tbTicketUrl(t), n = t.noteId != null ? findNote(t.noteId) : null, o = t.est > 0 && m > t.est, running = t.state === "run";
-    return '<tr data-uid="' + t.uid + '"' + (running ? ' class="running"' : "") + ">" +
-      '<td class="tbd-k"><span class="tbd-type" style="background:' + tbTypeHex(t.type) + '" title="' + esc(TB_KIND[t.type] || "Task") + '"></span>' +
-        (url ? '<a class="tbd-key" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" title="Open in ServiceNow">' + esc(t.id) + "</a>" : '<span class="tbd-key">' + esc(t.id) + "</span>") + "</td>" +
-      '<td class="tbd-sum"><span class="tbd-name">' + esc(t.name) + "</span>" + (n ? '<button type="button" class="tbd-note" data-note="' + esc(String(n.id)) + '" title="Open the linked note">' + esc(n.title) + "</button>" : "") + "</td>" +
-      '<td><span class="tbd-lane tbd-lane--' + t.state + '"><i></i>' + laneName[t.state] + "</span></td>" +
-      '<td class="tbd-time' + (o ? " over" : "") + '">' + (m >= 1 ? short(m) : "\u2013") + (t.est ? "<span> / " + short(t.est) + "</span>" : "") + "</td>" +
-      '<td class="tbd-go">' + (running ? '<button type="button" class="tbd-btn" data-done="' + t.uid + '" title="Done">\u2713</button>' : '<button type="button" class="tbd-btn" data-start="' + t.uid + '" title="Start the clock">\u25b6</button>') + "</td></tr>";
-  }).join("");
-  const tickets = panel("tbd-tickets blu", "My tickets", open.length ?
-      '<div class="tbd-tablewrap"><table class="tbd-table"><thead><tr><th>Key</th><th>Summary</th><th>Lane</th><th>Time</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div>" :
-      '<p class="tbd-empty">No open tickets. Use <b>+ Task</b> above, or drag a note onto the board.</p>', '<span class="tbd-count">' + open.length + "</span>");
-  /* ---- last 7 days: a slim strip ---- */
-  const days = []; let maxM = 1, any = false;
-  for (let k = 6; k >= 0; k--) {
-    const bd = tbDayBounds(k), mt = tbMinutesByType(bd[0], bd[1]), mins = Object.keys(mt).reduce(function (s, x) { return s + mt[x]; }, 0), dk = tbDay(bd[0]);
-    const dn = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === dk; }).length;
-    days.push({ label: k === 0 ? "Today" : bd[2].toLocaleDateString(undefined, { weekday: "short" }), mins: mins, done: dn });
-    maxM = Math.max(maxM, mins); if (mins >= 1 || dn) any = true;
-  }
-  const weekTotal = days.reduce(function (s, d) { return s + d.mins; }, 0), weekDone = days.reduce(function (s, d) { return s + d.done; }, 0);
-  const week = panel("tbd-week ok", "Last 7 days", any ? '<div class="tbd-days">' + days.map(function (d) {
-      return '<div class="tbd-day" title="' + esc(d.label + ": " + short(d.mins) + ", " + d.done + " done") + '"><div class="tbd-bar"><i style="height:' + Math.max(d.mins >= 1 ? 4 : 0, Math.round(d.mins / maxM * 100)) + '%"></i></div>' +
-        "<b>" + (d.mins >= 1 ? short(d.mins) : "\u2013") + "</b><span>" + esc(d.label) + (d.done ? " \u00b7 " + d.done + "\u2713" : "") + "</span></div>";
-    }).join("") + "</div>" : '<p class="tbd-empty">No time logged this week yet.</p>',
-    any ? '<span class="tbd-side">' + short(weekTotal) + " \u00b7 " + weekDone + " done</span>" : "");
-  /* ---- time by type: hidden ring when there's nothing to show ---- */
-  const parts = Object.keys(byType).filter(function (x) { return byType[x] >= 0.5; }).sort(function (a, c) { return byType[c] - byType[a]; })
-    .map(function (x) { return { label: TB_KIND[x] || "Task", v: byType[x], color: tbTypeHex(x) }; });
-  const types = panel("tbd-types ora", "Time by type", parts.length ? '<div class="tbd-donutwrap">' + tbDonut(parts, parts.reduce(function (s, q) { return s + q.v; }, 0)) +
-      '<ul class="tbd-legend">' + parts.map(function (q) { return '<li><span style="background:' + q.color + '"></span>' + esc(q.label) + "<b>" + short(q.v) + "</b></li>"; }).join("") + "</ul></div>"
-    : '<p class="tbd-empty">Nothing logged yet today.</p>');
-  /* ---- activity ---- */
-  const verbs = { added: "added", started: "started", paused: "back to To do", waiting: "waiting", done: "finished", reopened: "reopened", moved: "to To do" };
-  const evs = (tb.events || []).filter(function (e) { return e.at >= b0[0]; }).sort(function (a, c) { return c.at - a.at; }).slice(0, 8);
-  const act = panel("tbd-activity vio", "Activity", evs.length ? '<ol class="tbd-acts">' + evs.map(function (e) {
-      const d = new Date(e.at), hh = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-      return '<li class="tbd-act tbd-act--' + e.what + '"><time>' + hh + '</time><span class="dot" style="background:' + tbTypeHex(e.type) + '"></span><span class="tbd-act-t"><b>' + esc(e.id) + "</b> " + esc(verbs[e.what] || e.what) + "</span></li>";
-    }).join("") + "</ol>" : '<p class="tbd-empty">Nothing yet today.</p>');
-  dash.innerHTML = kpis + '<div class="tbd-main">' + tickets + week + '</div><div class="tbd-sidecol">' + types + act + "</div>";
-}
 /* ---- the Notes view: pinned notes as cards, a panel per pinned folder, and recent notes ---- */
 function tbnPreview(n) {
   const lines = String(n.content || "").split("\n"); let inFence = false;
@@ -22457,7 +21810,6 @@ function tbnAgo(ms) {
   return new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 function tbnFolderOf(n) { const p = n.path || ""; return p.indexOf("/") === -1 ? "" : p.slice(0, p.lastIndexOf("/")); }
-function tbnLinked(n) { return tb.tasks.filter(function (t) { return t.state !== "done" && t.noteId != null && sameId(t.noteId, n.id); })[0] || null; }
 /* ---- All notes: every note in one table, with filters that surface what to tidy ---- */
 /* what kind of note this is, from its name and folder: ticket numbers, dates, the usual words */
 const NOTE_TYPES = [
@@ -22499,7 +21851,7 @@ function tbnFacts() {
     const outN = (c.match(/\[\[[^\]\n]+\]\]/g) || []).length;
     const stamp = noteStamp(n);
     return { n: n, dir: tbnFolderOf(n), stamp: stamp, words: body ? body.split(/\s+/).length : 0, inN: inN, outN: outN,
-      tasks: tbnOpenTasks(n), ticket: tbnLinked(n), pinned: !!pinned[String(n.id)],
+      tasks: tbnOpenTasks(n), pinned: !!pinned[String(n.id)],
       untitled: /^untitled(\s*\d+)?$/i.test(n.title.trim()), empty: body.replace(/[#>*\-\s]/g, "").length < 3,
       stale: stamp && now - stamp > 30 * 864e5, type: noteType(n), tags: noteTagsOf(n), preview: tbnPreview(n) };
   });
@@ -22510,7 +21862,6 @@ const TBN_CHIPS = [
   ["orphan", "Not linked", function (f) { return !f.inN && !f.outN; }],
   ["stale", "Not edited in 30+ days", function (f) { return f.stale; }],
   ["tasks", "Open tasks", function (f) { return f.tasks > 0; }],
-  ["ticket", "On the board", function (f) { return !!f.ticket; }],
   ["pinned", "Pinned", function (f) { return f.pinned; }]
 ];
 function tbnState(p) { return p.tbnAll || (p.tbnAll = { chip: "all", type: "", group: tb.libGroup || "none", q: "", text: false, sort: "edited", dir: -1, sel: {} }); }
@@ -22563,11 +21914,10 @@ function tbnRenderResults(p) {
   const nSel = Object.keys(st.sel).length, total = rows.length, CAP = 400;
   const head = function (k, label) { return '<th data-sort="' + k + '"' + (st.sort === k ? ' class="on"' : "") + ">" + label + (st.sort === k ? (st.dir > 0 ? " \u2191" : " \u2193") : "") + "</th>"; };
   const allOn = rows.length && rows.slice(0, CAP).every(function (f) { return st.sel[String(f.n.id)]; });
-  const laneName = { run: "Working on", open: "To do", held: "Waiting" };
   const body = rows.slice(0, CAP).map(function (f) {
     const id = esc(String(f.n.id)), flags = (f.untitled ? '<span class="tbn-flag">untitled</span>' : "") + (f.empty ? '<span class="tbn-flag">empty</span>' : "");
     let ghead = "";
-    if (groupOf) { const g = groupOf(f); if (g !== lastG) { ghead = '<tr class="tbn-grp"><td colspan="9">' + esc(g) + "<span>" + gCount[g] + "</span></td></tr>"; lastG = g; } }
+    if (groupOf) { const g = groupOf(f); if (g !== lastG) { ghead = '<tr class="tbn-grp"><td colspan="8">' + esc(g) + "<span>" + gCount[g] + "</span></td></tr>"; lastG = g; } }
     return ghead + '<tr data-open="' + id + '"' + (st.sel[String(f.n.id)] ? ' class="sel"' : "") + '><td class="tbn-cb"><input type="checkbox" data-sel="' + id + '"' + (st.sel[String(f.n.id)] ? " checked" : "") + ' aria-label="Select ' + esc(f.n.title) + '"></td>' +
       '<td class="tbn-t"><span class="tbn-tt">' + (f.pinned ? '<span class="tbn-pin" title="Pinned">' + ico("starFill") + "</span>" : "") + esc(f.n.title) + flags +
         f.tags.slice(0, 3).map(function (t) { return '<span class="tbn-tag">#' + esc(t) + "</span>"; }).join("") + "</span>" +
@@ -22577,15 +21927,14 @@ function tbnRenderResults(p) {
       '<td class="tbn-e' + (f.stale ? " stale" : "") + '">' + esc(tbnAgo(f.stamp)) + "</td>" +
       '<td class="tbn-w">' + f.words + "</td>" +
       '<td class="tbn-l" title="' + f.inN + " linking here, " + f.outN + ' links out">' + (f.inN || f.outN ? f.inN + " / " + f.outN : "\u2013") + "</td>" +
-      '<td class="tbn-k">' + (f.tasks || "") + "</td>" +
-      '<td class="tbn-tk">' + (f.ticket ? '<span class="tbn-ticket tbn-ticket--' + f.ticket.state + '" title="' + esc(laneName[f.ticket.state]) + '"><i></i>' + esc(f.ticket.id) + "</span>" : "") + "</td></tr>";
+      '<td class="tbn-k">' + (f.tasks || "") + "</td></tr>";
   }).join("");
   const bulk = nSel ? '<div class="tbn-bulk"><b>' + nSel + " selected</b>" +
     '<button type="button" data-bulk="pin">Pin</button><button type="button" data-bulk="unpin">Unpin</button>' +
     (state.backend === "folder" ? '<button type="button" data-bulk="move">Move to folder\u2026</button>' : "") +
     '<button type="button" data-bulk="delete" class="danger">' + (state.backend === "folder" ? "Move to .trash" : "Delete") + '</button><button type="button" data-bulk="clear">Clear selection</button></div>' : "";
   box.innerHTML = bulk + (total ? '<div class="tbn-tablewrap"><table class="tbn-table"><thead><tr><th class="tbn-cb"><input type="checkbox" data-selall="1"' + (allOn ? " checked" : "") + ' aria-label="Select all shown"></th>' +
-    head("title", "Note") + head("type", "Type") + head("folder", "Folder") + head("edited", "Edited") + head("words", "Words") + head("links", "Links in / out") + head("tasks", "Tasks") + "<th>Ticket</th></tr></thead><tbody>" + body + "</tbody></table></div>" +
+    head("title", "Note") + head("type", "Type") + head("folder", "Folder") + head("edited", "Edited") + head("words", "Words") + head("links", "Links in / out") + head("tasks", "Tasks") + "</tr></thead><tbody>" + body + "</tbody></table></div>" +
     (total > CAP ? '<p class="tbd-empty">Showing ' + CAP + " of " + total + ". Narrow it with a filter or search.</p>" : "")
     : '<p class="tbd-empty">No notes match.</p>');
 }
@@ -22621,9 +21970,9 @@ function tbnOpenBeside(p, n, split) {
   if (split && panes.length < MAX_PANES) { addPane(p, n.id); return; }
   if (other) openInPane(n.id, other); else openInPane(n.id, p);
 }
-/* the library, from anywhere: the Notes view's All notes, in the board's pane */
+/* the library, from anywhere: the Notes panel's All notes */
 function openLibrary(mode) {
-  tb.view = "notes"; tb.notesMode = mode || "all"; tbSave();
+  tb.notesMode = mode || "all"; tbSave();
   const q = tbShow(); tbRenderAll(); if (q && q.renderTabs) q.renderTabs();
   setTimeout(function () { const i = q && q.tbRoot && q.tbRoot.querySelector(".tbn-search"); if (i) i.focus(); }, 0);
 }
@@ -22635,14 +21984,12 @@ function tbRenderNotes(p) {
     '<button type="button" role="tab" data-nmode="all"' + (mode === "all" ? ' class="on"' : "") + ">All notes <span>" + state.notes.length + "</span></button></div>";
   if (mode === "all") { box.innerHTML = modes + tbnAllHtml(p); tbnRenderResults(p); return; }
   p.tbnOpen = p.tbnOpen || {};
-  const laneName = { run: "Working on", open: "To do", held: "Waiting" };
   const pinnedNotes = Object.keys(pinned).filter(function (k) { return k.indexOf("folder:") !== 0; })
     .map(function (k) { return state.notes.filter(function (n) { return String(n.id) === k; })[0]; }).filter(Boolean)
     .sort(function (a, b) { return noteStamp(b) - noteStamp(a); });
   const pinnedDirs = Object.keys(pinned).filter(function (k) { return k.indexOf("folder:") === 0; }).map(function (k) { return k.slice(7); }).sort(function (a, b) { return a.localeCompare(b); });
   const badge = function (n) {
-    const t = tbnLinked(n), k = tbnOpenTasks(n); let out = "";
-    if (t) out += '<span class="tbn-ticket tbn-ticket--' + t.state + '" title="On the task board: ' + esc(laneName[t.state]) + '"><i></i>' + esc(t.id) + "</span>";
+    const k = tbnOpenTasks(n); let out = "";
     if (k) out += '<span class="tbn-todo" title="Unticked checkboxes in this note">' + k + " open task" + (k === 1 ? "" : "s") + "</span>";
     return out;
   };
@@ -22662,9 +22009,9 @@ function tbRenderNotes(p) {
     const inside = state.notes.filter(function (n) { return (n.path || "").indexOf(dir + "/") === 0; }).sort(function (a, b) { return noteStamp(b) - noteStamp(a); });
     const showAll = !!p.tbnOpen[dir], list = showAll ? inside : inside.slice(0, 8);
     const rows = list.map(function (n) {
-      const sub = tbnFolderOf(n).slice(dir.length + 1), t = tbnLinked(n), k = tbnOpenTasks(n);
+      const sub = tbnFolderOf(n).slice(dir.length + 1), k = tbnOpenTasks(n);
       return '<li class="tbn-row" data-open="' + esc(String(n.id)) + '" tabindex="0" role="button"><span class="tbn-row-t">' + (sub ? '<span class="tbn-sub">' + esc(sub) + "/</span>" : "") + esc(n.title) + "</span>" +
-        (t ? '<span class="tbn-ticket tbn-ticket--' + t.state + '"><i></i>' + esc(t.id) + "</span>" : "") + (k ? '<span class="tbn-todo">' + k + "</span>" : "") +
+        (k ? '<span class="tbn-todo">' + k + "</span>" : "") +
         '<span class="tbn-when">' + esc(tbnAgo(noteStamp(n))) + "</span></li>";
     }).join("");
     const more = inside.length > 8 ? '<button type="button" class="tbn-more" data-more="' + esc(dir) + '">' + (showAll ? "Show fewer" : "Show all " + inside.length) + "</button>" : "";
@@ -22695,64 +22042,19 @@ function tbBuild(p) {
   root.tabIndex = -1;
   root.innerHTML =
     '<header class="tb-top">' +
-      '<div class="tb-titlerow"><h2>Task board</h2>' +
-        '<button type="button" class="tb-pin" aria-pressed="false" aria-label="Pin the board" title="Pin: open the board whenever CarbonFibre starts"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 1.9l4.5 4.5-1.6.6-2.4 2.4-.4 3-1.2 1.2-2.6-2.6-3.3 3.3M4.3 7.6l1.2-1.2 3-.4 2.4-2.4.6-1.6"/></svg></button>' +
+      '<div class="tb-titlerow"><h2>Notes</h2>' +
+        '<button type="button" class="tb-pin" aria-pressed="false" aria-label="Pin the Notes panel" title="Pin: open the Notes panel whenever CarbonFibre starts"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.6 1.9l4.5 4.5-1.6.6-2.4 2.4-.4 3-1.2 1.2-2.6-2.6-3.3 3.3M4.3 7.6l1.2-1.2 3-.4 2.4-2.4.6-1.6"/></svg></button>' +
         '<span class="tb-date"></span>' +
-        '<span class="tb-summary"><b class="tb-sTime">0 min</b> logged today \u00b7 <b class="tb-sDone">0</b> done \u00b7 <b class="tb-sOpen">0</b> to do</span>' +
         '<span class="tb-actions">' +
-        '<span class="tb-qa-row"><button type="button" class="tb-qa tb-qa--primary" data-qa="task" title="Add a task">+ Task</button>' +
           '<span class="tb-qa-group" role="group" aria-label="New note"><span class="tb-qa-lbl">New note</span>' +
           '<button type="button" class="tb-qa" data-qa="inc" title="New note from the Incident template"><span class="tb-long">Incident note</span><span class="tb-short">Incident</span></button>' +
           '<button type="button" class="tb-qa" data-qa="chg" title="New note from the Change / downtime template"><span class="tb-long">Change note</span><span class="tb-short">Change</span></button>' +
-          '<button type="button" class="tb-qa" data-qa="daily" title="Today\u2019s daily note (Ctrl+Alt+D)"><span class="tb-long">Daily note</span><span class="tb-short">Daily</span></button></span></span>' +
-        '<span class="tb-views" role="tablist" aria-label="View"><button type="button" class="tb-view" data-view="dash" role="tab">Dashboard</button><button type="button" class="tb-view" data-view="notes" role="tab">Notes</button><button type="button" class="tb-view" data-view="board" role="tab">Board</button></span>' +
+          '<button type="button" class="tb-qa" data-qa="daily" title="Today\u2019s daily note (Ctrl+Alt+D)"><span class="tb-long">Daily note</span><span class="tb-short">Daily</span></button></span>' +
         '</span></div>' +
-      '<div class="tb-now">' +
-        '<div class="tb-now-main"><div class="tb-lbl">Working on</div><h3 class="tb-runname"></h3><div class="tb-meta"></div></div>' +
-        '<div class="tb-now-clock"><span class="tb-clock">0:00:00</span><span class="tb-est"></span><div class="tb-bar"><i></i></div></div>' +
-        '<div class="tb-ctl">' +
-          '<button type="button" class="tb-btn tb-btn--primary tb-done">Done</button>' +
-          '<button type="button" class="tb-btn tb-pause">Pause</button>' +
-          '<button type="button" class="tb-btn tb-hold">Waiting</button>' +
-          '<button type="button" class="tb-btn tb-stop" title="Back to To do, keeping the time so far">Stop for now</button>' +
-          '<button type="button" class="tb-btn tb-note">Open note</button>' +
-          '<button type="button" class="tb-btn tb-ticket">Open ticket</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="tb-undo" hidden><span class="tb-undo-msg"></span><button type="button" class="tb-ghost tb-undo-btn">Undo</button></div>' +
-      '<div class="tb-filters" role="group" aria-label="Show">' + [["all", "Everything"], ["inc", "Incidents"], ["ptask", "Problem tasks"], ["chg", "Changes"],
-        ["ctask", "Change tasks"], ["sctask", "Catalog tasks"], ["ritm", "Requests"], ["stsk", "Story tasks"]].map(function (f) {
-        return '<button type="button" class="tb-chip" data-f="' + f[0] + '" aria-pressed="false">' + f[1] + "</button>"; }).join("") + '</div>' +
     '</header>' +
-    '<main class="tb-board">' + TB_LANES.map(function (l) {
-      return '<section class="tb-lane tb-lane--' + l[0] + '" data-drop="' + l[0] + '"><div class="tb-lane__head"><span class="dot"></span><h4>' + l[1] +
-        '</h4><span class="tb-count" data-count="' + l[0] + '"></span></div>' +
-        (l[0] === "open" ? '<form class="tb-quick"><input class="tb-quick-in" name="quick" autocomplete="off" spellcheck="false" ' +
-          'placeholder="Add a task\u2026" title="Type the ticket, what it is and a time, then Enter. For example: INC0012345 Splunk HEC down 30m" aria-label="Add a task: ticket number, what it is, and an estimate"></form>' : "") +
-        '<div class="tb-cards" data-lane="' + l[0] + '"></div></section>'; }).join("") +
-    '</main>' +
-    '<main class="tb-dash" hidden></main>' +
-    '<main class="tb-notes" hidden></main>' +
-    '<div class="tb-menu" hidden role="menu"></div>';
+    '<main class="tb-notes"></main>';
   const $ = function (s) { return root.querySelector(s); };
-  $(".tb-quick").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const inp = $(".tb-quick-in"), q = tbParseQuick(inp.value);
-    if (!q) return;
-    tbAdd(q.id, q.name, q.est);
-    inp.value = ""; inp.focus();
-  });
   $(".tb-pin").addEventListener("click", function () { tb.pinned = !tb.pinned; tb.pinnedPane = Math.max(0, panes.indexOf(p)); tbSave(); tbRenderAll(); });
-  $(".tb-pause").addEventListener("click", function () { if (timer && timer.boardUid) { timerPause(); tbRenderAll(); } });
-  $(".tb-stop").addEventListener("click", function () { tbStopAs("open"); });
-  $(".tb-hold").addEventListener("click", function () { tbStopAs("held"); });
-  $(".tb-done").addEventListener("click", function () { tbStopAs("done"); });
-  $(".tb-note").addEventListener("click", function () { tbOpenNote(tbRunning(), p); });
-  $(".tb-ticket").addEventListener("click", function () { const u = tbTicketUrl(tbRunning()); if (u) window.open(u, "_blank", "noopener"); else tbSetSnowBase(); });
-  $(".tb-undo-btn").addEventListener("click", tbUndoRemove);
-  root.querySelectorAll(".tb-chip").forEach(function (c) { c.addEventListener("click", function () { tb.filter = c.dataset.f; tbSave(); tbRenderAll(); }); });
-  root.querySelectorAll(".tb-view").forEach(function (v) { v.addEventListener("click", function () { tb.view = v.dataset.view; tbSave(); tbRenderAll(); p.renderTabs(); }); });
-  /* dashboard clicks: a ticket row opens its card on the board, a note link the note, quick actions */
   const notesBox = root.querySelector(".tb-notes");
   const findN = function (id) { return state.notes.filter(function (x) { return String(x.id) === id; })[0]; };
   notesBox.addEventListener("input", function (e) {
@@ -22792,267 +22094,23 @@ function tbBuild(p) {
     const q = e.target.closest("[data-qa]");
     if (!q) return;
     const a = q.dataset.qa;
-    if (a === "task") { tb.view = "board"; tbSave(); tbRenderAll(); setTimeout(function () { const i = root.querySelector(".tb-quick-in"); if (i) i.focus(); }, 0); }
-    else if (a === "inc") newFromTemplate(TEMPLATES[0]);
+    if (a === "inc") newFromTemplate(TEMPLATES[0]);
     else if (a === "chg") newFromTemplate(TEMPLATES[1]);
     else if (a === "daily") openDailyNote();
   });
-  root.querySelector(".tb-dash").addEventListener("click", function (e) {
-    const go = e.target.closest("[data-start], [data-done]");
-    if (go) { const tt = tbFind(go.dataset.start || go.dataset.done); if (go.dataset.start) tbStart(tt); else tbMove(tt, "done"); return; }
-    const nb = e.target.closest(".tbd-note");
-    if (nb) { const nn = state.notes.filter(function (x) { return String(x.id) === nb.dataset.note; })[0]; if (nn) openInPane(nn.id, p); return; }
-    if (e.target.closest("a")) return;
-    const q = e.target.closest("[data-qa]");
-    if (q) {
-      const a = q.dataset.qa;
-      if (a === "task" || a === "board") { tb.view = "board"; tbSave(); tbRenderAll(); if (a === "task") setTimeout(function () { const i = root.querySelector(".tb-quick-in"); if (i) i.focus(); }, 0); }
-      else if (a === "inc") newFromTemplate(TEMPLATES[0]);
-      else if (a === "chg") newFromTemplate(TEMPLATES[1]);
-      else if (a === "daily") openDailyNote();
-      return;
-    }
-    const row = e.target.closest("tr[data-uid]");
-    if (row) {
-      tb.view = "board"; tbSave(); tbRenderAll();
-      const c = root.querySelector('.tb-card[data-uid="' + row.dataset.uid + '"]');
-      if (c) { c.scrollIntoView({ block: "center" }); c.focus(); c.classList.add("flash"); setTimeout(function () { c.classList.remove("flash"); }, 1200); }
-    }
-  });
-  /* drag cards between lanes */
-  root.querySelectorAll("[data-drop]").forEach(function (lane) {
-    lane.addEventListener("dragover", function (e) {
-      const ty = e.dataTransfer.types, isTask = Array.prototype.indexOf.call(ty, "text/x-cf-task") !== -1, isNote = Array.prototype.indexOf.call(ty, "text/x-cf-note") !== -1;
-      if (!isTask && !isNote) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = isNote ? "copy" : "move"; lane.classList.add("drop-on");
-    });
-    lane.addEventListener("dragleave", function (e) { if (!lane.contains(e.relatedTarget)) lane.classList.remove("drop-on"); });
-    lane.addEventListener("drop", function (e) {
-      lane.classList.remove("drop-on");
-      const noteId = e.dataTransfer.getData("text/x-cf-note");
-      if (noteId) {                                   /* a note from the sidebar */
-        e.preventDefault();
-        const nn = state.notes.filter(function (x) { return String(x.id) === noteId; })[0];
-        if (nn) tbAddNoteTask(nn, lane.dataset.drop);
-        return;
-      }
-      const uid = e.dataTransfer.getData("text/x-cf-task");
-      if (!uid) return;
-      e.preventDefault();
-      tbMove(tbFind(uid), lane.dataset.drop);
-    });
-  });
-  /* keyboard on a focused card: Enter starts it, Delete removes it (undoable) */
-  root.addEventListener("keydown", function (e) {
-    if (e.target.closest(".tb-edit, .tb-quick")) return;
-    const card = e.target.closest && e.target.closest(".tb-card");
-    if (!card) { if (e.key === "Escape") tbMenuClose(root); return; }
-    const t = tbFind(card.dataset.uid);
-    if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); tbRemoveWithUndo(t); }
-    else if (e.key === "Enter" && e.target === card) { e.preventDefault(); tbStart(t); }
-  });
-  document.addEventListener("mousedown", function (e) { if (!root.querySelector(".tb-menu").hidden && !e.target.closest(".tb-menu, .tb-more")) tbMenuClose(root); });
   p.root.appendChild(root);
   return root;
-}
-function tbMenuClose(root) { const m = root.querySelector(".tb-menu"); m.hidden = true; m.replaceChildren(); }
-function tbMenuOpen(p, t, anchor) {
-  const root = p.tbRoot, m = root.querySelector(".tb-menu");
-  m.replaceChildren();
-  const item = function (label, fn, cls) {
-    const b = tbEl("button", "tb-menu-item" + (cls ? " " + cls : ""), label);
-    b.type = "button"; b.setAttribute("role", "menuitem");
-    b.addEventListener("click", function () { tbMenuClose(root); fn(); });
-    m.appendChild(b);
-  };
-  item("Edit", function () { tbEditing = t.uid; tbRenderAll(); });
-  if (t.noteId != null && findNote(t.noteId)) {
-    item("Open note", function () { tbOpenNote(t, p); });
-    item("Change linked note\u2026", function () { tbPickNoteFor(t); });
-    item("Unlink note", function () { tbUnlinkNote(t); });
-  } else {
-    item("Link to a note\u2026", function () { tbPickNoteFor(t); });
-    item("Create a note for it", function () { tbOpenNote(t, p); });
-  }
-  if (tbTicketUrl(t)) item("Open in ServiceNow", function () { window.open(tbTicketUrl(t), "_blank", "noopener"); });
-  if (t.state !== "open") item("Move to To do", function () { tbMove(t, "open"); });
-  if (t.state !== "held" && t.state !== "done") item("Move to Waiting", function () { tbMove(t, "held"); });
-  item("Remove", function () { tbRemoveWithUndo(t); }, "tb-menu-danger");
-  const r = anchor.getBoundingClientRect(), rr = root.getBoundingClientRect();
-  m.hidden = false;
-  m.style.top = (r.bottom - rr.top + 4) + "px";
-  m.style.left = Math.max(8, Math.min(rr.width - m.offsetWidth - 8, r.right - rr.left - m.offsetWidth)) + "px";
-  m.firstChild.focus();
-}
-function tbCard(t, p) {
-  const card = tbEl("div", "tb-card tb-card--" + t.state);
-  card.dataset.uid = t.uid; card.tabIndex = 0; card.draggable = tbEditing !== t.uid;
-  card.setAttribute("aria-label", t.id + ", " + t.name);
-  card.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-cf-task", t.uid); e.dataTransfer.effectAllowed = "move"; card.classList.add("dragging"); });
-  card.addEventListener("dragend", function () { card.classList.remove("dragging"); });
-  /* double-click anywhere on a card (not its buttons or links) to edit it: on a narrow card the hover
-     buttons cover part of the name */
-  card.addEventListener("dblclick", function (e) {
-    if (tbEditing === t.uid || e.target.closest(".tb-acts, a, button, input, .tb-edit")) return;
-    tbEditing = t.uid; tbRenderAll();
-  });
-  card.addEventListener("dragover", function (e) {
-    if (Array.prototype.indexOf.call(e.dataTransfer.types, "text/x-cf-note") === -1) return;
-    e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "link";
-    card.classList.add("link-on");
-    const lane = card.closest("[data-drop]"); if (lane) lane.classList.remove("drop-on");
-  });
-  card.addEventListener("dragleave", function (e) { if (!card.contains(e.relatedTarget)) card.classList.remove("link-on"); });
-  card.addEventListener("drop", function (e) {
-    const noteId = e.dataTransfer.getData("text/x-cf-note");
-    card.classList.remove("link-on");
-    if (!noteId) return;
-    e.preventDefault(); e.stopPropagation();
-    const n = state.notes.filter(function (x) { return String(x.id) === noteId; })[0];
-    if (n) tbLinkNote(t, n);
-  });
-  const body = tbEl("div", "tb-cardbody");
-  /* top: ticket and kind on the left, time on the right */
-  const top = tbEl("div", "tb-cardtop"), url = tbTicketUrl(t); let idEl;
-  if (url) { idEl = tbEl("a", "id", t.id); idEl.href = url; idEl.target = "_blank"; idEl.rel = "noopener noreferrer"; idEl.title = "Open " + t.id + " in ServiceNow"; idEl.draggable = false; }
-  else idEl = tbEl("span", "id", t.id);
-  const mins = tbMinutes(t), over = t.est > 0 && mins > t.est;
-  const sm = tbMinShort;
-  const timeTxt = t.state === "done" ? sm(mins) : mins >= 1 ? (over ? sm(mins - t.est) + " over" : sm(mins) + " / " + sm(t.est)) : t.est ? "~" + sm(t.est) : "";
-  const sq = tbEl("span", "tb-typesq"); sq.style.background = tbTypeHex(t.type); sq.title = TB_KIND[t.type] || "Task";
-  top.append(sq, idEl, tbEl("span", "kind", TB_KIND[t.type] || "Task"), tbEl("span", "t" + (over && t.state !== "done" ? " over" : ""), timeTxt));
-  body.appendChild(top);
-  if (tbEditing === t.uid) {
-    /* edit in place: name and estimate */
-    const f = tbEl("form", "tb-edit");
-    const nIn = tbEl("input", "tb-edit-name"); nIn.value = t.name; nIn.setAttribute("aria-label", "Task name");
-    const eIn = tbEl("input", "tb-edit-est"); eIn.type = "number"; eIn.min = "0"; eIn.step = "5"; eIn.value = t.est; eIn.setAttribute("aria-label", "Estimate in minutes");
-    const save = tbEl("button", "tb-btn tb-btn--primary", "Save"); save.type = "submit";
-    const cancel = tbEl("button", "tb-btn", "Cancel"); cancel.type = "button";
-    f.append(nIn, tbEl("span", "tb-edit-unit", "min"), eIn, save, cancel);
-    f.addEventListener("submit", function (e) { e.preventDefault(); t.name = nIn.value.trim() || t.name; t.est = Math.max(0, parseInt(eIn.value, 10) || 0); tbEditing = null; tbSave(); tbRenderAll(); });
-    cancel.addEventListener("click", function () { tbEditing = null; tbRenderAll(); });
-    f.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); tbEditing = null; tbRenderAll(); } });
-    body.appendChild(f);
-    setTimeout(function () { nIn.focus(); nIn.select(); }, 0);
-  } else {
-    const name = tbEl("div", "name", t.name);
-    name.title = "Double-click to edit";
-    name.addEventListener("dblclick", function () { tbEditing = t.uid; tbRenderAll(); });
-    body.appendChild(name);
-  }
-  if (t.est > 0 && mins >= 1 && t.state !== "done") {
-    const bar = tbEl("div", "tb-cardbar" + (over ? " over" : "")), fill = tbEl("i");
-    fill.style.width = Math.min(100, mins / t.est * 100) + "%";
-    bar.appendChild(fill); body.appendChild(bar);
-  }
-  /* bottom: the note, and what you can do with the card */
-  const foot = tbEl("div", "tb-cardfoot"), n = t.noteId != null ? findNote(t.noteId) : null;
-  const noteBtn = tbEl("button", "tb-notelink" + (n ? "" : " none"), n ? n.title : "Link a note\u2026");
-  noteBtn.type = "button"; noteBtn.title = n ? "Open the note" : "Link an existing note to this task (or drag one onto the card)";
-  noteBtn.addEventListener("click", function () { if (n) tbOpenNote(t, p); else tbPickNoteFor(t); });
-  /* small icon buttons beside the name; the word is the label (hover, screen readers) */
-  const acts = tbEl("div", "tb-acts");
-  const act = function (icon, label, cls, fn, hint) {
-    const b = tbEl("button", "tb-act " + cls, icon); b.type = "button";
-    b.setAttribute("aria-label", label + " " + t.id); b.title = hint || label; b.dataset.label = label;
-    b.addEventListener("click", fn); acts.appendChild(b); return b;
-  };
-  if (t.state === "open" || t.state === "held") {
-    act("\u25b6", "Start", "tb-start", function () { tbStart(t); }, "Start the clock");
-    act("\u2713", "Done", "tb-todone", function () { tbMove(t, "done"); });
-  } else if (t.state === "run") {
-    const paused = timer && timer.pausedAt;
-    act(paused ? "\u25b6" : "\u275a\u275a", paused ? "Resume" : "Pause", "tb-cardpause", function () { timerPause(); tbRenderAll(); });
-    act("\u2713", "Done", "tb-todone", function () { tbMove(t, "done"); });
-  } else act("\u21ba", "Reopen", "tb-reopen", function () { tbMove(t, "open"); }, "Back to To do");
-  if (!n && t.state !== "done") act("\u21b3", "Link a note", "tb-linknote", function () { tbPickNoteFor(t); }, "Link an existing note (or drag one onto the card)");
-  const more = act("\u22ef", "More", "tb-more", function (e) { e.stopPropagation(); tbMenuOpen(p, t, more); }, "More");
-  more.setAttribute("aria-label", "More actions for " + t.id); more.setAttribute("aria-haspopup", "menu");
-  /* two rows: ticket and time, then the name with the buttons beside it; a linked note adds a slim
-     line (an unlinked card offers "Link a note..." only on hover) */
-  const nameEl = body.querySelector(".name");
-  if (nameEl) { const mid = tbEl("div", "tb-cardmid"); body.insertBefore(mid, nameEl); mid.append(nameEl, acts); }
-  else body.appendChild(acts);
-  foot.appendChild(noteBtn);
-  body.appendChild(foot);
-  card.appendChild(body);
-  return card;
 }
 function tbRender(p) {
   const root = p.tbRoot;
   if (!root) return;
-  tb.tasks.forEach(function (t) { if (t.state === "run" && !(timer && timer.boardUid === t.uid)) t.state = "open"; });
-  const today = tbDay(), $ = function (s) { return root.querySelector(s); };
-  const view = tb.view === "board" ? "board" : tb.view === "notes" ? "notes" : "dash";
-  root.querySelectorAll(".tb-view").forEach(function (v) { const on = v.dataset.view === view; v.setAttribute("aria-selected", String(on)); v.classList.toggle("on", on); });
-  $(".tb-board").hidden = view !== "board"; $(".tb-dash").hidden = view !== "dash"; $(".tb-notes").hidden = view !== "notes";
-  root.classList.toggle("tb-on-dash", view !== "board");             /* the summary line repeats the figure cards there */
-  if (view === "notes") tbRenderNotes(p);
-  $(".tb-titlerow h2").textContent = view === "notes" ? "Notes" : "Task board";
-  $(".tb-filters").style.display = view === "board" ? "" : "none";
-  if (view === "dash") tbRenderDash(p);
-  const visible = function (t) { return t.state !== "done" || t.clearedAt === today; };
-  const fam = { prb: "inc", stry: "stsk" };
-  TB_LANES.forEach(function (l) {
-    const lane = l[0];
-    const rows = tb.tasks.filter(function (t) { return t.state === lane && visible(t) && (tb.filter === "all" || t.type === tb.filter || fam[t.type] === tb.filter); });
-    const box = root.querySelector('[data-lane="' + lane + '"]');
-    box.replaceChildren.apply(box, rows.map(function (t) { return tbCard(t, p); }));
-    if (!rows.length) box.appendChild(tbEl("div", "tb-empty", l[2]));
-    root.querySelector('[data-count="' + lane + '"]').textContent = rows.length || "";
-  });
-  root.querySelectorAll(".tb-chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.f === tb.filter)); });
-  const pin = $(".tb-pin");
+  tbRenderNotes(p);
+  const pin = root.querySelector(".tb-pin");
   pin.setAttribute("aria-pressed", String(!!tb.pinned));
-  pin.title = tb.pinned ? "Pinned: the board opens whenever CarbonFibre starts (click to unpin)" : "Pin: open the board whenever CarbonFibre starts";
-  $(".tb-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
-  $(".tb-sOpen").textContent = tb.tasks.filter(function (t) { return t.state === "open"; }).length;
-  $(".tb-sDone").textContent = tb.tasks.filter(function (t) { return t.state === "done" && t.clearedAt === today; }).length;
-  const run = tbRunning();
-  root.querySelector(".tb-now").classList.toggle("idle", !run);
-  $(".tb-runname").textContent = run ? run.name : "Nothing on the go";
-  const meta = $(".tb-meta");
-  meta.replaceChildren();
-  if (run) {
-    meta.append(tbEl("span", "id", run.id), tbEl("span", "", " \u00b7 " + (TB_KIND[run.type] || "Task")));
-    const rn = run.noteId != null && findNote(run.noteId);
-    if (rn) meta.append(tbEl("span", "", " \u00b7 " + rn.title));
-  } else meta.textContent = "Press Start on a card when you begin. The clock runs from there.";
-  root.querySelectorAll(".tb-ctl button").forEach(function (bt) { bt.disabled = !run; });
-  $(".tb-ticket").disabled = !run;                          /* with no ServiceNow address set, it asks for one */
-  $(".tb-ticket").title = run && !tbTicketUrl(run) ? "Set your ServiceNow address to open tickets" : "Open the ticket in ServiceNow";
-  const ub = $(".tb-undo");
-  ub.hidden = !tbUndo;
-  if (tbUndo) $(".tb-undo-msg").textContent = "Removed " + tbUndo.task.id + " \u201c" + tbUndo.task.name + "\u201d.";
-  tbTick(p);
+  pin.title = tb.pinned ? "Pinned: the Notes panel opens whenever CarbonFibre starts (click to unpin)" : "Pin: open the Notes panel whenever CarbonFibre starts";
+  root.querySelector(".tb-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 }
-/* the clock: only the text and bars change each second */
-function tbTick(p) {
-  const root = p.tbRoot;
-  if (!root) return;
-  const run = tbRunning(), $ = function (s) { return root.querySelector(s); };
-  const secs = run ? Math.floor(tbMinutes(run) * 60) : 0, est = run ? run.est * 60 : 0, over = run && est > 0 && secs > est;
-  const clock = $(".tb-clock"), bar = $(".tb-bar");
-  clock.textContent = Math.floor(secs / 3600) + ":" + String(Math.floor(secs % 3600 / 60)).padStart(2, "0") + ":" + String(secs % 60).padStart(2, "0");
-  clock.classList.toggle("over", !!over); bar.classList.toggle("over", !!over);
-  bar.firstElementChild.style.width = (run && est > 0 ? Math.min(100, secs / est * 100) : 0) + "%";
-  $(".tb-est").textContent = !run ? "" : over ? tbMin((secs - est) / 60) + " over the estimate" : run.est ? "of about " + tbMin(run.est) : "";
-  $(".tb-pause").textContent = timer && timer.pausedAt ? "Resume" : "Pause";
-  const logged = timerToday().reduce(function (s, e) { return s + e.actual; }, 0) + (timer ? timerElapsed() : 0);
-  if (tb.view !== "board" && run && (!p.tbDashAt || Date.now() - p.tbDashAt > 30000)) { p.tbDashAt = Date.now(); tbRenderDash(p); }
-  $(".tb-sTime").textContent = tbMin(logged / 60000);
-  if (run) {
-    const card = root.querySelector('.tb-card[data-uid="' + run.uid + '"]');
-    if (card) {
-      const m = tbMinutes(run), o = run.est > 0 && m > run.est, t = card.querySelector(".t");
-      if (t) { t.textContent = m >= 1 ? (o ? tbMinShort(m - run.est) + " over" : tbMinShort(m) + " / " + tbMinShort(run.est)) : "just started"; t.classList.toggle("over", o); }
-      const cb = card.querySelector(".tb-cardbar i");
-      if (cb && run.est > 0) { cb.style.width = Math.min(100, m / run.est * 100) + "%"; cb.parentNode.classList.toggle("over", o); }
-    }
-  }
-}
-/* pinned: the board opens on launch, in the pane it last occupied (after the session is back) */
+/* pinned: the Notes panel opens on launch, in the pane it last occupied (after the session is back) */
 function tbLaunchPin() {
   if (!tb.pinned) return;
   setTimeout(function () {
@@ -23061,7 +22119,6 @@ function tbLaunchPin() {
   }, 150);
 }
 function tbRenderAll() { panes.forEach(function (q) { if (q.type === "taskboard") tbRender(q); }); }
-function tbTickAll() { panes.forEach(function (q) { if (q.type === "taskboard") tbTick(q); }); }
 function tbOpenInPane(p) {
   if (!p) return;
   if (p.type === "note") { p.sync(); p.deactivate(); }
@@ -23078,7 +22135,7 @@ function tbClosePane(p) {
   p.type = "note";
   p.open(p.noteId != null && findNote(p.noteId) ? p.noteId : p.tabs[0]);
 }
-/* show the board: switch to it if it is open somewhere, otherwise open it in the focused pane */
+/* show the Notes panel: switch to it if it is open somewhere, otherwise open it in the focused pane */
 function tbShow() {
   const open = panes.filter(function (q) { return q.type === "taskboard"; })[0];
   if (open) { open.focusThis(); return open; }
@@ -23086,42 +22143,6 @@ function tbShow() {
   tbOpenInPane(p);
   return p;
 }
-/* add the note in front of you as a task: the ticket number from its title or first lines */
-function tbAddCurrentNote() {
-  const p = focusedPane || panes[0], n = p && p.type === "note" ? p.note() : null;
-  if (!n) { pushToastLike("Open a note first."); return; }
-  tbAddNoteTask(n);
-}
-/* link an existing task to an existing note (any name); the card's note link then opens it */
-function tbLinkNote(t, n) {
-  if (!t || !n) return;
-  t.noteId = n.id;
-  tbSave(); tbRenderAll();
-  pushToastLike("Linked " + t.id + " to \u201c" + n.title + "\u201d.");
-}
-function tbUnlinkNote(t) {
-  if (!t) return;
-  t.noteId = null;
-  tbSave(); tbRenderAll();
-  pushToastLike("Unlinked the note from " + t.id + ".");
-}
-function tbPickNoteFor(t) {
-  palPick("note", function (n) { tbLinkNote(t, n); }, "Link " + t.id + " to which note? Type to search");
-}
-/* a task for note n: ticket and name from its title (or the top of the note), linked to it; dropped
-   on a lane it starts there (Working on starts the clock) */
-function tbAddNoteTask(n, lane) {
-  const existing = tb.tasks.filter(function (t) { return sameId(t.noteId, n.id) && t.state !== "done"; })[0];
-  if (existing) { if (lane && lane !== existing.state) tbMove(existing, lane); pushToastLike("That note is already on the board."); return existing; }
-  const m = /\b(SCTASK|PTASK|CTASK|STSK|STRY|RITM|INC|CHG|PRB)\d+\b/i.exec(n.title + "\n" + n.content.slice(0, 600));
-  const id = m ? m[0].toUpperCase() : "";
-  const name = n.title.replace(id ? new RegExp("\\b" + id + "\\b", "i") : /$^/, "").replace(/^[\s\-:\u2014]+|[\s\-:\u2014]+$/g, "") || n.title;
-  const t = tbAdd(id || "TASK", name, timePrefs.minutes, n.id) || tb.tasks[tb.tasks.length - 1];
-  if (t && lane && lane !== "open") tbMove(t, lane);
-  pushToastLike("Added " + (id || n.title) + " to the task board.");
-  return t;
-}
-
 const TIMER_KEY = "carbonfibre-timer", TIMELOG_KEY = "carbonfibre-timelog", TIMEPREF_KEY = "carbonfibre-timeprefs";
 let timer = null;             /* { task, noteId, planned, startedAt, pausedMs, pausedAt, alerted } */
 let timeLog = [];
@@ -23177,7 +22198,6 @@ function timerNotify(title, body) {
 
 /* ---- start, pause, extend, finish ---- */
 function timerStart(task, minutes, noteId) {
-  if (timer && timer.boardUid) { tbPending[timer.boardUid] = "open"; timerFinish(true); }   /* a board task in progress is logged, not lost */
   timer = { task: task || "Focus", noteId: noteId == null ? null : noteId, planned: minutes * 60000,
             startedAt: Date.now(), pausedMs: 0, pausedAt: null, alerted: false };
   timePrefs.minutes = minutes; timePrefsSave();
@@ -23203,7 +22223,7 @@ function timerExtend(minutes) {
 /* Done logs the block; discard throws it away. Either way the timer stops. */
 function timerFinish(keep) {
   if (!timer) return;
-  const actual = timerElapsed(), boardUid = timer.boardUid;
+  const actual = timerElapsed();
   if (keep && actual >= 30000) {                     /* under half a minute is a mis-click, not a block */
     const entry = { task: timer.task, noteId: timer.noteId, start: timer.startedAt, end: Date.now(),
                   planned: timer.planned, actual: actual };
@@ -23215,7 +22235,6 @@ function timerFinish(keep) {
   timerSave(); timerHideAlert();
   if (timerTick) { clearInterval(timerTick); timerTick = null; }
   timerRender();
-  if (boardUid) tbTimerEnded(boardUid, actual, keep);     /* the task board gets the time */
 }
 
 /* one line at the end of the task's note: when, how long, and how that compared to the plan */
@@ -23258,7 +22277,6 @@ function timerRun() {
 
 const BASE_TITLE = document.title;
 function timerRender() {
-  if (typeof tbTickAll === "function") tbTickAll();
   const pill = document.getElementById("btnTimer"), bar = document.getElementById("timerBar");
   if (!pill) return;
   const label = pill.querySelector(".tm-label");
@@ -23547,23 +22565,8 @@ function palCommands() {
         if (!txt) { pushToastLike("Highlight some lines first."); return; }
         copyRich(txt.split("\n")).then(function (ok) { pushToastLike(ok ? "Copied with formatting." : "Copied as plain text."); });
       } },
-    { label: "Task board: show", run: function () { tbShow(); } },
-    { label: "Task board: start task", run: function () {
-        const p = tbShow(), first = p && p.tbRoot && p.tbRoot.querySelector('[data-lane="open"] .tb-card .tb-start');
-        if (first) first.focus(); else pushToastLike("Nothing to do yet. Type a task into the box at the top of To do.");
-      } },
-    { label: "Task board: stop timer", run: function () { if (tbRunning()) tbStopAs("open"); else pushToastLike("Nothing running on the board."); } },
-    { label: "Task board: add this note as a task", run: function () { tbAddCurrentNote(); } },
-    { label: "Open notes dashboard (pinned notes and folders)", run: function () { tb.view = "notes"; tb.notesMode = "overview"; tbSave(); const q = tbShow(); tbRenderAll(); if (q && q.renderTabs) q.renderTabs(); } },
-    { label: "All notes (find, sort and tidy every note)", run: function () { tb.view = "notes"; tb.notesMode = "all"; tbSave(); const q = tbShow(); tbRenderAll(); if (q && q.renderTabs) q.renderTabs(); } },
-    { label: "Task board: link this note to a task\u2026", run: function () {
-        const q = focusedPane || panes[0], n = q && q.type === "note" ? q.note() : null;
-        if (!n) { pushToastLike("Open a note first."); return; }
-        if (!tb.tasks.length) { pushToastLike("The task board has no tasks yet."); return; }
-        setTimeout(function () { palPick("task", function (t) { tbLinkNote(t, n); }, "Link \u201c" + n.title + "\u201d to which task? Type to search"); }, 0);
-      } },
-    { label: "Task board: set ServiceNow address", run: function () { tbSetSnowBase(); } },
-    { label: "Task board: ServiceNow link style", run: function () { tbSetSnowStyle(); } },
+    { label: "Open notes dashboard (pinned notes and folders)", run: function () { openLibrary("overview"); } },
+    { label: "All notes (find, sort and tidy every note)", run: function () { openLibrary("all"); } },
     { label: "Search all notes", key: "Ctrl+Shift+F", run: function () { showView("search"); } },
     { label: "Open graph", key: "Ctrl+G", run: function () { openGraph(); } },
     { label: "Toggle sidebar", run: click("#btnSidebar") },
@@ -23622,13 +22625,7 @@ function palRender() {
   const cmdMode = raw.charAt(0) === ">", headMode = raw.charAt(0) === "@", tplMode = raw.charAt(0) === "/";
   let q = (cmdMode || headMode || tplMode ? raw.slice(1) : raw).trim().toLowerCase();
   let rows = [];
-  if (pal.pick && pal.pick.kind === "task" && !cmdMode) {
-    /* open tasks first, then today's finished ones */
-    const order = { run: 0, open: 1, held: 2, done: 3 }, today = tbDay();
-    tb.tasks.filter(function (t) { return t.state !== "done" || t.clearedAt === today; })
-      .sort(function (a, b) { return order[a.state] - order[b.state]; })
-      .forEach(function (t) { const m = palMatch(t.id + " " + t.name, q); if (m) rows.push({ kind: "tbtask", t: t, m: m }); });
-  } else if (tplMode) {
+  if (tplMode) {
     templateList().forEach(function (t) { const m = palMatch(t.name, q); if (m) rows.push({ kind: "tpl", t: t, m: m }); });
   } else if (headMode) {
     const hp = (pal.spot && pal.spot.pane) || focusedPane || panes[0];
@@ -23650,7 +22647,7 @@ function palRender() {
     });
     if (!q) rows.sort(function (a, b) { return (b.n.mtime || 0) - (a.n.mtime || 0); });
     /* commands that match come after the notes, so "text colour" works without typing > first */
-    if (q.length >= 3 && !pal.pick) {
+    if (q.length >= 3) {
       rows.sort(function (a, b) { return b.m.score - a.m.score; });
       const qn = q.replace(/colou?r/g, "colour"), cmds = [];
       palCommands().forEach(function (c) { const m = palMatch(c.label, qn); if (m && m.score > 0) cmds.push({ kind: "cmd", c: c, m: m }); });
@@ -23668,14 +22665,13 @@ function palRender() {
     return;
   }
   list.innerHTML = pal.rows.map(function (r, i) {
-    const label = r.kind === "cmd" ? r.c.label : r.kind === "head" ? r.text : r.kind === "tpl" ? r.t.name : r.kind === "tbtask" ? r.t.id + "  " + r.t.name : r.n.title;
-    const meta = r.kind === "tbtask" ? ({ run: "Working on", open: "To do", held: "Waiting", done: "Done today" }[r.t.state] + (r.t.noteId != null && findNote(r.t.noteId) ? " \u00b7 linked to " + findNote(r.t.noteId).title : "")) :
-      r.kind === "tpl" ? (r.t.own ? "your template" : "built in") : r.kind === "cmd" ? (r.c.key ? "<kbd>" + esc(r.c.key) + "</kbd>" : "")
+    const label = r.kind === "cmd" ? r.c.label : r.kind === "head" ? r.text : r.kind === "tpl" ? r.t.name : r.n.title;
+    const meta = r.kind === "tpl" ? (r.t.own ? "your template" : "built in") : r.kind === "cmd" ? (r.c.key ? "<kbd>" + esc(r.c.key) + "</kbd>" : "")
              : r.kind === "head" ? "H" + r.level + "  line " + (r.line + 1)
              : (r.n.path && r.n.path.indexOf("/") > 0 ? esc(r.n.path.split("/").slice(0, -1).join("/")) : "");
     return '<div class="cmd-row' + (i === pal.sel ? " sel" : "") + '" role="option" data-i="' + i + '"' +
       (i === pal.sel ? ' aria-selected="true"' : "") + (r.kind === "head" ? ' style="padding-left:' + (10 + (r.level - 1) * 14) + 'px"' : "") + ">" +
-      ico(r.kind === "cmd" ? "command" : r.kind === "head" ? "hash" : r.kind === "tpl" ? "pencil" : r.kind === "tbtask" ? "check" : "file") +
+      ico(r.kind === "cmd" ? "command" : r.kind === "head" ? "hash" : r.kind === "tpl" ? "pencil" : "file") +
       '<span class="cmd-label">' + palMark(label, r.m.hits) + '</span><span class="cmd-meta">' + meta + "</span></div>";
   }).join("");
   const cur = list.querySelector(".cmd-row.sel");
@@ -23775,16 +22771,6 @@ function openDailyNote() {
   const c = tplCursor(tplFill(t.body, title));
   createNoteWithText(title, c.text, null, c.line, c.col);
 }
-/* open the palette to pick a note ("note") or an open task ("task"); fn gets the choice */
-let PAL_PLACEHOLDER = null;
-function palPick(kind, fn, hint) {
-  palOpen("");
-  pal.pick = { kind: kind, fn: fn };
-  const inp = document.getElementById("cmdIn");
-  if (PAL_PLACEHOLDER === null) PAL_PLACEHOLDER = inp.placeholder;
-  inp.placeholder = hint || (kind === "task" ? "Pick a task" : "Pick a note");
-  palRender();
-}
 /* colour from the palette: opening it took focus from the note, so the caret and selection it had
    (captured when the palette opened) go back first, then the colour is applied to them */
 function colourAfterPalette(q, colour) {
@@ -23802,8 +22788,6 @@ function palOpen(prefix, tplAction) {
   const fpS = focusedPane || panes[0];
   pal.textSel = fpS && fpS.allSelected && fpS.selEnds ? { pane: fpS, hl: fpS.selEnds() }
     : fpS && fpS.ta && fpS.activeLine !== null ? { pane: fpS, line: fpS.activeLine, start: fpS.ta.selectionStart, end: fpS.ta.selectionEnd } : null;
-  pal.pick = null;
-  if (PAL_PLACEHOLDER !== null) document.getElementById("cmdIn").placeholder = PAL_PLACEHOLDER;
   pal.tplAction = tplAction || null;
   pal.back = document.activeElement;
   const fp0 = focusedPane || panes[0];
@@ -23830,10 +22814,7 @@ function palClose(restore) {
 }
 function palRun(i, newPane) {
   const r = pal.rows[i]; if (!r) return;
-  const pick = pal.pick; pal.pick = null;
   palClose(false);
-  if (pick && r.kind === "note" && pick.kind === "note") { pick.fn(r.n); return; }
-  if (pick && r.kind === "tbtask") { pick.fn(r.t); return; }
   if (r.kind === "cmd") { r.c.run(); return; }
   if (r.kind === "tpl") { const act = pal.tplAction || "new", spot = pal.spot; pal.tplAction = null; if (act === "insert") insertTemplate(r.t, spot); else newFromTemplate(r.t); return; }
   if (r.kind === "head") {

@@ -109,16 +109,16 @@
   p.renderTabs = function () {
     tabTreeSoon();
     p.tabsEl.innerHTML = "";
-    if (p.type === "taskboard" || p.type === "sheet") {   /* the board's or sheet's own tab: closing it goes back to the note */
+    if (p.type === "taskboard" || p.type === "sheet") {   /* the Notes panel's or sheet's own tab: closing it goes back to the note */
       const isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
       const bt = document.createElement("div");
       bt.className = "tab on tab-board";
       const bl = document.createElement("span");
       bl.className = "tab-lbl";
       if (isSheet) bl.innerHTML = ico("table");
-      bl.appendChild(document.createTextNode((isSheet ? " " + (shObj ? shObj.title : "Sheet") : tb.view === "notes" ? "Notes" : "Task board")));
+      bl.appendChild(document.createTextNode((isSheet ? " " + (shObj ? shObj.title : "Sheet") : "Notes")));
       const bx = document.createElement("button");
-      bx.className = "tab-x"; bx.innerHTML = ico("x"); bx.title = isSheet ? "Close the sheet" : "Close the task board";
+      bx.className = "tab-x"; bx.innerHTML = ico("x"); bx.title = isSheet ? "Close the sheet" : "Close the Notes panel";
       bx.addEventListener("mousedown", function (e) { e.stopPropagation(); });
       bx.addEventListener("click", function (e) { e.stopPropagation(); if (isSheet) closeSheetPane(p); else tbClosePane(p); });
       bt.appendChild(bl); bt.appendChild(bx);

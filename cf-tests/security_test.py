@@ -30,12 +30,10 @@ with sync_playwright() as p:
                 [json.dumps(NOTES), json.dumps(SHEETS), json.dumps(BOARD)])
     pg.reload(); pg.wait_for_timeout(900)
     E = lambda js, *a: pg.evaluate(js, *a)
-    check("the hostile board still loads (cleaned, not dropped)", E("() => tb.tasks.length === 2"))
+    check("old saved task board data is ignored (the board is gone)", E("() => tb.tasks === undefined && tb.snowBase === undefined && !document.getElementById('actBoard')"))
     injected = lambda: E("() => [...document.querySelectorAll('[id^=pwn]')].map(e => e.id + ':' + e.tagName).concat(window.__x ? ['script ' + window.__x] : [])")
     steps = [("a note", "() => openInPane(1)"), ("its backlink", "() => openInPane(2)"), ("open tabs", "() => showView('tabs')"),
              ("search", "() => showView('search')"), ("all notes", "() => document.getElementById('actLibrary').click()"),
-             ("task board", "() => document.getElementById('actBoard').click()"),
-             ("board views", "() => ['Board', 'Notes', 'Dashboard'].forEach(v => { const b = [...document.querySelectorAll('.tb-view')].find(x => x.textContent.trim() === v); if (b) b.click(); })"),
              ("graph", "() => { openGraph(); graphSelect(graphData.order[0]); }"), ("graph closed", "() => closeGraph()"),
              ("the palette", "() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, bubbles: true })); }")]
     bad = []
@@ -53,8 +51,7 @@ with sync_playwright() as p:
     check("a link that isn't opened still shows its text", E("() => [...document.querySelectorAll('.xl-off')].map(e => e.textContent)") [:2] == ["js", "tab"])
     check("normalizeUrl", E("""() => [normalizeUrl('JaVaScRiPt:x'), normalizeUrl(' java\\tscript:x'), normalizeUrl('\\u0001javascript:x'), normalizeUrl('vbscript:x'),
         normalizeUrl('file:///c:/x'), normalizeUrl('ms-msdt:x'), normalizeUrl('https://a.b'), normalizeUrl('a.b/c')].join('|')""") == "||||||https://a.b|https://a.b/c")
-    check("a board's ServiceNow address must be https (a vault can't plant javascript:)", E("() => tbTicketUrl(tb.tasks[1]) === '' && tb.snowBase === ''"))
-    check("board fields are kept to known values", E("() => tb.tasks[0].state === 'open' && /^[\\w-]+$/.test(tb.tasks[0].uid) && tb.events.length === 0"))
+    check("the Notes panel's saved settings are kept to known values", E("() => Object.keys(tb).sort().join() === 'libGroup,notesMode,pinned,pinnedPane'"), str(E("() => Object.keys(tb)")))
     check("no errors from hostile data", not errs, errs[:2])
     # framed inside another page (clickjacking): the app hides itself
     import tempfile

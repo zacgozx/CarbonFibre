@@ -129,23 +129,8 @@ function palCommands() {
         if (!txt) { pushToastLike("Highlight some lines first."); return; }
         copyRich(txt.split("\n")).then(function (ok) { pushToastLike(ok ? "Copied with formatting." : "Copied as plain text."); });
       } },
-    { label: "Task board: show", run: function () { tbShow(); } },
-    { label: "Task board: start task", run: function () {
-        const p = tbShow(), first = p && p.tbRoot && p.tbRoot.querySelector('[data-lane="open"] .tb-card .tb-start');
-        if (first) first.focus(); else pushToastLike("Nothing to do yet. Type a task into the box at the top of To do.");
-      } },
-    { label: "Task board: stop timer", run: function () { if (tbRunning()) tbStopAs("open"); else pushToastLike("Nothing running on the board."); } },
-    { label: "Task board: add this note as a task", run: function () { tbAddCurrentNote(); } },
-    { label: "Open notes dashboard (pinned notes and folders)", run: function () { tb.view = "notes"; tb.notesMode = "overview"; tbSave(); const q = tbShow(); tbRenderAll(); if (q && q.renderTabs) q.renderTabs(); } },
-    { label: "All notes (find, sort and tidy every note)", run: function () { tb.view = "notes"; tb.notesMode = "all"; tbSave(); const q = tbShow(); tbRenderAll(); if (q && q.renderTabs) q.renderTabs(); } },
-    { label: "Task board: link this note to a task\u2026", run: function () {
-        const q = focusedPane || panes[0], n = q && q.type === "note" ? q.note() : null;
-        if (!n) { pushToastLike("Open a note first."); return; }
-        if (!tb.tasks.length) { pushToastLike("The task board has no tasks yet."); return; }
-        setTimeout(function () { palPick("task", function (t) { tbLinkNote(t, n); }, "Link \u201c" + n.title + "\u201d to which task? Type to search"); }, 0);
-      } },
-    { label: "Task board: set ServiceNow address", run: function () { tbSetSnowBase(); } },
-    { label: "Task board: ServiceNow link style", run: function () { tbSetSnowStyle(); } },
+    { label: "Open notes dashboard (pinned notes and folders)", run: function () { openLibrary("overview"); } },
+    { label: "All notes (find, sort and tidy every note)", run: function () { openLibrary("all"); } },
     { label: "Search all notes", key: "Ctrl+Shift+F", run: function () { showView("search"); } },
     { label: "Open graph", key: "Ctrl+G", run: function () { openGraph(); } },
     { label: "Toggle sidebar", run: click("#btnSidebar") },
@@ -204,13 +189,7 @@ function palRender() {
   const cmdMode = raw.charAt(0) === ">", headMode = raw.charAt(0) === "@", tplMode = raw.charAt(0) === "/";
   let q = (cmdMode || headMode || tplMode ? raw.slice(1) : raw).trim().toLowerCase();
   let rows = [];
-  if (pal.pick && pal.pick.kind === "task" && !cmdMode) {
-    /* open tasks first, then today's finished ones */
-    const order = { run: 0, open: 1, held: 2, done: 3 }, today = tbDay();
-    tb.tasks.filter(function (t) { return t.state !== "done" || t.clearedAt === today; })
-      .sort(function (a, b) { return order[a.state] - order[b.state]; })
-      .forEach(function (t) { const m = palMatch(t.id + " " + t.name, q); if (m) rows.push({ kind: "tbtask", t: t, m: m }); });
-  } else if (tplMode) {
+  if (tplMode) {
     templateList().forEach(function (t) { const m = palMatch(t.name, q); if (m) rows.push({ kind: "tpl", t: t, m: m }); });
   } else if (headMode) {
     const hp = (pal.spot && pal.spot.pane) || focusedPane || panes[0];
@@ -232,7 +211,7 @@ function palRender() {
     });
     if (!q) rows.sort(function (a, b) { return (b.n.mtime || 0) - (a.n.mtime || 0); });
     /* commands that match come after the notes, so "text colour" works without typing > first */
-    if (q.length >= 3 && !pal.pick) {
+    if (q.length >= 3) {
       rows.sort(function (a, b) { return b.m.score - a.m.score; });
       const qn = q.replace(/colou?r/g, "colour"), cmds = [];
       palCommands().forEach(function (c) { const m = palMatch(c.label, qn); if (m && m.score > 0) cmds.push({ kind: "cmd", c: c, m: m }); });
@@ -250,14 +229,13 @@ function palRender() {
     return;
   }
   list.innerHTML = pal.rows.map(function (r, i) {
-    const label = r.kind === "cmd" ? r.c.label : r.kind === "head" ? r.text : r.kind === "tpl" ? r.t.name : r.kind === "tbtask" ? r.t.id + "  " + r.t.name : r.n.title;
-    const meta = r.kind === "tbtask" ? ({ run: "Working on", open: "To do", held: "Waiting", done: "Done today" }[r.t.state] + (r.t.noteId != null && findNote(r.t.noteId) ? " \u00b7 linked to " + findNote(r.t.noteId).title : "")) :
-      r.kind === "tpl" ? (r.t.own ? "your template" : "built in") : r.kind === "cmd" ? (r.c.key ? "<kbd>" + esc(r.c.key) + "</kbd>" : "")
+    const label = r.kind === "cmd" ? r.c.label : r.kind === "head" ? r.text : r.kind === "tpl" ? r.t.name : r.n.title;
+    const meta = r.kind === "tpl" ? (r.t.own ? "your template" : "built in") : r.kind === "cmd" ? (r.c.key ? "<kbd>" + esc(r.c.key) + "</kbd>" : "")
              : r.kind === "head" ? "H" + r.level + "  line " + (r.line + 1)
              : (r.n.path && r.n.path.indexOf("/") > 0 ? esc(r.n.path.split("/").slice(0, -1).join("/")) : "");
     return '<div class="cmd-row' + (i === pal.sel ? " sel" : "") + '" role="option" data-i="' + i + '"' +
       (i === pal.sel ? ' aria-selected="true"' : "") + (r.kind === "head" ? ' style="padding-left:' + (10 + (r.level - 1) * 14) + 'px"' : "") + ">" +
-      ico(r.kind === "cmd" ? "command" : r.kind === "head" ? "hash" : r.kind === "tpl" ? "pencil" : r.kind === "tbtask" ? "check" : "file") +
+      ico(r.kind === "cmd" ? "command" : r.kind === "head" ? "hash" : r.kind === "tpl" ? "pencil" : "file") +
       '<span class="cmd-label">' + palMark(label, r.m.hits) + '</span><span class="cmd-meta">' + meta + "</span></div>";
   }).join("");
   const cur = list.querySelector(".cmd-row.sel");

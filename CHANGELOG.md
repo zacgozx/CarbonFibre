@@ -4,6 +4,20 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Task board removed
+- Removed: the Board (lanes, cards, quick-add, filter chips, the "Working on" banner and its clock), the
+  Dashboard (figure cards, My tickets, Last 7 days, Time by type, Activity), ServiceNow (ticket links,
+  "Open ticket", the address and link-style commands), the task board button in the left bar, "+ Task",
+  the task-board commands, ticket badges and the "On the board" filter in Notes, and the board's copy in
+  a vault (`.carbonfibre/taskboard.json` is no longer read or written; an old one can be deleted).
+  About 1,200 lines of code and styles.
+- Kept: the Notes panel (Overview: pinned notes, pinned folders, recent notes; All notes), its Incident,
+  Change and Daily note buttons and its pin; it opens from the All notes button in the left bar, Alt+N
+  or the command palette. The Timer in the status bar is unchanged.
+- Old saved board data is ignored and dropped on the next save.
+- Tests: `dash_test.py`, `tb2_test.py`, `tbvault_test.py` and `link_test.py` deleted (board only);
+  `allnotes`, `notesdash`, `library`, `reveal`, `tooltips`, `security` and `cleanup` updated.
+
 ### Pop-out: no lost edits when the main window reloads or closes
 - A popped-out note says hello to the main window every 1.5 s, with its text while an edit is
   unconfirmed. A reloaded main window recognises its popped-out notes again and saves what they typed

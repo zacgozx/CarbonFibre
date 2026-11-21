@@ -284,9 +284,8 @@ function renderList(listEl, q) {
     });
     item.addEventListener("dblclick", function () { state.renamingId = n.id; renderSidebar(); });
 
-    item.draggable = true;                     /* onto the task board: a task for this note */
-    item.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-cf-note", String(n.id)); e.dataTransfer.effectAllowed = "copyMove"; });
     if (state.backend === "folder") {          /* drag a note onto a folder to move it */
+      item.draggable = true;
       item.addEventListener("dragstart", function (e) {
         e.dataTransfer.setData("text/plain", String(n.id));
         e.dataTransfer.effectAllowed = "copyMove";
@@ -455,8 +454,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".act-btn[data-view]"), f
   b.addEventListener("click", function () { showView(b.dataset.view, true); });
 });
 document.getElementById("actLibrary").addEventListener("click", function () { openLibrary("all"); });
-/* the board and the graph: clicking shows them (closing is their own ×, or Esc for the graph) */
-document.getElementById("actBoard").addEventListener("click", function () { const q = tbShow(); if (q) revealPane(q); });
+/* the graph: clicking shows it (closing is its own ×, or Esc) */
 document.getElementById("actGraph").addEventListener("click", function () { openGraph(); });
 
 /* ---------------- search input ---------------- */

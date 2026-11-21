@@ -19,8 +19,7 @@ VAULT = """() => {
   for (let i = 0; i < 33; i++) notes.push(mk('Daily/2026-09-' + String(i + 1).padStart(2, '0') + '.md', '# 2026-09-' + (i + 1) + '\\nLog for the day ' + i + ' with a few words.', 30 + i));
   state.notes = notes;
   Object.keys(pinned).forEach(k => delete pinned[k]); pinned['Shift log.md'] = 1; savePins();
-  tb.tasks = []; const t = tbAdd('INC0048812', 'Exchange node not reporting', 45); t.noteId = 'Incidents/INC0048812.md';
-  renderSidebar(); tb.view = 'notes'; tb.notesMode = 'all'; tbShow(); tbRenderAll(); }"""
+  renderSidebar(); openLibrary('all'); }"""
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1500, "height": 950}, color_scheme=os.environ.get("CF_SCHEME", "light"))
     pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
@@ -33,7 +32,7 @@ with sync_playwright() as p:
     summary = E("() => document.querySelector('.tb.show .tbn-sum').textContent")
     check("a summary of everything", summary == "40 notes in 3 folders \u00b7 3 untitled or empty \u00b7 37 not linked \u00b7 36 not edited in 30+ days", summary)
     chips = E("() => [...document.querySelectorAll('.tb.show .tbn-chip[data-chip]')].map(c => c.textContent)")   # the original chip row (types are a separate row)
-    check("filter chips with counts", chips == ["All40", "Untitled or empty3", "Not linked37", "Not edited in 30+ days36", "Open tasks2", "On the board1", "Pinned1"], str(chips))
+    check("filter chips with counts", chips == ["All40", "Untitled or empty3", "Not linked37", "Not edited in 30+ days36", "Open tasks2", "Pinned1"], str(chips))
     check("All: newest first", names()[:3] == ["Shift log", "INC0048812", "Scratch"], str(names()[:3]))
     pg.locator(".tb.show .tbn-chip[data-chip='tidy']").click(); pg.wait_for_timeout(150)
     check("'Untitled or empty' surfaces the junk", sorted(names()) == ["Scratch", "Untitled", "Untitled 2"], str(names()))
@@ -66,7 +65,7 @@ with sync_playwright() as p:
     pg.locator(".tb.show .tbn-chip[data-chip='all']").click(); pg.wait_for_timeout(100)
     pg.locator(".tb.show .tbn-table tbody tr").first.locator(".tbn-t").click(); pg.wait_for_timeout(250)
     check("clicking a note opens it", E("() => panes.some(q => q.type === 'note' && q.note() && q.note().title === 'Shift log')"))
-    E("() => { tb.view = 'notes'; tbShow(); tbRenderAll(); }"); pg.wait_for_timeout(150)
+    E("() => openLibrary('all')"); pg.wait_for_timeout(150)
     pg.locator(".tb.show [data-nmode='overview']").click(); pg.wait_for_timeout(150)
     check("Overview / All notes switch", E("() => !!document.querySelector('.tb.show .tbn-pinned') && !document.querySelector('.tb.show .tbn-all')"))
     print("  errors:", errs or "none"); ok &= not errs

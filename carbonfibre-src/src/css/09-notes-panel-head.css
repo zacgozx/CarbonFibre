@@ -1,0 +1,24 @@
+/* ---- the Notes panel's header ---- */
+.tb { --tbl-lane: #121216; }
+:root[data-theme="light"] .tb { --tbl-lane: #f3f8fb; }
+/* the header's buttons: one height, the note buttons joined into one group; in a narrow pane
+   labels shorten and the actions wrap below the title, never past the pane */
+.tb-top { overflow: hidden; }
+.tb-titlerow { flex-wrap: wrap; row-gap: 8px; column-gap: 12px; }
+.tb-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; min-width: 0; }
+
+.tb .tb-qa, .tb .tb-pin { height: 28px; min-height: 28px; box-sizing: border-box; font: 600 12.5px/1 var(--sans); display: inline-flex; align-items: center; gap: 6px; }
+.tb .tb-qa { padding: 0 11px; border-radius: 7px; border: 1px solid var(--tbd-cardline); background: var(--tbd-card); color: var(--tb-ink); }
+.tb .tb-qa:hover { border-color: var(--tb-blu); color: var(--tb-blu); }
+/* the joined group: a quiet label, then three buttons sharing their borders */
+.tb-qa-group { display: inline-flex; align-items: center; border: 1px solid var(--tbd-cardline); border-radius: 7px; background: var(--tbd-card); overflow: hidden; }
+.tb-qa-lbl { padding: 0 8px 0 10px; font-size: 12px; color: var(--tb-mute); white-space: nowrap; border-right: 1px solid var(--tbd-cardline); height: 26px; display: inline-flex; align-items: center; }
+.tb .tb-qa-group .tb-qa { border: 0; border-radius: 0; height: 26px; min-height: 26px; background: none; }
+.tb .tb-qa-group .tb-qa + .tb-qa { border-left: 1px solid var(--tbd-cardline); }
+.tb .tb-qa-group .tb-qa:hover { background: rgba(var(--tb-blu-rgb), .1); color: var(--tb-blu); }
+.tb-short { display: none; }
+.tb .tb-pin { padding: 0 11px; border-radius: 7px; border-color: var(--tbd-cardline); background: var(--tbd-card); }
+.tb .tb-pin[aria-pressed="true"] { color: var(--tb-acc-text); border-color: rgba(var(--tb-acc-rgb), .55); }
+@container (max-width: 980px) { .tb-long { display: none; } .tb-short { display: inline; } .tb-qa-lbl { display: none; } }
+@container (max-width: 720px) { .tb-actions { margin-left: 0; width: 100%; } .tb-date { display: none; } }
+@container (max-width: 520px) { .tb-qa-group { display: none; } }
