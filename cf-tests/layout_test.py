@@ -28,6 +28,12 @@ with sync_playwright() as p:
     check("split right of the lower pane makes a new column", cols() == [["Alpha", "Bravo"], ["Charlie"]], str(cols()))
     check("the lower pane is under the upper one", E("() => panes[1].root.getBoundingClientRect().top > panes[0].root.getBoundingClientRect().bottom - 2"))
 
+    E("() => { panes.forEach(q => { const bl = q.root.querySelector('.backlinks'); if (!bl.classList.contains('collapsed')) bl.querySelector('.bl-head').click(); }); const sh = document.querySelector('.sheet-head'); if (!sh.classList.contains('folded')) sh.click(); }"); pg.wait_for_timeout(100)
+    bars = E("""() => { const r = e => e.getBoundingClientRect(), bl = panes[panes.length - 1].root.querySelector('.backlinks'), sh = document.querySelector('.sheet-head');
+      const lab = [...sh.querySelectorAll('*')].find(e => e.textContent.trim() === 'Sheets'), bll = bl.querySelector('.bl-label');
+      return [Math.round(r(sh).top), Math.round(r(bl).top), Math.round(r(sh).height), Math.round(r(bl).height), Math.round(r(lab).top), Math.round(r(bll).top)]; }""")
+    check("collapsed, the Sheets bar and Linked mentions bar are one height, lines and labels level", bars[0] == bars[1] and bars[2] == bars[3] == 41 and bars[4] == bars[5], str(bars))
+
     print("DROPPING A TAB ON AN EDGE")
     E("() => { panes[2].open(4); }"); pg.wait_for_timeout(100)
     drag = """a => { const [from, to, fx, fy, wait] = a, col = panes[to].root, r = col.getBoundingClientRect();

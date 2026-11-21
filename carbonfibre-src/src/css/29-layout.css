@@ -62,3 +62,9 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
 /* a popped-out note that can't reach the main window (js/44-popout.js) */
 .pop-offline { position: fixed; left: 0; right: 0; top: 0; z-index: 300; display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: #8a2c2c; color: #fff; font-size: 13px; }
 .pop-offline-text { flex: 1; }
+
+/* the Sheets bar (bottom of the sidebar) and the Linked mentions bar (bottom of a pane) sit side by side:
+   one height (40px under a 1px line, as tall as each other) with their labels centred, so collapsed they
+   line up across the window */
+.sheet-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }
+.bl-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }

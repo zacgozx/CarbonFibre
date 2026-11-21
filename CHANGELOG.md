@@ -4,6 +4,11 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Sheets and Linked mentions bars line up
+- The Sheets bar at the bottom of the sidebar and the Linked mentions bar at the bottom of a pane are
+  both 40px under a 1px line, with centred labels, so collapsed their lines and labels are level.
+  Check in `layout_test.py`.
+
 ### CI: the pop-out test waited for nothing
 - `desktop/test/popout_test.js` added its note before the page had loaded its own notes, so on a busy
   machine (CI) the note was replaced and nothing popped out. It now waits for the page to be ready,
