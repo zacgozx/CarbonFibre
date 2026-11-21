@@ -77,6 +77,10 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
 .tl-copy:hover { border-color: var(--acc); color: var(--acc-text); }
 .tl-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }
 .tl-copy { top: 4px; transform: none; }
+/* the day picker beside it: the browser's own date input, themed through color-scheme */
+.tl-date { position: absolute; right: 130px; top: 4px; z-index: 1; height: 24px; box-sizing: border-box; padding: 0 6px;
+  font: 500 12.5px/1 var(--sans); color: var(--txt); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.tl-date:hover, .tl-date:focus-visible { border-color: var(--acc); }
 
 /* the Timeline strip (js/39-timeline.js): a time axis under the heading */
 .tl-strip { display: block; margin: 10px 0 4px; padding: 8px 12px 10px; border: 1px solid var(--line); border-radius: 8px;

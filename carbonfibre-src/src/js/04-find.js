@@ -267,9 +267,11 @@ function lineInnerHtml(raw, fenceInfo, idx) {
   if (c.type === "blank") return "&nbsp;";
   if (c.type === "hr") return '<span data-deco="1" class="hr-rule"></span>';
 
-  const inline = tokensToHtml(scanInline(c.text).tokens);
-  if (c.type === "heading") return inline + (idx >= 0 && Timeline.HEAD.test(raw)
-    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' +
+  const tl = c.type === "heading" && idx >= 0 ? Timeline.HEAD.exec(raw) : null;    /* its day shows in the date picker, not the text */
+  const inline = tokensToHtml(scanInline(tl && tl[2] ? c.text.replace(/\s+\d{4}-\d{2}-\d{2}\s*$/, "") : c.text).tokens);
+  if (c.type === "heading") return inline + (tl
+    ? '<input data-deco="1" type="date" class="tl-date" value="' + (tl[2] || "") + '" aria-label="The day this timeline starts" title="The day this timeline starts">' +
+      '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' +
       (fenceInfo && fenceInfo.timeline ? Timeline.strip(fenceInfo.timeline) : "") : "");
   if (c.type === "task") {
     return '<span data-deco="1" class="cb' + (c.done ? " cb-done" : "") + '"' + (idx >= 0 ? ' data-check="' + idx + '"' : "") +

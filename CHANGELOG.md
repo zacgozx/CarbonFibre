@@ -4,6 +4,16 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Timeline past midnight, and a day you can set
+- The Timeline heading carries its day (`## Timeline 2026-11-21`): set with the browser's own date picker
+  on the heading, or today's date when the first entry is made. Stamps and entries on a later day carry
+  their date (`- 2026-11-22 00:10 Restart`), so the list and the strip stay in order past midnight (the
+  strip's axis runs on across 00:00). Entries on the heading's day stay plain `HH:MM`; picking a new day
+  drops dates that now match it. Days are counted with `Date.UTC`, so a daylight-saving change can't
+  shift one. Copy timeline names the heading's day.
+- Tests in `timeline_test.py`: sorting and stamping after midnight, unticking, the strip's minutes,
+  daylight-saving days, the picker (sets, rewrites dates, clears, never opens the heading).
+
 ### Rubber ducky mode
 - **Toggle rubber ducky mode** (palette) or `:duck`: a panel beside the note that reads its code blocks by
   pattern, offline. Per block: summary, steps with kinds and fields added/removed/after, names with line

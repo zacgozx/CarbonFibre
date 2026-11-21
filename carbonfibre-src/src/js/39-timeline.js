@@ -4,14 +4,32 @@
    and the Timeline section lists the stamped steps by time, with any notes of your own kept among them.
    Alt+Enter (or /log) adds a note of your own; "Copy timeline" puts it on the clipboard as plain lines
    for a ticket. Notes without the heading are never changed. It's all plain markdown.
+   The day: the heading carries it ("## Timeline 2026-11-21", set with the date picker on the heading, or
+   today's date on the first entry). Entries on a later day carry their own date ("- 2026-11-22 00:10
+   Restart"), so an incident running past midnight still sorts and draws in order.
    ============================================================ */
 const Timeline = {
-  HEAD: /^(#{1,6})\s+timeline\s*$/i,
+  HEAD: /^(#{1,6})\s+timeline(?:\s+(\d{4}-\d{2}-\d{2}))?\s*$/i,
   TASK: /^(\s*(?:[-*+]|\d+[.)])\s+\[( |x|X)\]\s+)(.*)$/,
-  STAMP: /\s(\d{1,2}:\d{2})$/,
-  ENTRY: /^\s*[-*+]\s+(\d{1,2}:\d{2})\s+(.*)$/,
+  STAMP: /\s(?:(\d{4}-\d{2}-\d{2})\s)?(\d{1,2}:\d{2})$/,             /* [1] the day when not the heading's, [2] the time */
+  ENTRY: /^\s*[-*+]\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{1,2}:\d{2})\s+(.*)$/,   /* [1] day, [2] time, [3] text */
 
   now() { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); },
+  today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); },
+  /* whole days from day a to day b: both read as UTC midnights, so a daylight-saving hour can't make 23 or 25 */
+  days(a, b) {
+    const u = function (s) { return Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)); };
+    return a && b ? Math.round((u(b) - u(a)) / 864e5) : 0;
+  },
+  /* a stamp for now: the time, with the day in front when it isn't the timeline's day */
+  stamp(day) { const t = Timeline.today(); return (day && t !== day ? t + " " : "") + Timeline.now(); },
+  /* the heading's day, adding today's when it has none (called only when an entry is about to be made) */
+  ensureDay(out, sec) {
+    if (sec.day) return sec.day;
+    sec.day = Timeline.today();
+    out[sec.h] = out[sec.h].replace(/\s*$/, " " + sec.day);
+    return sec.day;
+  },
   /* the section: heading line, and where it ends (the next heading as big or bigger, or the end) */
   section(lines) {
     const h = lines.findIndex(function (l) { return Timeline.HEAD.test(l); });
@@ -19,7 +37,7 @@ const Timeline = {
     const level = Timeline.HEAD.exec(lines[h])[1].length;
     let end = h + 1;
     for (; end < lines.length; end++) { const m = /^(#{1,6})\s/.exec(lines[end]); if (m && m[1].length <= level) break; }
-    return { h: h, end: end };
+    return { h: h, end: end, day: Timeline.HEAD.exec(lines[h])[2] || null };
   },
 
   /* lines after ticking or unticking the lines at `changed`: their stamps, then the section rebuilt.
@@ -27,15 +45,16 @@ const Timeline = {
   apply(lines, changed) {
     const sec = Timeline.section(lines);
     if (!sec) return null;
-    const out = lines.slice(), T = Timeline, key = function (t, x) { return t + "|" + x.trim().toLowerCase(); };
+    const out = lines.slice(), T = Timeline;
+    const key = function (d, t, x) { return (d || sec.day) + " " + t + "|" + x.trim().toLowerCase(); };
     const drop = new Set();                                 /* entries of steps just unticked */
     (changed || []).forEach(function (i) {
       if (i >= sec.h && i < sec.end) return;               /* a checkbox inside the timeline itself */
       const m = T.TASK.exec(out[i] || "");
       if (!m) return;
       const done = m[2] !== " ", s = T.STAMP.exec(m[3]);
-      if (done && !s) out[i] = out[i].replace(/\s+$/, "") + " " + T.now();
-      else if (!done && s) { drop.add(key(s[1], m[3].replace(T.STAMP, ""))); out[i] = out[i].replace(T.STAMP, ""); }
+      if (done && !s) out[i] = out[i].replace(/\s+$/, "") + " " + T.stamp(T.ensureDay(out, sec));
+      else if (!done && s) { drop.add(key(s[1], s[2], m[3].replace(T.STAMP, ""))); out[i] = out[i].replace(T.STAMP, ""); }
     });
     const steps = [], made = new Set();
     out.forEach(function (l, i) {
@@ -43,21 +62,20 @@ const Timeline = {
       const m = T.TASK.exec(l);
       if (!m) return;
       const text = m[3].replace(T.STAMP, "").trim(), s = T.STAMP.exec(m[3]);
-      if (m[2] !== " " && s && text) { steps.push({ time: s[1], text: text }); made.add(key(s[1], text)); }
+      if (m[2] !== " " && s && text) { steps.push({ day: s[1] || null, time: s[2], text: text }); made.add(key(s[1], s[2], text)); }
     });
     /* the section's own lines: entries for ticked steps are rebuilt (never twice), those of steps just
        unticked go, and your own entries and any other text stay */
     const own = [], other = [];
     for (let i = sec.h + 1; i < sec.end; i++) {
       const m = T.ENTRY.exec(out[i]);
-      if (m) { const k = key(m[1], m[2]); if (!made.has(k) && !drop.has(k)) own.push({ time: m[1], text: m[2].trim() }); }
+      if (m) { const k = key(m[1], m[2], m[3]); if (!made.has(k) && !drop.has(k)) own.push({ day: m[1] || null, time: m[2], text: m[3].trim() }); }
       else if (out[i].trim() && !/^\s*[-*+]\s*$/.test(out[i])) other.push(out[i]);
     }
-    const mins = function (e) { const p = e.time.split(":"); return +p[0] * 60 + +p[1]; };
-    /* shortcut: sorted by time of day, so an incident running past midnight sorts wrong; add dates when that bites */
+    const at = function (e) { return T.days(sec.day, e.day || sec.day) * 1440 + T.mins(e.time); };
     const entries = steps.concat(own).map(function (e, k) { return { e: e, k: k }; })
-      .sort(function (a, b) { return mins(a.e) - mins(b.e) || a.k - b.k; })
-      .map(function (o) { return "- " + o.e.time + " " + o.e.text; });
+      .sort(function (a, b) { return at(a.e) - at(b.e) || a.k - b.k; })
+      .map(function (o) { return "- " + (o.e.day && o.e.day !== sec.day ? o.e.day + " " : "") + o.e.time + " " + o.e.text; });
     const body = entries.concat(other);
     const next = out.slice(0, sec.h + 1).concat(body.length ? body : ["- "], sec.end < out.length ? [""] : [], out.slice(sec.end));
     return next.join("\n") === lines.join("\n") ? null : next;
@@ -66,7 +84,7 @@ const Timeline = {
   withEntry(lines, text) {
     let out = lines.slice(), sec = Timeline.section(out);
     if (!sec) { while (out.length && !out[out.length - 1].trim()) out.pop(); out = out.concat(["", "## Timeline"]); sec = Timeline.section(out); }
-    out.splice(sec.end, 0, "- " + Timeline.now() + " " + String(text).replace(/\s+/g, " ").trim());
+    out.splice(sec.end, 0, "- " + Timeline.stamp(Timeline.ensureDay(out, sec)) + " " + String(text).replace(/\s+/g, " ").trim());
     return Timeline.apply(out, []) || out;
   },
 
@@ -97,9 +115,10 @@ const Timeline = {
     const sec = Timeline.section(p.lines);
     if (!sec) return "";
     const rows = [];
-    for (let i = sec.h + 1; i < sec.end; i++) { const m = Timeline.ENTRY.exec(p.lines[i]); if (m) rows.push(m[1] + " " + m[2].trim()); }
-    const n = p.note(), d = new Date();
-    return (n ? n.title + ", " : "") + d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "\n" + rows.join("\n");
+    for (let i = sec.h + 1; i < sec.end; i++) { const m = Timeline.ENTRY.exec(p.lines[i]); if (m) rows.push((m[1] ? m[1] + " " : "") + m[2] + " " + m[3].trim()); }
+    const n = p.note(), day = sec.day || Timeline.today();
+    const d = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)));
+    return (n ? n.title + ", " : "") + d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + "\n" + rows.join("\n");
   },
   copy(p, btn) {
     const t = Timeline.text(p);
@@ -126,15 +145,16 @@ Object.assign(Timeline, {
     lines.forEach(function (l, i) {
       if (i >= sec.h && i < sec.end) return;
       const m = Timeline.TASK.exec(l), s = m && Timeline.STAMP.exec(m[3]);
-      if (m && m[2] !== " " && s) steps[s[1] + "|" + m[3].replace(Timeline.STAMP, "").trim().toLowerCase()] = i;
+      if (m && m[2] !== " " && s) steps[(s[1] || sec.day) + " " + s[2] + "|" + m[3].replace(Timeline.STAMP, "").trim().toLowerCase()] = i;
     });
     const out = [];
     for (let i = sec.h + 1; i < sec.end; i++) {
       const m = Timeline.ENTRY.exec(lines[i]);
       if (!m) continue;
-      const k = m[1] + "|" + m[2].trim().toLowerCase(), step = Object.prototype.hasOwnProperty.call(steps, k);
-      out.push({ t: Timeline.mins(m[1]), time: m[1], text: m[2].trim(), line: step ? steps[k] : i, step: step });
+      const k = (m[1] || sec.day) + " " + m[2] + "|" + m[3].trim().toLowerCase(), step = Object.prototype.hasOwnProperty.call(steps, k);
+      out.push({ t: Timeline.days(sec.day, m[1] || sec.day) * 1440 + Timeline.mins(m[2]), time: (m[1] ? m[1].slice(5) + " " : "") + m[2], text: m[3].trim(), line: step ? steps[k] : i, step: step, day: sec.day });
     }
+    out.sort(function (x, y) { return x.t - y.t; });     /* a hand-edited section can be out of order */
     return out.length ? out : null;
   },
   fit(d) {
@@ -163,7 +183,7 @@ Object.assign(Timeline, {
       track += '<span class="tl-seg' + (long ? " tl-gap" : "") + '" style="left:' + X(d[i - 1].t).toFixed(2) + "%;width:" + (dt / span * 100).toFixed(2) + '%">' +
         (long ? "<em>" + Timeline.dur(dt) + "</em>" : "") + "</span>";
     }
-    const nowM = Timeline.mins(Timeline.now()), last = d[d.length - 1].t, since = nowM - last;
+    const nowM = Timeline.days(d[0].day, Timeline.today()) * 1440 + Timeline.mins(Timeline.now()), last = d[d.length - 1].t, since = nowM - last;
     if (since >= 0 && since < 360 && nowM <= v.b) track += '<span class="tl-now" style="left:' + X(nowM).toFixed(2) + '%"><b>now</b></span>';
     /* labels: each in the first row it fits in (rows below the axis); near the right edge a label
        reads leftwards from its dot so it isn't cut off */
@@ -248,6 +268,23 @@ document.addEventListener("keydown", function (e) {
   e.preventDefault(); e.stopPropagation();
   Timeline.go(dot.closest(".tl-strip"), +dot.dataset.line);
 }, true);
+/* the date picker on the Timeline heading: opens the browser's own calendar without putting the heading
+   into editing; a picked day goes into the heading (cleared: taken out) */
+document.addEventListener("mousedown", function (e) {
+  const b = e.target.closest && e.target.closest(".tl-date");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  try { b.showPicker(); } catch (err) { b.focus(); }
+}, true);
+document.addEventListener("change", function (e) {
+  const b = e.target.closest && e.target.closest(".tl-date");
+  const p = b && panes.filter(function (q) { return q.root.contains(b); })[0];
+  if (!p) return;
+  const lines = p.lines.slice(), sec = Timeline.section(lines);
+  if (!sec || (b.value || null) === sec.day) return;
+  lines[sec.h] = lines[sec.h].replace(/\s+\d{4}-\d{2}-\d{2}\s*$/, "").replace(/\s*$/, b.value ? " " + b.value : "");
+  Timeline.write(p, Timeline.apply(lines, []) || lines);
+});
 /* the button on the Timeline heading: copies without putting the heading into editing */
 document.addEventListener("mousedown", function (e) {
   const b = e.target.closest && e.target.closest(".tl-copy");

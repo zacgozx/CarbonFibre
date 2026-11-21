@@ -106,14 +106,17 @@ In a note with a `## Timeline` heading (the Incident and Change templates have o
 | Untick it | The time comes off and the entry goes |
 | **Alt+Enter** on a line, or `/log` | That line's text (or what you type) is added to the Timeline with the time |
 | **Copy timeline** (on the heading, or the command palette) | The note's name and the day, then one `HH:MM text` line per entry, ready for a ticket |
+| The date picker on the heading | Sets the day the timeline starts (`## Timeline 2026-11-21`); cleared, the heading has no day |
 
 Under the heading the Timeline is also drawn on a time axis: a dot per entry (filled for a ticked step,
 hollow for your own), shaded stretches between them with a long wait marked, and "now" while it's still
 going. Hover a dot for its detail, click it (or Enter) to go to that step, drag to pan, Ctrl+scroll or
 **+** / **−** to zoom, **Fit** to see it all.
 
-Entries you write yourself stay where they are. Notes without the heading are never changed. Times are the
-time of day, so an incident that runs past midnight sorts by time, not by day.
+Entries you write yourself stay where they are. Notes without the heading are never changed. The first entry
+puts today's date on the heading if it has none. Anything stamped on a later day carries its date
+(`- 2026-11-22 00:10 Restart`), so an incident that runs past midnight stays in order, in the list and on the
+axis. To write one by hand after midnight, put the date in front of the time the same way.
 
 ## Layout
 

@@ -21,17 +21,18 @@ with sync_playwright() as p:
     lines = lambda: E("() => panes[0].lines.slice()")
     def section():
         L = lines(); out = []
-        for l in L[L.index("## Timeline") + 1:]:
+        for l in L[next(i for i, l in enumerate(L) if l.startswith("## Timeline")) + 1:]:
             if l.startswith("#"): break
             if l.startswith("- "): out.append(l)
         return out
     tick = lambda i: E("i => panes[0].linesEl.children[i].querySelector('[data-check]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))", i)
     E("() => openInPane(1, panes[0])"); pg.wait_for_timeout(200)
-    now = E("() => Timeline.now()")
+    now = E("() => Timeline.now()"); today = E("() => Timeline.today()")
 
     tick(4); pg.wait_for_timeout(100)
     L = lines()
     check("ticking a step writes the time at its end", L[4] == "- [x] Restart forwarder " + now, L[4])
+    check("the first entry puts today's date on the heading", lines()[7] == "## Timeline " + today, lines()[7])
     check("...and lists it in the Timeline, after the earlier entry", section()[:2] == ["- 09:05 Picked up", "- " + now + " Restart forwarder"], str(section()))
     E("() => histUndo(panes[0])"); pg.wait_for_timeout(50)
     check("...one undo step for both", lines()[4] == "- [ ] Restart forwarder" and section() == ["- 09:05 Picked up"], str([lines()[4], section()]))
@@ -86,7 +87,7 @@ with sync_playwright() as p:
     check("...and never puts the heading into editing (the line being edited stays as it was)", E("() => panes[0].activeLine") == act0, str([act0, E("() => panes[0].activeLine")]))
     pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + 10); pg.keyboard.down("Control"); pg.mouse.wheel(0, -200); pg.keyboard.up("Control"); pg.wait_for_timeout(50)
     check("Ctrl+scroll zooms", span() < s0, str([s0, span()]))
-    E("() => { const q = panes[0], i = q.lines.indexOf('## Timeline') + 1; q.setActive(i, q.lines[i].length); }")
+    E("() => { const q = panes[0], i = q.lines.findIndex(l => l.startsWith('## Timeline')) + 1; q.setActive(i, q.lines[i].length); }")
     pg.keyboard.type(" extra"); E("() => panes[0].deactivate()"); pg.wait_for_timeout(150)
     check("editing an entry redraws the strip", "Picked up extra" in E("() => document.querySelector('.tl-strip').textContent"))
 
@@ -95,7 +96,34 @@ with sync_playwright() as p:
     tick(2); pg.wait_for_timeout(100)
     check("a note without a ## Timeline is never stamped", lines()[2] == "- [x] Milk", lines()[2])
     E("() => { panes[0].setActive(3, 0); }"); pg.keyboard.press("Alt+Enter"); pg.wait_for_timeout(150)
-    check("Alt+Enter there makes the section, at the end", lines()[-2:] == ["## Timeline", "- " + now + " Bread"], str(lines()[-3:]))
+    check("Alt+Enter there makes the section, dated today, at the end", lines()[-2] == "## Timeline " + E("() => Timeline.today()") and re.match(r"^- \d\d:\d\d Bread$", lines()[-1]), str(lines()[-3:]))
+
+    print("PAST MIDNIGHT")
+    mid = ["# INC2", "", "- [x] Failover 23:58", "- [ ] Restart", "", "## Timeline 2026-11-20", "- 23:50 Paged", "- 2026-11-21 00:20 Queue drained", "- 23:58 Failover"]
+    srt = E("l => Timeline.apply(l, []).slice(6)", mid)
+    check("entries on the next day sort after the evening ones", srt == ["- 23:50 Paged", "- 23:58 Failover", "- 2026-11-21 00:20 Queue drained"], str(srt))
+    tk = E("""l => { const t = Timeline.today, n = Timeline.now; Timeline.today = () => '2026-11-21'; Timeline.now = () => '00:05';
+      try { const x = l.slice(); x[3] = '- [x] Restart'; return Timeline.apply(x, [3]); } finally { Timeline.today = t; Timeline.now = n; } }""", mid)
+    check("ticking after midnight stamps the day too, and lists it in order", tk[3] == "- [x] Restart 2026-11-21 00:05" and tk[6:] == ["- 23:50 Paged", "- 23:58 Failover", "- 2026-11-21 00:05 Restart", "- 2026-11-21 00:20 Queue drained"], str(tk))
+    tk[3] = "- [ ] Restart 2026-11-21 00:05"; un = E("([l]) => Timeline.apply(l, [3])", [tk])
+    check("...and unticking takes both away", un[3] == "- [ ] Restart" and not any("Restart" in l for l in un[6:]), str(un))
+    dd = E("l => Timeline.data(l).map(e => e.t)", mid)
+    check("the strip draws the next day after, not before (minutes from the heading's day)", dd == [23 * 60 + 50, 23 * 60 + 58, 1440 + 20], str(dd))
+    check("whole days are counted across daylight saving changes", E("() => [Timeline.days('2026-04-04', '2026-04-05'), Timeline.days('2026-10-03', '2026-10-05'), Timeline.days('2026-12-31', '2027-01-01')]") == [1, 2, 1])
+
+    print("SETTING THE DAY")
+    E("s => { const n = findNote(1); n.content = s; openInPane(1, panes[0]); panes[0].reload(); panes[0].render(); }", "\n".join(mid))
+    E("() => panes[0].deactivate()"); pg.wait_for_timeout(150)
+    picker = pg.locator(".tl-date"); act0 = E("() => panes[0].activeLine")
+    check("the heading has the browser's date picker, showing its day", picker.count() == 1 and picker.input_value() == "2026-11-20", str(picker.count()))
+    check("...and the day isn't repeated in the heading's text", "2026-11-20" not in E("() => panes[0].linesEl.children[5].textContent"))
+    picker.fill("2026-11-21"); pg.wait_for_timeout(150)
+    L = lines()
+    check("picking a day writes it into the heading", L[5] == "## Timeline 2026-11-21", L[5])
+    check("...and entries on that day lose their now-unneeded date", "- 00:20 Queue drained" in L, str(L[5:]))
+    check("the line being edited didn't change (the picker doesn't open the heading)", E("() => panes[0].activeLine") == act0, str([act0, E("() => panes[0].activeLine")]))
+    picker = pg.locator(".tl-date"); picker.fill(""); pg.wait_for_timeout(150)
+    check("clearing it takes the day off the heading", lines()[5] == "## Timeline", lines()[5])
     check("the Change template has a Timeline now too", E("() => TEMPLATES.find(t => /^Change/.test(t.name)).body.includes('## Timeline')"))
     check("no errors", not errs, errs[:2])
     b.close()
