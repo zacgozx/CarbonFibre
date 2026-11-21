@@ -41,7 +41,7 @@ body.cf-popout .pane-col :is(.md-more, .md-float, .md-close) { display: none; }
 
 /* vim (js/44-vim.js): a block caret where the browser has one, and the mode in the status bar */
 body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
-.sb-vim { font-family: var(--mono, monospace); font-size: 11px; color: var(--acc-text); white-space: pre; }
+.sb-vim { font-family: monospace; font-size: 11px; color: var(--acc-text); white-space: pre; }
 
 /* Mermaid diagrams under their code (js/42-mermaid-view.js) */
 .mmd { position: relative; display: block; margin: 6px 0 2px; padding: 42px 12px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: zoom-in; overflow-x: auto; }
@@ -109,3 +109,42 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
 .tl-flash { animation: tl-flash .9s ease-out; }
 @keyframes tl-flash { from { background: var(--acc-soft); } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .tl-flash { animation: none; } .tl-dot:hover > i { transform: none; } }
+
+/* ---------- rubber duck panel (js/44-duck.js) ---------- */
+.pane-col.duck-on .editor { padding-right: 364px; }
+.duck {
+  position: absolute; right: 0; width: 330px; z-index: 3; overflow-y: auto; box-sizing: border-box;
+  padding: 0 12px 16px; border-left: 1px solid var(--line); background: var(--c101010);
+  font-size: 12.5px; line-height: 1.45; color: var(--txt);
+}
+.duck[hidden] { display: none; }
+.duck-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 8px 0 6px; background: inherit; font-weight: 600; color: var(--dim); z-index: 1; }
+.duck-x { background: none; border: 0; color: var(--dim); cursor: pointer; padding: 2px; display: flex; }
+.duck-x svg { width: 14px; height: 14px; }
+.duck-none { color: var(--dim); }
+.duck [data-line] { cursor: pointer; }
+.duck [data-line]:hover { color: var(--acc-text); }
+.duck-flow { margin: 0 0 10px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.duck-flow b { display: block; font-weight: 600; margin-bottom: 4px; color: var(--dim); }
+.duck-node { display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--acc-soft); }
+.duck-arrow { margin: 0 5px; color: var(--dim); }
+.duck-card { margin: 0 0 8px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.duck-card.on { border-color: var(--acc); }
+.duck-sum { font-weight: 500; }
+.duck-qn { color: var(--acc-text); margin-top: 2px; }
+.duck-sec { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+.duck-q { margin: 0 0 4px; padding: 4px 6px; border-left: 2px solid var(--acc); background: var(--acc-soft); border-radius: 0 4px 4px 0; }
+.duck-steps { margin: 0; padding-left: 18px; }
+.duck-step { margin: 0 0 5px; padding: 2px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+.duck-step.cur { background: var(--acc-soft); }
+.duck-kind { display: inline-block; min-width: 54px; font-size: 10.5px; color: var(--dim); }
+.duck-kind.k-filter { color: var(--blu); } .duck-kind.k-aggregate { color: var(--ora); } .duck-kind.k-output, .duck-kind.k-join { color: var(--acc-text); } .duck-kind.k-source { color: var(--txt); }
+.duck-fields { margin-top: 2px; display: flex; flex-direction: column; gap: 2px; }
+.duck-f { display: inline-block; padding: 0 4px; margin: 1px 0; border: 1px solid var(--line); border-radius: 3px; font-family: monospace; font-size: 11px; }
+.duck-add { color: var(--blu); } .duck-rem { color: var(--acc-text); } .duck-after { color: var(--dim); }
+.duck-sym { padding: 1px 0; overflow-wrap: anywhere; }
+.duck-sym.unused { opacity: .7; text-decoration: line-through; text-decoration-color: var(--dim); }
+.duck-ln { color: var(--dim); font-size: 11px; }
+.duck-io { margin-top: 6px; color: var(--dim); }
+.duck-io span { color: var(--txt); }
+.editor-inner > .duck-hl { background: var(--acc-soft); }

@@ -137,6 +137,16 @@ a text object (`iw aw i" a" i( a( i[ i{ i<`), `x X D C s S Y r J ~ p P`, `u` and
 `v` and `V`, `/ ? n N`, and `:w :q :wq :<line> :s/a/b/g :%s/a/b/g`. Not there: macros, marks and named registers;
 `.` repeats a command but not text typed after it. **Ctrl** and **Cmd** shortcuts still go to the app.
 
+## Rubber ducky mode
+
+**Toggle rubber ducky mode** in the command palette (the choice is kept). A panel beside the note explains its
+code blocks (SPL, Logstash, SQL, Python, JavaScript, shell, PowerShell): a one-line summary per block, the
+pipeline step by step with the fields after each, the names it defines (unused ones marked), questions about
+likely mistakes (a field used after `stats` dropped it, a column neither grouped nor aggregated, …), and which
+blocks feed which. Click anything to go to its line. With vim mode: `gd`, `]]` `[[`, `K`, **Ctrl+O** / **Ctrl+I**
+and `:duck`. Live mode, panes 520px or wider. Pattern-based and offline; it stays quiet when unsure. The rules,
+with ids matching the tests, are in [docs/rubber-duck-rules.md](docs/rubber-duck-rules.md).
+
 ## Diagrams
 
 A ```` ```mermaid ```` block is drawn under its code: flowcharts, state, class, ER, mind maps, pie charts and

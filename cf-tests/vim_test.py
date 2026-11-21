@@ -46,6 +46,7 @@ with sync_playwright() as p:
     print("OPERATORS")
     reset(); keys(["d", "w"]); check("dw deletes a word", lines()[0] == "line here", lines()[0])
     keys(["u"]); check("u undoes it", lines()[0] == "first line here")
+    keys(["Control+r"]); check("Ctrl+R redoes it (it used to read as the < operator)", lines()[0] == "line here", lines()[0])
     reset(); keys(["d", "d"]); check("dd deletes the line", lines()[0] == "second (inner words) line")
     keys(["p"]); check("p puts it back below", lines()[1] == "first line here", str(lines()[:2]))
     reset(); keys(["2", "d", "d"]); check("2dd deletes two lines", lines()[0] == "third \"quoted text\" end")

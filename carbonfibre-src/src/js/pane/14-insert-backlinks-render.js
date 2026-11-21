@@ -117,6 +117,7 @@
     (PANE_RENDER[p.type] || PANE_RENDER.note)();
     const al = document.getElementById("actLibrary");
     if (al) al.classList.toggle("on", panes.some(function (q) { return q.type === "taskboard"; }));
+    Duck.changed(p, true);                              /* the panel shows only for a note in Live mode */
   };
 
   p.renderNote = function () {

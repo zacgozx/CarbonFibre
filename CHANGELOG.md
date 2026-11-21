@@ -4,6 +4,18 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Rubber ducky mode
+- **Toggle rubber ducky mode** (palette) or `:duck`: a panel beside the note that reads its code blocks by
+  pattern, offline. Per block: summary, steps with kinds and fields added/removed/after, names with line
+  numbers (unused marked), reads/writes, and questions (SPL-1 field dropped by an earlier command, LS-1
+  Logstash field nothing made, SQL-1 not grouped or aggregated, UNUSED-1). Data flow between blocks at the
+  top. Click to jump, hover to highlight, the step under the caret highlighted. Vim: `gd`, `]]` `[[`, `K`,
+  Ctrl+O / Ctrl+I. Hidden in Source mode and panes under 520px. Rules: `docs/rubber-duck-rules.md`.
+- Tests: `duck_rules_test.py` (78 cases, each rule's trigger and must-not), `duck_test.py` (the panel and keys).
+- Fixed on the way: vim **Ctrl+R** was read as the `<` operator and did nothing (check added to
+  `vim_test.py`); code blocks showed single-quoted strings as `&#39;` and the rest of the line as a comment,
+  because highlighting ran on already-escaped text.
+
 ### Timeline strip
 - The Timeline is drawn under its heading on a time axis: dots for entries (filled: ticked step, hollow:
   your own), shaded stretches, the longest wait marked, a "now" line while it's going, labels in rows so

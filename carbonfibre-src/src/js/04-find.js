@@ -189,16 +189,16 @@ const CODE_RE =
   /(\/\/[^\n]*|#[^\n]*)|("[^"\n]*"|'[^'\n]*'|`[^`\n]*`)|\b(\d+\.?\d*)\b|\b(const|let|var|function|return|if|else|elif|for|while|import|from|export|class|def|async|await|try|except|catch|finally|lambda|print|True|False|None|null|undefined|true|false|new|this|self|in|of|not|and|or|pass|break|continue|switch|case|type|interface)\b/g;
 
 function highlightCode(line) {
-  const e = esc(line);
+  /* match on the raw line and escape each piece: escaped text has &#39; and &quot;, which read as a # comment and hide strings */
   let out = "", last = 0, m;
   CODE_RE.lastIndex = 0;
-  while ((m = CODE_RE.exec(e)) !== null) {
-    if (m.index > last) out += e.slice(last, m.index);
+  while ((m = CODE_RE.exec(line)) !== null) {
+    if (m.index > last) out += esc(line.slice(last, m.index));
     const cls = m[1] ? "tk-com" : m[2] ? "tk-str" : m[3] ? "tk-num" : "tk-kw";
-    out += '<span class="' + cls + '">' + m[0] + "</span>";
+    out += '<span class="' + cls + '">' + esc(m[0]) + "</span>";
     last = m.index + m[0].length;
   }
-  if (last < e.length) out += e.slice(last);
+  if (last < line.length) out += esc(line.slice(last));
   return out;
 }
 

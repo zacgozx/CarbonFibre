@@ -178,6 +178,7 @@
     p.activeLine = i;
     p.caret = caret;
     mountActive(i);
+    Duck.cursor(p);
   };
 
   p.deactivate = function () {

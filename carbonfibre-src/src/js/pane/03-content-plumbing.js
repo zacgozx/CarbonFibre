@@ -25,6 +25,7 @@
     markDirty(n);
     refreshSearchIfActive();
     scheduleMirror(p, n.id);
+    Duck.changed(p);
   };
 
   p.open = function (id) {

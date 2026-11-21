@@ -4,7 +4,7 @@
    Normal: h j k l w b e 0 ^ $ gg G { } f F t T ; , with counts; x X D C s S Y r J ~ p P u Ctrl+R .
    operators d c y > < with a motion, doubled (dd), or a text object (iw aw i" a" i' a' i( a( i[ a[
    i{ a{ i< a<); i a I A o O; v and V with the same motions and d c y > < ~; / ? n N search; :w :q
-   :wq :<line> :s/a/b/g :%s/a/b/g. Not here: macros, marks, named registers; "." repeats the
+   :wq :<line> :s/a/b/g :%s/a/b/g; with the rubber duck, gd ]] [[ K Ctrl+O Ctrl+I and :duck. Not here: macros, marks, named registers; "." repeats the
    command but not text typed after it in insert mode.
    Edits go through the pane's own applyLines, so each is one undo step like any other edit.
    ============================================================ */
@@ -45,7 +45,7 @@ const Vim = {
       Vim.show();
       return true;
     }
-    if (e.metaKey || (e.ctrlKey && e.key !== "r" && e.key !== "[") || e.altKey) return false;   /* the app's own shortcuts */
+    if (e.metaKey || (e.ctrlKey && e.key !== "r" && e.key !== "[" && !(Duck.on && (e.key === "o" || e.key === "i"))) || e.altKey) return false;   /* the app's own shortcuts */
     if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return true;
     const k = e.ctrlKey ? "C-" + e.key : e.key === "Escape" ? "Esc" : e.key === "Enter" ? "Enter" : e.key === "Backspace" ? "BS" : e.key.length === 1 ? e.key : null;
     e.preventDefault(); e.stopPropagation();
@@ -314,7 +314,9 @@ const Vim = {
     }
 
     /* operators: d c y > < ~(g~) with a motion, a text object, or doubled */
-    const om = /^(d|c|y|>|<|g~|gu|gU)(.*)$/.exec(rest);
+    const dk = Duck.vim(p, rest);                     /* gd ]] [[ K Ctrl+O Ctrl+I: the rubber duck's */
+    if (dk !== undefined) return dk;
+    const om = /^<[A-Z]-/.test(rest) ? null : /^(d|c|y|>|<|g~|gu|gU)(.*)$/.exec(rest);   /* <C-r> is a key, not the < operator */
     if (om) {
       const op = om[1] === "g~" ? "~" : om[1] === "gu" ? "u" : om[1] === "gU" ? "U" : om[1], tail = om[2];
       if (!tail) return false;
@@ -434,6 +436,7 @@ const Vim = {
     if (c === "w" || c === "write") { flushPersist(); pushToastLike("Saved."); return; }
     if (c === "q" || c === "q!" || c === "wq" || c === "x") { if (c !== "q!") flushPersist(); if (p.noteId != null) p.closeTab(p.noteId); return; }
     if (c === "noh" || c === "nohlsearch") return;
+    if (c === "duck") { Duck.toggle(); return; }
     const sm = /^(%?)s(.)(.*?)\2(.*?)(?:\2([gi]*))?$/.exec(c);
     if (sm) {
       const flags = sm[5] || "", from = sm[1] ? 0 : Vim.pos(p).l, to = sm[1] ? p.lines.length - 1 : from;

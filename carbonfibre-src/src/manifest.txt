@@ -113,5 +113,6 @@ js/44-get-app.js
 js/44-tooltips.js
 js/44-popout.js
 js/44-vim.js
+js/44-duck.js
 js/45-boot.js
 html/03-tail.html
