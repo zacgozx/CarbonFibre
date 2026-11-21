@@ -4,6 +4,12 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### CI: the pop-out test waited for nothing
+- `desktop/test/popout_test.js` added its note before the page had loaded its own notes, so on a busy
+  machine (CI) the note was replaced and nothing popped out. It now waits for the page to be ready,
+  opens the window as a user action (as the app always does), and waits for the note's window to show the
+  note. Passed 15 runs out of 15 with five running at once; it failed 1 in 10 that way before.
+
 ### Fixes from the audit
 - Popped-out note renamed, moved or deleted in the main window: its window now says edits there aren't
   saved and offers Copy (they used to be dropped without a word).

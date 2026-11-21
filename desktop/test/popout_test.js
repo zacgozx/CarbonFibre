@@ -29,16 +29,27 @@ app.on("browser-window-created", (_e, w) => {
 
 async function run(w) {
   const js = (s) => { at = s.slice(0, 70); return w.webContents.executeJavaScript(s); };
+  /* the page loads its notes a moment after it has loaded: a note added sooner is replaced (on a busy
+     machine, as CI is, the test used to add it too soon and pop out nothing) */
+  for (let i = 0; i < 100 && !(await js(`!!PluginHost.notesAreReady`)); i++) await wait(100);
   /* a note to pop out, without a folder: straight into the page's state */
   await js(`state.notes.push({ id: 7, title: "Popped", path: "Popped", content: "# Popped\\n\\nline" }); openInPane(7, panes[0], { here: true }); true`);
-  const made = new Promise((r) => app.once("browser-window-created", (_e, c) => r(c)));
-  await js(`PopOut.open(panes[0], 7, 400, 300); true`);   /* as when a tab is let go at (400, 300) on screen */
-  const child = await Promise.race([made, wait(5000).then(() => null)]);
-  check("the note's window opens", !!child);
+  /* run as a user action (the second argument): in the app it always follows a click or a drag, and a
+     window opened without one can be refused */
+  at = "PopOut.open";
+  const how = await w.webContents.executeJavaScript(`(() => { const o = window.open; let got = "not called"; window.open = function () { const x = o.apply(window, arguments); got = x ? "a window" : "null (refused)"; return x; };
+    try { PopOut.open(panes[0], 7, 400, 300); } finally { window.open = o; } return got; })()`, true);   /* as when a tab is let go at (400, 300) on screen */
+  let child = null;
+  for (let i = 0; i < 100 && !child; i++) { await wait(100); child = BrowserWindow.getAllWindows().find((x) => x !== w) || null; }
+  check("the note's window opens", !!child, "window.open gave " + how);
   if (!child) return finish();
-  await new Promise((r) => child.webContents.once("did-finish-load", r));
-  await wait(800);
   const cj = (s) => { at = "note window: " + s.slice(0, 60); return child.webContents.executeJavaScript(s); };
+  /* ready when it shows the note (it loads a blank page first, then the app, then asks for the note) */
+  for (let i = 0; i < 100; i++) {
+    const ready = await cj(`typeof PopOut === "object" && !!panes[0] && !!panes[0].note()`).catch(() => false);
+    if (ready) break;
+    await wait(100);
+  }
   const bx = child.getBounds();
   check("it opens where the tab was let go", Math.abs(bx.x - 280) < 40 && Math.abs(bx.y - 280) < 60, JSON.stringify(bx));
   check("it shows just that note", await cj(`document.body.classList.contains("cf-popout") && panes[0].note() && panes[0].note().title === "Popped"`));
