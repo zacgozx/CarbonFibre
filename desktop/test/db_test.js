@@ -24,6 +24,12 @@ const results = [];
 const check = (name, ok, detail) => { results.push({ name, ok: !!ok, detail }); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const loaded = (w) => new Promise((r) => w.webContents.once("did-finish-load", r));
+/* a test that hangs (a dialog nobody answers, a page that crashed) fails with where it stopped, rather
+   than running until the CI job is cancelled */
+let at = "starting", ended = false;
+dialog.showMessageBoxSync = () => 1;
+setTimeout(() => { if (!ended) { check("finished within 90 s (stuck at: " + at + ")", false); finish(); } }, 90000);
+app.on("render-process-gone", (_e, _wc, d) => { if (!ended) { check("no page crashed (stuck at: " + at + ")", false, d && d.reason); finish(); } });
 let first = true;
 
 app.on("browser-window-created", (_e, w) => {
@@ -33,7 +39,7 @@ app.on("browser-window-created", (_e, w) => {
 });
 
 async function run(w) {
-  const js = (s) => w.webContents.executeJavaScript(s);
+  const js = (s) => { at = s.slice(0, 70); return w.webContents.executeJavaScript(s); };
   check("the page's storage is the app's database", await js("window.cfDesktopStore === true"));
   check("the file is carbonfibre.db in the app's data folder", fs.existsSync(path.join(ud, "carbonfibre.db")), db.where());
 
@@ -98,6 +104,8 @@ async function run(w) {
 
 function print(s) { results.push({ name: s, section: true }); }
 function finish() {
+  if (ended) return;
+  ended = true;
   let bad = 0, n = 0;
   for (const x of results) {
     if (x.section) { console.log(x.name); continue; }

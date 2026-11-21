@@ -4,6 +4,15 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Drag a tab out of the window
+- A tab dragged out of the window and let go outside it comes out into a window of its own at that spot,
+  as in VS Code (the same pop-out window as "Move into a new window"). Let go inside the window, it moves
+  or splits as before.
+- Desktop tests now fail with where they stopped if a page crashes or nothing finishes within 90 s, an
+  unanswerable dialog can't hold them, and the CI test job stops after 15 minutes. (The last run sat
+  until it was cancelled; the same commit passes here, so the next run will say where it stuck.)
+- Tests: `layout_test.py` (inside vs outside), `popout_test.js` (opens where the tab was let go).
+
 ### Task board removed
 - Removed: the Board (lanes, cards, quick-add, filter chips, the "Working on" banner and its clock), the
   Dashboard (figure cards, My tickets, Last 7 days, Time by type, Activity), ServiceNow (ticket links,

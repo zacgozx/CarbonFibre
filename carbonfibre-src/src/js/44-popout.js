@@ -13,17 +13,24 @@ const PopOut = {
   timers: new Map(),
 
   /* main window: pop the note out (the pane's current one, or `id`), moving it out of the pane */
-  open(p, id) {
+  open(p, id, sx, sy) {
     if (id == null) id = p && p.type === "note" ? p.noteId : null;
     const n = id != null ? findNote(id) : null;
     if (!n) { pushToastLike("Open a note first."); return; }
     const key = String(n.id), had = PopOut.wins.get(key);
     if (had && !had.closed) { had.focus(); return; }
     syncAllPanes();
-    const w = window.open(location.href.split("#")[0] + "#popout=" + encodeURIComponent(key), "cfpop" + key.replace(/\W/g, "_"), "popup,width=760,height=860");
+    const at = sx != null ? ",left=" + Math.max(0, Math.round(sx - 120)) + ",top=" + Math.max(0, Math.round(sy - 20)) : "";   /* where a dragged tab was let go */
+    const w = window.open(location.href.split("#")[0] + "#popout=" + encodeURIComponent(key), "cfpop" + key.replace(/\W/g, "_"), "popup,width=760,height=860" + at);
     if (!w) { pushToastLike("The browser blocked the new window. Allow pop-ups for this page, then try again."); return; }
     PopOut.wins.set(key, w);
     if (p && p.tabs.some(function (t) { return sameId(t, n.id); })) p.closeTab(n.id);
+  },
+  /* a drag that ended outside this window (screen coordinates; 0,0 is what some systems report when they don't know) */
+  outside(e) {
+    const x = e.screenX, y = e.screenY;
+    if (!x && !y) return false;
+    return x < window.screenX || y < window.screenY || x > window.screenX + window.outerWidth || y > window.screenY + window.outerHeight;
   },
   /* main window: a popped-out note is shown by focusing its window instead of opening it again */
   reveal(id) {

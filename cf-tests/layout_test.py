@@ -83,6 +83,20 @@ with sync_playwright() as p:
     check("a link opened there opens here", E("() => panes[0].note().title") == "Bravo")
     E("() => openInPane(1)"); pg.wait_for_timeout(100)
     check("opening a popped-out note here goes to its window instead of a second copy", E("() => panes.every(q => !q.tabs.some(t => String(t) === '1'))"))
+    print("POP OUT: DRAG A TAB OUT OF THE WINDOW")
+    E("() => openInPane(3, panes[0])"); pg.wait_for_timeout(100)
+    out_js = """a => { const t = [...panes[0].tabsEl.querySelectorAll('.tab[data-id]')].find(x => x.dataset.id === '3');
+      const dt = new DataTransfer(); t.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+      t.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt, screenX: a[0], screenY: a[1] })); }"""
+    E(out_js, [E("() => window.screenX + window.outerWidth / 2"), E("() => window.screenY + window.outerHeight / 2")]); pg.wait_for_timeout(300)
+    check("a tab let go inside the window doesn't pop out", len(ctx.pages) == 2)
+    with ctx.expect_page() as pi2:
+        E(out_js, [E("() => window.screenX + window.outerWidth + 200"), E("() => window.screenY + 200")])
+    pop2 = pi2.value; pop2.wait_for_timeout(900)
+    check("a tab let go outside the window comes out into its own window", pop2.evaluate("() => document.body.classList.contains('cf-popout') && panes[0].note() && panes[0].note().title") == "Charlie")
+    check("...and leaves the pane", "3" not in E("() => panes[0].tabs.map(String)"))
+    pop2.close(); pg.wait_for_timeout(300)
+
     print("POP OUT: THE MAIN WINDOW RELOADED OR CLOSED")
     E("() => flushPersist()"); pg.reload(); pg.wait_for_timeout(200)
     pop.evaluate("() => { const q = panes[0]; q.setActive(2, q.lines[2].length); }"); pop.keyboard.type(" during reload"); pop.wait_for_timeout(3500)

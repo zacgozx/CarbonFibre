@@ -34,6 +34,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15                # a stuck test fails the run instead of holding it
     defaults:
       run:
         working-directory: desktop

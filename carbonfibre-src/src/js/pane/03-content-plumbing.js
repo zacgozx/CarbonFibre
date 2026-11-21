@@ -177,7 +177,11 @@
         t.classList.add("dragging");
         document.body.classList.add("tab-dragging");
       });
-      t.addEventListener("dragend", function () { t.classList.remove("dragging"); document.body.classList.remove("tab-dragging"); clearTabDropMarks(); });
+      t.addEventListener("dragend", function (e) {
+        t.classList.remove("dragging"); document.body.classList.remove("tab-dragging"); clearTabDropMarks();
+        /* dropped outside the window, onto nothing: the note comes out into a window of its own (VS Code's way) */
+        if (e.dataTransfer && e.dataTransfer.dropEffect === "none" && PopOut.outside(e)) PopOut.open(p, id, e.screenX, e.screenY);
+      });
       t.addEventListener("contextmenu", function (e) { e.preventDefault(); tabMenu(p, id, e.clientX, e.clientY); });
       t.appendChild(lbl); t.appendChild(x);
       p.tabsEl.appendChild(t);
