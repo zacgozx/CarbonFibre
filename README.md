@@ -107,6 +107,11 @@ In a note with a `## Timeline` heading (the Incident and Change templates have o
 | **Alt+Enter** on a line, or `/log` | That line's text (or what you type) is added to the Timeline with the time |
 | **Copy timeline** (on the heading, or the command palette) | The note's name and the day, then one `HH:MM text` line per entry, ready for a ticket |
 
+Under the heading the Timeline is also drawn on a time axis: a dot per entry (filled for a ticked step,
+hollow for your own), shaded stretches between them with a long wait marked, and "now" while it's still
+going. Hover a dot for its detail, click it (or Enter) to go to that step, drag to pan, Ctrl+scroll or
+**+** / **−** to zoom, **Fit** to see it all.
+
 Entries you write yourself stay where they are. Notes without the heading are never changed. Times are the
 time of day, so an incident that runs past midnight sorts by time, not by day.
 

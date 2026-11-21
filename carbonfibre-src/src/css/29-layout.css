@@ -76,3 +76,36 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
   color: var(--txt); background: var(--panel); border: 1px solid var(--line); }
 .tl-copy:hover { border-color: var(--acc); color: var(--acc-text); }
 .tl-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }
+.tl-copy { top: 4px; transform: none; }
+
+/* the Timeline strip (js/39-timeline.js): a time axis under the heading */
+.tl-strip { display: block; margin: 10px 0 4px; padding: 8px 12px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); font: 400 12px/1.3 var(--sans); letter-spacing: 0; color: var(--txt); cursor: grab; user-select: none; }
+.tl-strip.tl-panning { cursor: grabbing; }
+.tl-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tl-sum { flex: 1; color: var(--dim); }
+.tl-btn { min-width: 26px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--txt); font: inherit; cursor: pointer; }
+.tl-btn:hover { border-color: var(--acc); color: var(--acc-text); }
+.tl-track { position: relative; display: block; overflow: hidden; height: calc(46px + var(--rows) * 18px); }
+.tl-axis { position: absolute; left: 0; right: 0; top: 22px; height: 2px; background: var(--line); }
+.tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px dashed color-mix(in srgb, var(--line) 70%, transparent); }
+.tl-tick b { position: absolute; top: 0; left: 4px; font-weight: 500; color: var(--dim); font-size: 11px; white-space: nowrap; }
+.tl-seg { position: absolute; top: 19px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--acc) 22%, transparent); }
+.tl-seg.tl-gap { background: repeating-linear-gradient(90deg, color-mix(in srgb, #d6a64f 45%, transparent) 0 6px, transparent 6px 10px); }
+.tl-seg em { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 11px; color: #c08a2c; white-space: nowrap; }
+.tl-now { position: absolute; top: 8px; bottom: 0; border-left: 2px solid var(--acc); }
+.tl-now b { position: absolute; top: -8px; left: 3px; font-size: 10.5px; color: var(--acc-text); }
+.tl-dot { position: absolute; top: 16px; margin-left: -7px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--txt); font: inherit; text-align: left; }
+.tl-dot > i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 3px var(--panel); }
+.tl-dot.tl-own > i { background: var(--panel); border: 2px solid var(--acc); box-sizing: border-box; }
+.tl-dot:hover > i, .tl-dot:focus-visible > i { transform: scale(1.25); }
+.tl-dot:focus-visible { outline: none; }
+.tl-dot:focus-visible .tl-lbl { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 3px; }
+.tl-lbl { position: absolute; left: 0; top: calc(20px + var(--row) * 18px); white-space: nowrap; padding: 1px 4px; border-radius: 3px; background: var(--panel); }
+.tl-dot.tl-right .tl-lbl { left: auto; right: -14px; }
+.tl-lbl b { font-weight: 600; color: var(--acc-text); }
+.tl-dot:hover .tl-lbl { background: var(--acc-soft); }
+.tl-dot.tl-off { display: none; }
+.tl-flash { animation: tl-flash .9s ease-out; }
+@keyframes tl-flash { from { background: var(--acc-soft); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .tl-flash { animation: none; } .tl-dot:hover > i { transform: none; } }

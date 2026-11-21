@@ -271,6 +271,8 @@ function computeFenceMeta(ls) {
     meta[i].mmBody = ls.slice(i + 1, j).join("\n");
     if (j < ls.length) { meta[j].mmBody = meta[i].mmBody; meta[j].mmOpen = i; }
   }
+  const tl = Timeline.section(ls);                  /* the Timeline strip, drawn under its heading (39-timeline.js) */
+  if (tl) meta[tl.h].timeline = Timeline.data(ls);
   PluginHost.markBlocks(ls, meta);                 /* code blocks an Obsidian plugin draws (js/plugins/) */
   computeTableMeta(ls, meta);
   return meta;

@@ -269,7 +269,8 @@ function lineInnerHtml(raw, fenceInfo, idx) {
 
   const inline = tokensToHtml(scanInline(c.text).tokens);
   if (c.type === "heading") return inline + (idx >= 0 && Timeline.HEAD.test(raw)
-    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' : "");
+    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' +
+      (fenceInfo && fenceInfo.timeline ? Timeline.strip(fenceInfo.timeline) : "") : "");
   if (c.type === "task") {
     return '<span data-deco="1" class="cb' + (c.done ? " cb-done" : "") + '"' + (idx >= 0 ? ' data-check="' + idx + '"' : "") +
       ' role="checkbox" aria-checked="' + c.done + '">' + (c.done ? ico("check", "cb-tick") : "") + "</span>" +

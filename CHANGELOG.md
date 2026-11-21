@@ -4,6 +4,13 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Timeline strip
+- The Timeline is drawn under its heading on a time axis: dots for entries (filled: ticked step, hollow:
+  your own), shaded stretches, the longest wait marked, a "now" line while it's going, labels in rows so
+  they don't overlap (reading leftwards near the right edge), dots in the same minute side by side.
+  Hover for detail, click or Enter to go to the step, drag to pan, Ctrl+scroll or +/- to zoom, Fit.
+  Editing an entry redraws it. Tests in `timeline_test.py`.
+
 ### Timeline for incident and change notes
 - In a note with a `## Timeline` heading, ticking a step stamps the time at its end and lists it in the
   Timeline in time order; unticking takes both away; one undo step. Your own entries stay. Alt+Enter or

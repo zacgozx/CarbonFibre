@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-ajvvtlsFU5T3wONDt1FwOKOVf+7EvlJbEbwzwklgLDA='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-hrGlDqBSKpv6dT/se/E3kpfNXk9/RG6FFkv3XTKH0do='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2505,6 +2505,39 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
   color: var(--txt); background: var(--panel); border: 1px solid var(--line); }
 .tl-copy:hover { border-color: var(--acc); color: var(--acc-text); }
 .tl-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }
+.tl-copy { top: 4px; transform: none; }
+
+/* the Timeline strip (js/39-timeline.js): a time axis under the heading */
+.tl-strip { display: block; margin: 10px 0 4px; padding: 8px 12px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); font: 400 12px/1.3 var(--sans); letter-spacing: 0; color: var(--txt); cursor: grab; user-select: none; }
+.tl-strip.tl-panning { cursor: grabbing; }
+.tl-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tl-sum { flex: 1; color: var(--dim); }
+.tl-btn { min-width: 26px; height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--txt); font: inherit; cursor: pointer; }
+.tl-btn:hover { border-color: var(--acc); color: var(--acc-text); }
+.tl-track { position: relative; display: block; overflow: hidden; height: calc(46px + var(--rows) * 18px); }
+.tl-axis { position: absolute; left: 0; right: 0; top: 22px; height: 2px; background: var(--line); }
+.tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px dashed color-mix(in srgb, var(--line) 70%, transparent); }
+.tl-tick b { position: absolute; top: 0; left: 4px; font-weight: 500; color: var(--dim); font-size: 11px; white-space: nowrap; }
+.tl-seg { position: absolute; top: 19px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--acc) 22%, transparent); }
+.tl-seg.tl-gap { background: repeating-linear-gradient(90deg, color-mix(in srgb, #d6a64f 45%, transparent) 0 6px, transparent 6px 10px); }
+.tl-seg em { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 11px; color: #c08a2c; white-space: nowrap; }
+.tl-now { position: absolute; top: 8px; bottom: 0; border-left: 2px solid var(--acc); }
+.tl-now b { position: absolute; top: -8px; left: 3px; font-size: 10.5px; color: var(--acc-text); }
+.tl-dot { position: absolute; top: 16px; margin-left: -7px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--txt); font: inherit; text-align: left; }
+.tl-dot > i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 0 3px var(--panel); }
+.tl-dot.tl-own > i { background: var(--panel); border: 2px solid var(--acc); box-sizing: border-box; }
+.tl-dot:hover > i, .tl-dot:focus-visible > i { transform: scale(1.25); }
+.tl-dot:focus-visible { outline: none; }
+.tl-dot:focus-visible .tl-lbl { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 3px; }
+.tl-lbl { position: absolute; left: 0; top: calc(20px + var(--row) * 18px); white-space: nowrap; padding: 1px 4px; border-radius: 3px; background: var(--panel); }
+.tl-dot.tl-right .tl-lbl { left: auto; right: -14px; }
+.tl-lbl b { font-weight: 600; color: var(--acc-text); }
+.tl-dot:hover .tl-lbl { background: var(--acc-soft); }
+.tl-dot.tl-off { display: none; }
+.tl-flash { animation: tl-flash .9s ease-out; }
+@keyframes tl-flash { from { background: var(--acc-soft); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .tl-flash { animation: none; } .tl-dot:hover > i { transform: none; } }
 </style>
 <script>/* Storage, before anything reads it. Desktop app: the page's storage lives in the app's SQLite file
    (desktop/db.js) instead of the browser's. The page keeps calling localStorage; reads come from a copy
@@ -7897,6 +7930,8 @@ function computeFenceMeta(ls) {
     meta[i].mmBody = ls.slice(i + 1, j).join("\n");
     if (j < ls.length) { meta[j].mmBody = meta[i].mmBody; meta[j].mmOpen = i; }
   }
+  const tl = Timeline.section(ls);                  /* the Timeline strip, drawn under its heading (39-timeline.js) */
+  if (tl) meta[tl.h].timeline = Timeline.data(ls);
   PluginHost.markBlocks(ls, meta);                 /* code blocks an Obsidian plugin draws (js/plugins/) */
   computeTableMeta(ls, meta);
   return meta;
@@ -8480,7 +8515,8 @@ function lineInnerHtml(raw, fenceInfo, idx) {
 
   const inline = tokensToHtml(scanInline(c.text).tokens);
   if (c.type === "heading") return inline + (idx >= 0 && Timeline.HEAD.test(raw)
-    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' : "");
+    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' +
+      (fenceInfo && fenceInfo.timeline ? Timeline.strip(fenceInfo.timeline) : "") : "");
   if (c.type === "task") {
     return '<span data-deco="1" class="cb' + (c.done ? " cb-done" : "") + '"' + (idx >= 0 ? ' data-check="' + idx + '"' : "") +
       ' role="checkbox" aria-checked="' + c.done + '">' + (c.done ? ico("check", "cb-tick") : "") + "</span>" +
@@ -11149,7 +11185,8 @@ function createPane(index) {
       /* a line becoming or stopping being a fence is structural; so is any edit to a fence
          line, because the text after the backticks is the block's language (editing
          "```rmaid" into "```mermaid" used to leave the old language showing) */
-      const structural = wasDelim !== isDelim(ta.value) || (wasDelim && wasText !== ta.value);
+      const structural = wasDelim !== isDelim(ta.value) || (wasDelim && wasText !== ta.value) ||
+        (p.fmeta.some(function (m) { return m && m.timeline; }) && (Timeline.ENTRY.test(ta.value) || Timeline.ENTRY.test(wasText) || Timeline.HEAD.test(ta.value) || Timeline.HEAD.test(wasText)));   /* the Timeline strip follows */
       p.commit(structural || tableish);
       wrap.className = lineClass(ta.value, p.fmeta[i]) + " ln-active typing";
       hl.innerHTML = overlayHtml(ta.value, p.fmeta[i]);
@@ -23025,6 +23062,145 @@ const Timeline = {
     else pushToastLike("Timeline copied.");
   }
 };
+/* ---- the strip: the Timeline drawn on a time axis under its heading ----
+   Each entry is a dot (filled: a ticked step; hollow: an entry of your own) with its label in the first
+   row where it fits; the stretches between entries are shaded, a long wait is marked with its length,
+   and "now" shows while the work is still going. Hover a dot for its detail, click it (or Enter) to go to
+   the step, drag to pan, Ctrl+scroll or the buttons to zoom, Fit to see it all. */
+Object.assign(Timeline, {
+  mins(t) { const p = String(t).split(":"); return +p[0] * 60 + +p[1]; },
+  hm(m) { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); },
+  dur(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + " h" + (m % 60 ? " " + String(m % 60).padStart(2, "0") + " min" : "") : m + " min"; },
+  /* the section's entries, each with the line a click goes to: its ticked step, or the entry itself */
+  data(lines) {
+    const sec = Timeline.section(lines);
+    if (!sec) return null;
+    const steps = {};
+    lines.forEach(function (l, i) {
+      if (i >= sec.h && i < sec.end) return;
+      const m = Timeline.TASK.exec(l), s = m && Timeline.STAMP.exec(m[3]);
+      if (m && m[2] !== " " && s) steps[s[1] + "|" + m[3].replace(Timeline.STAMP, "").trim().toLowerCase()] = i;
+    });
+    const out = [];
+    for (let i = sec.h + 1; i < sec.end; i++) {
+      const m = Timeline.ENTRY.exec(lines[i]);
+      if (!m) continue;
+      const k = m[1] + "|" + m[2].trim().toLowerCase(), step = Object.prototype.hasOwnProperty.call(steps, k);
+      out.push({ t: Timeline.mins(m[1]), time: m[1], text: m[2].trim(), line: step ? steps[k] : i, step: step });
+    }
+    return out.length ? out : null;
+  },
+  fit(d) {
+    const a = d[0].t, b = d[d.length - 1].t, pad = Math.max(5, (b - a) * 0.06);
+    return b - a < 10 ? { a: a - 15, b: b + 15 } : { a: a - pad, b: b + pad };
+  },
+  /* the strip's inside for the window of time v ({ a, b } in minutes) at width w px */
+  inner(d, v, w) {
+    const span = Math.max(1, v.b - v.a), X = function (m) { return (m - v.a) / span * 100; }, E = esc;
+    const total = d[d.length - 1].t - d[0].t;
+    let gapMax = 0;
+    for (let i = 1; i < d.length; i++) gapMax = Math.max(gapMax, d[i].t - d[i - 1].t);
+    const h = '<span class="tl-bar"><span class="tl-sum">' + d.length + (d.length === 1 ? " entry" : " entries") +
+      (total ? " · " + Timeline.dur(total) + " from first to last" : "") + (gapMax >= 15 && d.length > 2 ? " · longest wait " + Timeline.dur(gapMax) : "") + "</span>" +
+      '<button type="button" class="tl-btn" data-tl-act="out" title="Zoom out" aria-label="Zoom out">−</button>' +
+      '<button type="button" class="tl-btn" data-tl-act="in" title="Zoom in (Ctrl+scroll)" aria-label="Zoom in">+</button>' +
+      '<button type="button" class="tl-btn" data-tl-act="fit" title="Show all of it">Fit</button></span>';
+    /* ticks at a round step: about one per 90px */
+    const steps = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360], want = span / Math.max(2, w / 90);
+    const st = steps.find(function (x) { return x >= want; }) || 720;
+    let track = "";
+    for (let m = Math.ceil(v.a / st) * st; m <= v.b; m += st) track += '<span class="tl-tick" style="left:' + X(m).toFixed(2) + '%"><b>' + Timeline.hm(m) + "</b></span>";
+    /* the stretches between entries; a long wait is marked */
+    for (let i = 1; i < d.length; i++) {
+      const dt = d[i].t - d[i - 1].t, long = dt >= 15 && dt >= total * 0.25 && d.length > 2;
+      track += '<span class="tl-seg' + (long ? " tl-gap" : "") + '" style="left:' + X(d[i - 1].t).toFixed(2) + "%;width:" + (dt / span * 100).toFixed(2) + '%">' +
+        (long ? "<em>" + Timeline.dur(dt) + "</em>" : "") + "</span>";
+    }
+    const nowM = Timeline.mins(Timeline.now()), last = d[d.length - 1].t, since = nowM - last;
+    if (since >= 0 && since < 360 && nowM <= v.b) track += '<span class="tl-now" style="left:' + X(nowM).toFixed(2) + '%"><b>now</b></span>';
+    /* labels: each in the first row it fits in (rows below the axis); near the right edge a label
+       reads leftwards from its dot so it isn't cut off */
+    let lastPx = -1e9;                                       /* dots in the same minute sit side by side, not on top of each other */
+    const rows = [], cw = 6.4, fits = function (row, a2, b2) { return row.every(function (s2) { return b2 <= s2[0] || a2 >= s2[1]; }); };
+    d.forEach(function (e, i) {
+      const x = X(e.t), lw = ((e.time.length + e.text.length + 1) * cw + 14) / Math.max(1, w) * 100, right = x + lw > 100 && x - lw >= 0;
+      const a2 = right ? x - lw : x, b2 = right ? x : x + lw;
+      let r = 0;
+      while (rows[r] && !fits(rows[r], a2, b2)) r++;
+      (rows[r] = rows[r] || []).push([a2, b2]);
+      const px = x / 100 * w, nudge = px - lastPx < 13 ? lastPx + 13 - px : 0;
+      lastPx = px + nudge;
+      const prev = i ? Math.round(e.t - d[i - 1].t) : null;
+      const tip = e.time + " " + e.text + " — " + (e.step ? "a ticked step" : "your entry") + (prev !== null ? ", " + Timeline.dur(prev) + " after the one before" : ", the first") + ". Click to go to it.";
+      track += '<button type="button" class="tl-dot' + (e.step ? "" : " tl-own") + (right ? " tl-right" : "") + (x < -1 || x > 101 ? " tl-off" : "") + '" style="left:calc(' + x.toFixed(2) + "% + " + Math.round(nudge) + "px);--row:" + r +
+        '" data-line="' + e.line + '" title="' + E(tip) + '"><i></i><span class="tl-lbl"><b>' + E(e.time) + "</b> " + E(e.text) + "</span></button>";
+    });
+    return h + '<span class="tl-track" style="--rows:' + Math.max(1, rows.length) + '">' + '<span class="tl-axis"></span>' + track + "</span>";
+  },
+  strip(d) {
+    const v = Timeline.fit(d);
+    return '<span data-deco="1" class="tl-strip" data-tl="' + esc(JSON.stringify(d)) + '" data-a="' + v.a + '" data-b="' + v.b + '" aria-label="Timeline, drawn on a time axis">' +
+      Timeline.inner(d, v, 640) + "</span>";
+  },
+  redraw(el, v) {
+    const d = JSON.parse(el.dataset.tl);
+    el.dataset.a = v.a; el.dataset.b = v.b;
+    el.innerHTML = Timeline.inner(d, v, el.clientWidth || 640);
+  },
+  zoom(el, f, at) {
+    const a = +el.dataset.a, b = +el.dataset.b, c = at == null ? (a + b) / 2 : at, span = Math.max(4, Math.min(1440, (b - a) / f));
+    const k = (c - a) / (b - a || 1);
+    Timeline.redraw(el, { a: c - span * k, b: c - span * k + span });
+  },
+  go(el, line) {
+    const p = panes.filter(function (q) { return q.root.contains(el); })[0];
+    if (!p || !(line >= 0) || line >= p.lines.length) return;
+    p.setActive(line, p.lines[line].length);
+    p.keepVisible(line);
+    const node = p.linesEl.children[line];
+    if (node) { node.classList.add("tl-flash"); setTimeout(function () { node.classList.remove("tl-flash"); }, 900); }
+  }
+});
+/* the strip's mouse: never puts the heading into editing; drag pans, a click on a dot goes to it */
+document.addEventListener("mousedown", function (e) {
+  const el = e.target.closest && e.target.closest(".tl-strip");
+  if (!el || e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const act = e.target.closest("[data-tl-act]");
+  if (act) {
+    if (act.dataset.tlAct === "fit") Timeline.redraw(el, Timeline.fit(JSON.parse(el.dataset.tl)));
+    else Timeline.zoom(el, act.dataset.tlAct === "in" ? 1.6 : 1 / 1.6);
+    return;
+  }
+  const dot = e.target.closest(".tl-dot"), sx = e.clientX, a0 = +el.dataset.a, b0 = +el.dataset.b, w = el.clientWidth || 640;
+  let moved = false;
+  const move = function (ev) {
+    const dx = ev.clientX - sx;
+    if (!moved && Math.abs(dx) < 4) return;
+    moved = true; el.classList.add("tl-panning");
+    const dm = -dx / w * (b0 - a0);
+    Timeline.redraw(el, { a: a0 + dm, b: b0 + dm });
+  };
+  const up = function () {
+    window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up);
+    el.classList.remove("tl-panning");
+    if (!moved && dot) Timeline.go(el, +dot.dataset.line);
+  };
+  window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+}, true);
+document.addEventListener("wheel", function (e) {
+  const el = (e.ctrlKey || e.metaKey) && e.target.closest && e.target.closest(".tl-strip");
+  if (!el) return;
+  e.preventDefault();
+  const r = el.getBoundingClientRect(), a = +el.dataset.a, b = +el.dataset.b;
+  Timeline.zoom(el, e.deltaY < 0 ? 1.25 : 0.8, a + (e.clientX - r.left) / (r.width || 1) * (b - a));
+}, { passive: false, capture: true });
+document.addEventListener("keydown", function (e) {
+  const dot = e.target.closest && e.target.closest(".tl-dot");
+  if (!dot || (e.key !== "Enter" && e.key !== " ")) return;
+  e.preventDefault(); e.stopPropagation();
+  Timeline.go(dot.closest(".tl-strip"), +dot.dataset.line);
+}, true);
 /* the button on the Timeline heading: copies without putting the heading into editing */
 document.addEventListener("mousedown", function (e) {
   const b = e.target.closest && e.target.closest(".tl-copy");

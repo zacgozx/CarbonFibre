@@ -21,7 +21,8 @@
       /* a line becoming or stopping being a fence is structural; so is any edit to a fence
          line, because the text after the backticks is the block's language (editing
          "```rmaid" into "```mermaid" used to leave the old language showing) */
-      const structural = wasDelim !== isDelim(ta.value) || (wasDelim && wasText !== ta.value);
+      const structural = wasDelim !== isDelim(ta.value) || (wasDelim && wasText !== ta.value) ||
+        (p.fmeta.some(function (m) { return m && m.timeline; }) && (Timeline.ENTRY.test(ta.value) || Timeline.ENTRY.test(wasText) || Timeline.HEAD.test(ta.value) || Timeline.HEAD.test(wasText)));   /* the Timeline strip follows */
       p.commit(structural || tableish);
       wrap.className = lineClass(ta.value, p.fmeta[i]) + " ln-active typing";
       hl.innerHTML = overlayHtml(ta.value, p.fmeta[i]);
