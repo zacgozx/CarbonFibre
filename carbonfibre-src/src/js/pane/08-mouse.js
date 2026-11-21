@@ -38,6 +38,8 @@
     if (cb) {
       e.preventDefault();
       const ci = parseInt(cb.dataset.check, 10);
+      const next = p.lines.slice(); next[ci] = toggleTask(next[ci]);
+      if (Timeline.write(p, Timeline.apply(next, [ci]))) return;     /* a note with a Timeline: stamped, one undo step */
       histBreak(p);
       p.lines[ci] = toggleTask(p.lines[ci]);
       p.commit(false);

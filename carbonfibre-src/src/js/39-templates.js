@@ -8,7 +8,7 @@ const TEMPLATES = [
   { name: "Incident", ask: "Incident note title (ticket number first, e.g. INC0012345 Splunk HEC down)",
     body: "# {{title}}\n\n**Ticket:** {{ticket}}\n**Opened:** {{date}} {{time}}\n**Status:** In progress\n\n## Summary\n{{cursor}}\n\n## Impact\n- \n\n## Timeline\n- {{time}} Picked up\n\n## Actions taken\n- [ ] \n\n## Follow-up\n- [ ] " },
   { name: "Change / downtime", ask: "Change note title (e.g. CHG0031204 Payroll batch window)",
-    body: "# {{title}}\n\n**Change:** {{ticket}}\n**Window:** {{date}} start to end\n**Requested by:** \n\n## Hosts and services\n- \n\n## Monitoring\n- [ ] Downtime scheduled in monitoring\n- [ ] Alerts suppressed for the window\n- [ ] Downtime removed after the change\n\n## Steps\n1. {{cursor}}\n\n## Rollback\n- \n\n## Checks after\n- [ ] " },
+    body: "# {{title}}\n\n**Change:** {{ticket}}\n**Window:** {{date}} start to end\n**Requested by:** \n\n## Hosts and services\n- \n\n## Monitoring\n- [ ] Downtime scheduled in monitoring\n- [ ] Alerts suppressed for the window\n- [ ] Downtime removed after the change\n\n## Steps\n1. {{cursor}}\n\n## Rollback\n- \n\n## Checks after\n- [ ] \n\n## Timeline\n- {{time}} Change note opened" },
   { name: "Shift handover", title: "Shift handover {{date}}",
     body: "# Shift handover {{date}}\n\n## Open incidents\n- {{cursor}}\n\n## In progress\n- \n\n## Watch items\n- \n\n## Notes for next shift\n- " },
   { name: "Meeting", ask: "Meeting note title",

@@ -101,6 +101,7 @@ js/36-all-notes.js
 js/37-timer-chime.js
 js/38-workbench.js
 js/39-templates.js
+js/39-timeline.js
 js/40-mermaid.js
 js/41-mermaid-layout.js
 js/42-mermaid-to-sketch.js

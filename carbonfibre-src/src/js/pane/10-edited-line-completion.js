@@ -137,6 +137,7 @@
       const next = raw.slice(0, from) + ins + after, pos = from + ins.length;
       acClose();
       applyInline(next, pos, pos);
+      if (ac.kind === "snippet" && it.snip.run) it.snip.run(p);
     }
     ta.addEventListener("mousedown", function () { acClose(); });   /* the caret moves: the popup was for where it was */
 

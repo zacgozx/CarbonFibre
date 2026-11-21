@@ -68,3 +68,11 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
    line up across the window */
 .sheet-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }
 .bl-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }
+
+/* "Copy timeline" on a Timeline heading (js/39-timeline.js), like a code block's Copy */
+.ln-heading:has(.tl-copy), div:has(> .tl-copy) { position: relative; }
+.tl-copy { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1;
+  font: 600 12.5px/1 var(--sans); padding: 5px 11px; min-height: 24px; box-sizing: border-box; border-radius: 6px; cursor: pointer;
+  color: var(--txt); background: var(--panel); border: 1px solid var(--line); }
+.tl-copy:hover { border-color: var(--acc); color: var(--acc-text); }
+.tl-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }

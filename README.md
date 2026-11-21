@@ -89,12 +89,26 @@ disabled with the reason. Switch any time from the bottom-left of the window.
 |---|---|
 | 3+ letters of a word | Words from your notes are suggested: start of the word first, then the start of a part (`vault` finds `ObsidianVault`), then the letters in order (`splk` finds `Splunk`). Words you pick and use often rank higher. The best one shows faintly after the cursor. |
 | `[[` | Note titles are suggested (recent notes when nothing is typed yet) |
-| `/` at the start of a word | Snippets: `/date`, `/time`, `/now`, `/today` (link to today's note), `/tomorrow`, `/yesterday`; at a line start also `/todo`, `/done`, `/h1`, `/h2`, `/quote`, `/code`, `/divider` |
+| `/` at the start of a word | Snippets: `/date`, `/time`, `/now`, `/today` (link to today's note), `/tomorrow`, `/yesterday`, `/log` (add to the timeline); at a line start also `/todo`, `/done`, `/h1`, `/h2`, `/quote`, `/code`, `/divider` |
 | **Tab** | Takes the highlighted suggestion |
 | **Enter** | A new line, as always. It takes a suggestion only for `[[links]]`, or after you moved to one with the arrow keys |
 | **Esc**, or moving the cursor | Closes the suggestions |
 
 Turn suggestions off with `COMPLETE_ON` in `carbonfibre-src/src/js/07-editing-aids.js`.
+
+## Timeline (incidents and changes)
+
+In a note with a `## Timeline` heading (the Incident and Change templates have one; add it to any note):
+
+| You do | What happens |
+|---|---|
+| Tick a step | The time goes at its end (`- [x] Restart forwarder 10:47`) and the step is listed in the Timeline, in time order |
+| Untick it | The time comes off and the entry goes |
+| **Alt+Enter** on a line, or `/log` | That line's text (or what you type) is added to the Timeline with the time |
+| **Copy timeline** (on the heading, or the command palette) | The note's name and the day, then one `HH:MM text` line per entry, ready for a ticket |
+
+Entries you write yourself stay where they are. Notes without the heading are never changed. Times are the
+time of day, so an incident that runs past midnight sorts by time, not by day.
 
 ## Layout
 

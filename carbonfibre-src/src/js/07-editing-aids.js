@@ -148,7 +148,8 @@ const Complete = {
     { key: "h2", label: "Subheading", text: function () { return "## "; }, lineStart: true },
     { key: "quote", label: "Quote", text: function () { return "> "; }, lineStart: true },
     { key: "code", label: "Code block", text: function () { return "```"; }, lineStart: true },
-    { key: "divider", label: "A line across", text: function () { return "---"; }, lineStart: true }
+    { key: "divider", label: "A line across", text: function () { return "---"; }, lineStart: true },
+    { key: "log", label: "Add to the timeline", text: function () { return ""; }, run: function (p) { Timeline.add(p, ""); } }
   ],
   /* "/da" -> the snippets whose name starts with "da" (all of them for "/") */
   snippets(q) {

@@ -4,6 +4,14 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Timeline for incident and change notes
+- In a note with a `## Timeline` heading, ticking a step stamps the time at its end and lists it in the
+  Timeline in time order; unticking takes both away; one undo step. Your own entries stay. Alt+Enter or
+  `/log` adds an entry; "Copy timeline" (on the heading, or the palette) copies plain `HH:MM text` lines
+  for a ticket. Notes without the heading are never changed. The Change template gains a Timeline.
+- Tests: `timeline_test.py` (new). `folders_test.py` checks saved pins without a reload (a reload on a busy
+  machine could read storage from before the last write).
+
 ### Sheets and Linked mentions bars line up
 - The Sheets bar at the bottom of the sidebar and the Linked mentions bar at the bottom of a pane are
   both 40px under a 1px line, with centred labels, so collapsed their lines and labels are level.

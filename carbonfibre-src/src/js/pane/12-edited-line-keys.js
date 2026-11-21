@@ -56,6 +56,7 @@
       if (mod && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); p.deleteLines(); return; }
       if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "l") { e.preventDefault(); p.selectLineStep(); return; }
       if (mod && !e.shiftKey && !e.altKey && e.key === "Enter") { e.preventDefault(); p.toggleTasks(); return; }
+      if (e.altKey && !mod && !e.shiftKey && e.key === "Enter") { e.preventDefault(); Timeline.add(p, Timeline.lineText(ta.value)); return; }   /* this line into the timeline */
       if (mod && !e.altKey && (e.key === "]" || e.key === "[")) {
         e.preventDefault();
         if (p.allSelected) p.indentRange(e.key === "[");

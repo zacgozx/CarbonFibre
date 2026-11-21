@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-oQQcyTvHTrvpv5iZK009EJobX7hj51js8QJnepsrIFI='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-ajvvtlsFU5T3wONDt1FwOKOVf+7EvlJbEbwzwklgLDA='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -2497,6 +2497,14 @@ body.vim-normal .line-ta { caret-shape: block; caret-color: var(--acc); }
    line up across the window */
 .sheet-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }
 .bl-head { box-sizing: content-box; height: 40px; padding-top: 0; padding-bottom: 0; }
+
+/* "Copy timeline" on a Timeline heading (js/39-timeline.js), like a code block's Copy */
+.ln-heading:has(.tl-copy), div:has(> .tl-copy) { position: relative; }
+.tl-copy { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1;
+  font: 600 12.5px/1 var(--sans); padding: 5px 11px; min-height: 24px; box-sizing: border-box; border-radius: 6px; cursor: pointer;
+  color: var(--txt); background: var(--panel); border: 1px solid var(--line); }
+.tl-copy:hover { border-color: var(--acc); color: var(--acc-text); }
+.tl-copy.done { background: var(--acc); border-color: var(--acc); color: #fff; }
 </style>
 <script>/* Storage, before anything reads it. Desktop app: the page's storage lives in the app's SQLite file
    (desktop/db.js) instead of the browser's. The page keeps calling localStorage; reads come from a copy
@@ -8471,7 +8479,8 @@ function lineInnerHtml(raw, fenceInfo, idx) {
   if (c.type === "hr") return '<span data-deco="1" class="hr-rule"></span>';
 
   const inline = tokensToHtml(scanInline(c.text).tokens);
-  if (c.type === "heading") return inline;
+  if (c.type === "heading") return inline + (idx >= 0 && Timeline.HEAD.test(raw)
+    ? '<span data-deco="1" class="tl-copy" role="button" tabindex="-1" title="Copy the timeline as plain lines, for a ticket">Copy timeline</span>' : "");
   if (c.type === "task") {
     return '<span data-deco="1" class="cb' + (c.done ? " cb-done" : "") + '"' + (idx >= 0 ? ' data-check="' + idx + '"' : "") +
       ' role="checkbox" aria-checked="' + c.done + '">' + (c.done ? ico("check", "cb-tick") : "") + "</span>" +
@@ -9529,7 +9538,8 @@ const Complete = {
     { key: "h2", label: "Subheading", text: function () { return "## "; }, lineStart: true },
     { key: "quote", label: "Quote", text: function () { return "> "; }, lineStart: true },
     { key: "code", label: "Code block", text: function () { return "```"; }, lineStart: true },
-    { key: "divider", label: "A line across", text: function () { return "---"; }, lineStart: true }
+    { key: "divider", label: "A line across", text: function () { return "---"; }, lineStart: true },
+    { key: "log", label: "Add to the timeline", text: function () { return ""; }, run: function (p) { Timeline.add(p, ""); } }
   ],
   /* "/da" -> the snippets whose name starts with "da" (all of them for "/") */
   snippets(q) {
@@ -10593,6 +10603,11 @@ function createPane(index) {
       const allDone = filled.every(function (l) { return /\[(x|X)\]/.test(l); });
       out = block.map(function (l) { return isTask(l) ? l.replace(/\[( |x|X)\]/, allDone ? "[ ]" : "[x]") : l; });
     }
+    /* a note with a Timeline: the ticked steps get their time, and the section follows (one undo step) */
+    const whole = p.lines.slice(0, sp.from).concat(out, p.lines.slice(sp.to + 1)), idx = [];
+    for (let k = sp.from; k <= sp.to; k++) idx.push(k);
+    const tl = Timeline.apply(whole, idx);
+    if (tl) { p.applyLines(0, p.lines.length - 1, tl, { range: sp.range, a: sp.from, b: sp.to, line: sp.from, col: col + colShift }); return; }
     p.applyLines(sp.from, sp.to, out, { range: sp.range, a: sp.from, b: sp.to, line: sp.from, col: col + colShift });
   };
   /* Ctrl+B / Ctrl+I on highlighted lines: each line's text (after #, -, - [ ], > or 1.) is wrapped,
@@ -10750,6 +10765,8 @@ function createPane(index) {
     if (cb) {
       e.preventDefault();
       const ci = parseInt(cb.dataset.check, 10);
+      const next = p.lines.slice(); next[ci] = toggleTask(next[ci]);
+      if (Timeline.write(p, Timeline.apply(next, [ci]))) return;     /* a note with a Timeline: stamped, one undo step */
       histBreak(p);
       p.lines[ci] = toggleTask(p.lines[ci]);
       p.commit(false);
@@ -11104,6 +11121,7 @@ function createPane(index) {
       const next = raw.slice(0, from) + ins + after, pos = from + ins.length;
       acClose();
       applyInline(next, pos, pos);
+      if (ac.kind === "snippet" && it.snip.run) it.snip.run(p);
     }
     ta.addEventListener("mousedown", function () { acClose(); });   /* the caret moves: the popup was for where it was */
 
@@ -11291,6 +11309,7 @@ function createPane(index) {
       if (mod && e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); p.deleteLines(); return; }
       if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "l") { e.preventDefault(); p.selectLineStep(); return; }
       if (mod && !e.shiftKey && !e.altKey && e.key === "Enter") { e.preventDefault(); p.toggleTasks(); return; }
+      if (e.altKey && !mod && !e.shiftKey && e.key === "Enter") { e.preventDefault(); Timeline.add(p, Timeline.lineText(ta.value)); return; }   /* this line into the timeline */
       if (mod && !e.altKey && (e.key === "]" || e.key === "[")) {
         e.preventDefault();
         if (p.allSelected) p.indentRange(e.key === "[");
@@ -11747,6 +11766,8 @@ function createPane(index) {
       e.preventDefault();
       const ci = parseInt(cb.dataset.check, 10);
       p.lines[ci] = toggleTask(p.lines[ci]);
+      const tl = Timeline.apply(p.lines, [ci]);
+      if (tl) Array.prototype.splice.apply(p.lines, [0, p.lines.length].concat(tl));
       const n = p.note();
       if (n) { n.content = p.lines.join("\n"); p.stale = false; markDirty(n); }
       const st = p.srcEl.scrollTop, ss = p.srcEl.selectionStart, sp = p.srcEl.selectionEnd;
@@ -22570,6 +22591,8 @@ function palCommands() {
     { label: "Move the sidebar to the other side", run: function () { SideDock.set(!SideDock.right); } },
     { label: "Reset the layout", run: function () { resetLayout(); } },
     { label: "Toggle vim mode", run: function () { Vim.toggle(); } },
+    { label: "Copy timeline (plain lines, for a ticket)", run: function () { const p = fp(); if (p && p.type === "note") Timeline.copy(p); } },
+    { label: "Add to the timeline\u2026", key: "Alt+Enter", run: function () { const p = fp(); if (p && p.type === "note") Timeline.add(p, ""); } },
     { label: "Show notes", key: "Ctrl+Shift+E", run: function () { showView("notes"); } },
     { label: "Show open tabs", key: "Alt+O", run: function () { showView("tabs"); } },
     { label: "Sketch library (drawings in the sketch folder)", key: "Alt+K", run: function () { openSketchLibrary(); } },
@@ -22726,7 +22749,7 @@ const TEMPLATES = [
   { name: "Incident", ask: "Incident note title (ticket number first, e.g. INC0012345 Splunk HEC down)",
     body: "# {{title}}\n\n**Ticket:** {{ticket}}\n**Opened:** {{date}} {{time}}\n**Status:** In progress\n\n## Summary\n{{cursor}}\n\n## Impact\n- \n\n## Timeline\n- {{time}} Picked up\n\n## Actions taken\n- [ ] \n\n## Follow-up\n- [ ] " },
   { name: "Change / downtime", ask: "Change note title (e.g. CHG0031204 Payroll batch window)",
-    body: "# {{title}}\n\n**Change:** {{ticket}}\n**Window:** {{date}} start to end\n**Requested by:** \n\n## Hosts and services\n- \n\n## Monitoring\n- [ ] Downtime scheduled in monitoring\n- [ ] Alerts suppressed for the window\n- [ ] Downtime removed after the change\n\n## Steps\n1. {{cursor}}\n\n## Rollback\n- \n\n## Checks after\n- [ ] " },
+    body: "# {{title}}\n\n**Change:** {{ticket}}\n**Window:** {{date}} start to end\n**Requested by:** \n\n## Hosts and services\n- \n\n## Monitoring\n- [ ] Downtime scheduled in monitoring\n- [ ] Alerts suppressed for the window\n- [ ] Downtime removed after the change\n\n## Steps\n1. {{cursor}}\n\n## Rollback\n- \n\n## Checks after\n- [ ] \n\n## Timeline\n- {{time}} Change note opened" },
   { name: "Shift handover", title: "Shift handover {{date}}",
     body: "# Shift handover {{date}}\n\n## Open incidents\n- {{cursor}}\n\n## In progress\n- \n\n## Watch items\n- \n\n## Notes for next shift\n- " },
   { name: "Meeting", ask: "Meeting note title",
@@ -22891,6 +22914,125 @@ document.getElementById("cmdPal").addEventListener("mousedown", function (e) {
   if (e.target === this) palClose(true);
 });
 
+/* ============================================================
+   Timeline: in a note with a "## Timeline" heading (the Incident and Change templates have one),
+   ticking a step writes the time at its end ("- [x] Restart forwarder 10:47"), unticking takes it off,
+   and the Timeline section lists the stamped steps by time, with any notes of your own kept among them.
+   Alt+Enter (or /log) adds a note of your own; "Copy timeline" puts it on the clipboard as plain lines
+   for a ticket. Notes without the heading are never changed. It's all plain markdown.
+   ============================================================ */
+const Timeline = {
+  HEAD: /^(#{1,6})\s+timeline\s*$/i,
+  TASK: /^(\s*(?:[-*+]|\d+[.)])\s+\[( |x|X)\]\s+)(.*)$/,
+  STAMP: /\s(\d{1,2}:\d{2})$/,
+  ENTRY: /^\s*[-*+]\s+(\d{1,2}:\d{2})\s+(.*)$/,
+
+  now() { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); },
+  /* the section: heading line, and where it ends (the next heading as big or bigger, or the end) */
+  section(lines) {
+    const h = lines.findIndex(function (l) { return Timeline.HEAD.test(l); });
+    if (h < 0) return null;
+    const level = Timeline.HEAD.exec(lines[h])[1].length;
+    let end = h + 1;
+    for (; end < lines.length; end++) { const m = /^(#{1,6})\s/.exec(lines[end]); if (m && m[1].length <= level) break; }
+    return { h: h, end: end };
+  },
+
+  /* lines after ticking or unticking the lines at `changed`: their stamps, then the section rebuilt.
+     null when the note has no Timeline heading or nothing changes. */
+  apply(lines, changed) {
+    const sec = Timeline.section(lines);
+    if (!sec) return null;
+    const out = lines.slice(), T = Timeline, key = function (t, x) { return t + "|" + x.trim().toLowerCase(); };
+    const drop = new Set();                                 /* entries of steps just unticked */
+    (changed || []).forEach(function (i) {
+      if (i >= sec.h && i < sec.end) return;               /* a checkbox inside the timeline itself */
+      const m = T.TASK.exec(out[i] || "");
+      if (!m) return;
+      const done = m[2] !== " ", s = T.STAMP.exec(m[3]);
+      if (done && !s) out[i] = out[i].replace(/\s+$/, "") + " " + T.now();
+      else if (!done && s) { drop.add(key(s[1], m[3].replace(T.STAMP, ""))); out[i] = out[i].replace(T.STAMP, ""); }
+    });
+    const steps = [], made = new Set();
+    out.forEach(function (l, i) {
+      if (i >= sec.h && i < sec.end) return;
+      const m = T.TASK.exec(l);
+      if (!m) return;
+      const text = m[3].replace(T.STAMP, "").trim(), s = T.STAMP.exec(m[3]);
+      if (m[2] !== " " && s && text) { steps.push({ time: s[1], text: text }); made.add(key(s[1], text)); }
+    });
+    /* the section's own lines: entries for ticked steps are rebuilt (never twice), those of steps just
+       unticked go, and your own entries and any other text stay */
+    const own = [], other = [];
+    for (let i = sec.h + 1; i < sec.end; i++) {
+      const m = T.ENTRY.exec(out[i]);
+      if (m) { const k = key(m[1], m[2]); if (!made.has(k) && !drop.has(k)) own.push({ time: m[1], text: m[2].trim() }); }
+      else if (out[i].trim() && !/^\s*[-*+]\s*$/.test(out[i])) other.push(out[i]);
+    }
+    const mins = function (e) { const p = e.time.split(":"); return +p[0] * 60 + +p[1]; };
+    /* shortcut: sorted by time of day, so an incident running past midnight sorts wrong; add dates when that bites */
+    const entries = steps.concat(own).map(function (e, k) { return { e: e, k: k }; })
+      .sort(function (a, b) { return mins(a.e) - mins(b.e) || a.k - b.k; })
+      .map(function (o) { return "- " + o.e.time + " " + o.e.text; });
+    const body = entries.concat(other);
+    const next = out.slice(0, sec.h + 1).concat(body.length ? body : ["- "], sec.end < out.length ? [""] : [], out.slice(sec.end));
+    return next.join("\n") === lines.join("\n") ? null : next;
+  },
+  /* your own entry: the time and text, into the section (made at the end of the note if there's none) */
+  withEntry(lines, text) {
+    let out = lines.slice(), sec = Timeline.section(out);
+    if (!sec) { while (out.length && !out[out.length - 1].trim()) out.pop(); out = out.concat(["", "## Timeline"]); sec = Timeline.section(out); }
+    out.splice(sec.end, 0, "- " + Timeline.now() + " " + String(text).replace(/\s+/g, " ").trim());
+    return Timeline.apply(out, []) || out;
+  },
+
+  /* the pane's lines replaced as one undo step; the caret stays on its line when a line is being edited */
+  write(p, next) {
+    if (!next) return false;
+    if (p.activeLine !== null && p.activeLine !== undefined && p.ta) {
+      const line = Math.min(p.activeLine, next.length - 1), col = p.ta.selectionStart;
+      p.applyLines(0, p.lines.length - 1, next, { line: line, col: col });
+      return true;
+    }
+    histBreak(p);
+    Array.prototype.splice.apply(p.lines, [0, p.lines.length].concat(next));
+    p.commit(true);
+    p.render();
+    return true;
+  },
+  /* Alt+Enter and /log: the current line's text, or ask when it's empty */
+  add(p, text) {
+    if (!p || !p.note()) return;
+    const go = function (t) { if (t && t.trim()) { Timeline.write(p, Timeline.withEntry(p.lines, t)); pushToastLike("Added to the timeline."); } };
+    if (text && text.trim()) go(text); else Dialogs.prompt("Add to the timeline:", "").then(go);
+  },
+  lineText(raw) { return String(raw || "").replace(/^\s*(?:#{1,6}\s+|>\s*|(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?)?/, "").replace(Timeline.STAMP, "").trim(); },
+
+  /* "Copy timeline": a line naming the note and the day, then one line per entry */
+  text(p) {
+    const sec = Timeline.section(p.lines);
+    if (!sec) return "";
+    const rows = [];
+    for (let i = sec.h + 1; i < sec.end; i++) { const m = Timeline.ENTRY.exec(p.lines[i]); if (m) rows.push(m[1] + " " + m[2].trim()); }
+    const n = p.note(), d = new Date();
+    return (n ? n.title + ", " : "") + d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "\n" + rows.join("\n");
+  },
+  copy(p, btn) {
+    const t = Timeline.text(p);
+    if (!t) { pushToastLike("This note has no ## Timeline section."); return; }
+    copyText(t);
+    if (btn) { btn.textContent = "Copied"; btn.classList.add("done"); setTimeout(function () { if (btn.isConnected) { btn.textContent = "Copy timeline"; btn.classList.remove("done"); } }, 1500); }
+    else pushToastLike("Timeline copied.");
+  }
+};
+/* the button on the Timeline heading: copies without putting the heading into editing */
+document.addEventListener("mousedown", function (e) {
+  const b = e.target.closest && e.target.closest(".tl-copy");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const p = panes.filter(function (q) { return q.root.contains(b); })[0];
+  if (p) Timeline.copy(p, b);
+}, true);
 /* ============================================================
    Mermaid flowcharts -> CarbonFibre sketches.
    Reads graph/flowchart source (any direction): node shapes, the four link kinds,

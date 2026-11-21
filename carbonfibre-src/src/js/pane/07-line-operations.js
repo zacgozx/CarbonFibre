@@ -66,6 +66,11 @@
       const allDone = filled.every(function (l) { return /\[(x|X)\]/.test(l); });
       out = block.map(function (l) { return isTask(l) ? l.replace(/\[( |x|X)\]/, allDone ? "[ ]" : "[x]") : l; });
     }
+    /* a note with a Timeline: the ticked steps get their time, and the section follows (one undo step) */
+    const whole = p.lines.slice(0, sp.from).concat(out, p.lines.slice(sp.to + 1)), idx = [];
+    for (let k = sp.from; k <= sp.to; k++) idx.push(k);
+    const tl = Timeline.apply(whole, idx);
+    if (tl) { p.applyLines(0, p.lines.length - 1, tl, { range: sp.range, a: sp.from, b: sp.to, line: sp.from, col: col + colShift }); return; }
     p.applyLines(sp.from, sp.to, out, { range: sp.range, a: sp.from, b: sp.to, line: sp.from, col: col + colShift });
   };
   /* Ctrl+B / Ctrl+I on highlighted lines: each line's text (after #, -, - [ ], > or 1.) is wrapped,

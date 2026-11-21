@@ -131,6 +131,8 @@
       e.preventDefault();
       const ci = parseInt(cb.dataset.check, 10);
       p.lines[ci] = toggleTask(p.lines[ci]);
+      const tl = Timeline.apply(p.lines, [ci]);
+      if (tl) Array.prototype.splice.apply(p.lines, [0, p.lines.length].concat(tl));
       const n = p.note();
       if (n) { n.content = p.lines.join("\n"); p.stale = false; markDirty(n); }
       const st = p.srcEl.scrollTop, ss = p.srcEl.selectionStart, sp = p.srcEl.selectionEnd;

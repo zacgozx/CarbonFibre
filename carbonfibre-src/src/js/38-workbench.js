@@ -95,6 +95,8 @@ function palCommands() {
     { label: "Move the sidebar to the other side", run: function () { SideDock.set(!SideDock.right); } },
     { label: "Reset the layout", run: function () { resetLayout(); } },
     { label: "Toggle vim mode", run: function () { Vim.toggle(); } },
+    { label: "Copy timeline (plain lines, for a ticket)", run: function () { const p = fp(); if (p && p.type === "note") Timeline.copy(p); } },
+    { label: "Add to the timeline\u2026", key: "Alt+Enter", run: function () { const p = fp(); if (p && p.type === "note") Timeline.add(p, ""); } },
     { label: "Show notes", key: "Ctrl+Shift+E", run: function () { showView("notes"); } },
     { label: "Show open tabs", key: "Alt+O", run: function () { showView("tabs"); } },
     { label: "Sketch library (drawings in the sketch folder)", key: "Alt+K", run: function () { openSketchLibrary(); } },
