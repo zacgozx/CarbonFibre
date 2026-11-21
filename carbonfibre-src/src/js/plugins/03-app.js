@@ -1598,7 +1598,7 @@ class PluginWorkspace extends PluginEvents {
       }
     });
   }
-  getLastOpenFiles() { return state.notes.slice().sort(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 10).map(PluginApp.notePath); }
+  getLastOpenFiles() { return state.notes.toSorted(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 10).map(PluginApp.notePath); }
   getLayout() { return {}; }
   changeLayout() { return Promise.resolve(); }
   updateOptions() {}

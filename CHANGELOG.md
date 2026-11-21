@@ -4,6 +4,25 @@ Newest first. Dates are when the change was made; each line names the commit.
 
 ## 2026-11-21
 
+### Fixes from the audit
+- Popped-out note renamed, moved or deleted in the main window: its window now says edits there aren't
+  saved and offers Copy (they used to be dropped without a word).
+- Sketch files: a drawing still being written counts as unsaved, so closing the page asks first (the last
+  strokes could be lost).
+- Sheets: ROUND rounds as Excel does (1.005 -> 1.01, -2.5 -> -3); a long chain of formulas asked for from
+  its far end (a total pointing at the last row) works instead of showing #ERROR!; MIN and MAX work on
+  ranges of any size.
+- Splitting or closing a pane no longer scrolls the other panes back to the top.
+- Word suggestions re-read only the notes that changed: 4 ms after an edit in a 2,000-note vault, from about 200 ms.
+- Desktop updates on Linux and Windows start the new copy (or installer) as the app quits, not before, so it
+  can't find the old copy still open and give up.
+- The tab menu is built by the same code as every other menu; newer built-in JavaScript (structuredClone,
+  toSorted, replaceChildren) where Modern Web Guidance flagged the old forms.
+- Two tests that failed now and then: they set storage just before a reload, which the browser can read back
+  missing; they no longer do.
+- Tests: `sheetcalc_test.py` (new); `layout_test.py`, `complete_test.py`, `sketchfolder_test.py`,
+  `folders_test.py`, `desktop/test/update_test.js` updated.
+
 ### Drag a tab out of the window
 - A tab dragged out of the window and let go outside it comes out into a window of its own at that spot,
   as in VS Code (the same pop-out window as "Move into a new window"). Let go inside the window, it moves

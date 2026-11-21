@@ -96,7 +96,7 @@ function skToExcalidraw(elements) {
   const out = [], files = {}, boundTo = {};
   let uid = 0;
   const nid = function () { uid++; return skId() + "x" + uid; };
-  const keep = function (el) { return JSON.parse(JSON.stringify(el)); };
+  const keep = function (el) { return structuredClone(el); };
   const text = function (str, x, y, w, h, colour, size, container, align) {
     return skFullEl({ id: nid(), type: "text", x: x, y: y, width: w, height: h, strokeColor: colour, strokeWidth: 1,
       text: str, originalText: str, fontSize: size, fontFamily: 2, textAlign: align || "center", verticalAlign: container ? "middle" : "top",

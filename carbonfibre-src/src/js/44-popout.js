@@ -99,7 +99,7 @@ const PopOut = {
         if (PopOut.timers.has(PopOut.satId)) PopOut.flush(PopOut.satId);
         PopOut.post(window.opener, { cf: "pop-hello", id: PopOut.satId, content: PopOut.dirty && n ? n.content : null });
       }
-      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : null);
+      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : PopOut.gone ? "gone" : null);
     }, 1500);
   },
   /* the bar shown while edits here can't reach the main window */
@@ -119,6 +119,7 @@ const PopOut = {
     }
     bar.querySelector(".pop-offline-text").textContent = why === "closed"
       ? "The main CarbonFibre window is closed, so changes here aren't saved. Copy this note before you close this window."
+      : why === "gone" ? "This note was renamed, moved or deleted in the main window, so changes here aren't saved. Copy this note before you close this window."
       : "Lost touch with the main CarbonFibre window, so changes here aren't being saved yet. They'll be saved when it's back.";
   },
   start(d) {
@@ -140,7 +141,7 @@ const PopOut = {
       if (!d || typeof d.cf !== "string" || d.cf.indexOf("pop-") !== 0) return;
       if (PopOut.sat) {
         if (e.source !== window.opener) return;                 /* only the window that opened this one */
-        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.offline(null); }
+        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.gone = !!d.gone; PopOut.offline(d.gone ? "gone" : null); }
         else if (d.cf === "pop-note") PopOut.start(d);
         else if (d.cf === "pop-update" && String(d.id) === PopOut.satId) PopOut.take(PopOut.satId, d.content);
         return;
@@ -158,7 +159,7 @@ const PopOut = {
       } else if (d.cf === "pop-edit" || d.cf === "pop-hello") {
         if (n && typeof d.content === "string") PopOut.take(key, d.content);
         /* saved: true only once the note is here to take it (a folder may still be loading) */
-        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string" });
+        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string", gone: !n && !!PluginHost.notesAreReady });   /* loaded and still not there: renamed or deleted */
       }
       else if (d.cf === "pop-open" && findNote(d.to)) { window.focus(); openInPane(findNote(d.to).id); }
       else if (d.cf === "pop-closed") setTimeout(function () { if (e.source.closed) PopOut.wins.delete(key); }, 500);   /* a reload says it too */

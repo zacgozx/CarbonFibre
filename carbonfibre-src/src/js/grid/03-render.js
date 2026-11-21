@@ -1,6 +1,6 @@
   function defineRender() {
     g.render = function () {
-      if (!g.sheet) { g.head.innerHTML = ""; g.body.innerHTML = ""; return; }
+      if (!g.sheet) { g.head.replaceChildren(); g.body.replaceChildren(); return; }
       g.titleEl.textContent = g.sheet.title + (g.sheet.note ? "  (table in " + g.sheet.note.title + ")" : "");
       g.computeView();
       g.renderHead();

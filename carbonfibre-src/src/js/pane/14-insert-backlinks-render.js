@@ -34,7 +34,7 @@
 
   p.renderBacklinks = function () {
     const n = p.note();
-    p.blBody.innerHTML = "";
+    p.blBody.replaceChildren();
     if (!n) { p.blEl.style.display = "none"; return; }
     p.blEl.style.display = "";
     const refs = backlinksFor(n.title);
@@ -130,7 +130,7 @@
     p.editorEl.classList.toggle("show", !!n && p.mode === "live");
     p.splitEl.classList.toggle("show", !!n && p.mode === "split");
     p.closeBtn.style.display = panes.length > 1 ? "" : "none";
-    if (!n) { p.linesEl.innerHTML = ""; p.prevEl.innerHTML = ""; p.blEl.style.display = "none"; return; }
+    if (!n) { p.linesEl.replaceChildren(); p.prevEl.replaceChildren(); p.blEl.style.display = "none"; return; }
     if (p.mode === "live") renderAllLines();
     else {
       if (p.srcEl.value !== n.content) p.srcEl.value = n.content;

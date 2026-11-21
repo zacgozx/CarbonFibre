@@ -10,7 +10,7 @@ function skSerialiseSel() {
   return {
     carbonfibre: "sketch-clip", v: 1,
     elements: picked.map(function (el) {
-      const c = JSON.parse(JSON.stringify(el));
+      const c = structuredClone(el);
       /* a link is only worth keeping if both ends came along */
       if (c.fromId && !ids[c.fromId]) c.fromId = null;
       if (c.toId && !ids[c.toId]) c.toId = null;
@@ -36,7 +36,7 @@ function skPasteElements(list, atCursor) {
   if (!list || !list.length) return;
   skSnapshot();
   const map = {}, copies = list.map(function (el) {
-    const c = JSON.parse(JSON.stringify(el));
+    const c = structuredClone(el);
     const old = c.id;
     c.id = skId();
     map[old] = c.id;
@@ -116,7 +116,7 @@ function skRenamePreview() {
   err.textContent = "";
   if (find) {
     try { rx = new RegExp(useRx ? find : find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), ci ? "gi" : "g"); }
-    catch (e) { err.textContent = "Pattern: " + e.message; rows.innerHTML = ""; return null; }
+    catch (e) { err.textContent = "Pattern: " + e.message; rows.replaceChildren(); return null; }
   }
   const out = targets.map(function (el, i) {
     const before = skLabelGet(el);

@@ -108,7 +108,7 @@ function setTheme(t) {
   appIconApply();                                /* the icon follows the theme */
   ["skPalette", "skTemplates"].forEach(function (id) {
     const el = document.getElementById(id);
-    if (el && el.dataset.built) { const open = el.classList.contains("show"); el.innerHTML = ""; delete el.dataset.built;
+    if (el && el.dataset.built) { const open = el.classList.contains("show"); el.replaceChildren(); delete el.dataset.built;
       if (open) { if (id === "skPalette") skBuildPalette(); else sketchLibRender(document.getElementById("skTemplates")); } }
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-ink]"), function (b) { b.style.background = skInk(b.dataset.ink); });

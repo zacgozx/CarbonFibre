@@ -31,7 +31,7 @@
   }
 
   function renderAllLines() {
-    p.linesEl.innerHTML = "";
+    p.linesEl.replaceChildren();
     const frag = document.createDocumentFragment();
     for (let j = 0; j < p.lines.length; j++) frag.appendChild(makeRenderedNode(p.lines[j], p.fmeta[j], j));
     p.linesEl.appendChild(frag);

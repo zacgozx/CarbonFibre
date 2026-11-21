@@ -91,6 +91,19 @@ with sync_playwright() as p:
     check("screen readers: a listbox the editor points to, the highlighted option marked", E("() => { const ta = document.activeElement, a = document.querySelector('.ac'); return a.getAttribute('role') === 'listbox' && ta.getAttribute('aria-controls') === a.id && document.getElementById(ta.getAttribute('aria-activedescendant')).getAttribute('aria-selected') === 'true'; }"))
     pg.keyboard.press("ArrowLeft"); pg.wait_for_timeout(40)
     check("moving the caret closes the popup", popup() is None and ghost() is None)
+    print("A BIG VAULT")
+    big = E("""() => { const words = ['monitoring', 'forwarder', 'incident', 'downtime', 'threshold', 'pipeline', 'ingestion', 'latency'];
+      const keep = state.notes; state.notes = keep.concat(Array.from({ length: 2000 }, (_, i) => ({ id: 'big' + i, title: 'Big ' + i, path: 'Big ' + i,
+        content: Array.from({ length: 450 }, (_, k) => words[(i + k) % 8] + ((i * 7 + k) % 300)).join(' ') })));
+      vocabCache.at = 0; let t = performance.now(); vocabulary(); const first = performance.now() - t;
+      state.notes[state.notes.length - 1].content += ' zebracrossing';
+      vocabCache.at = 0; t = performance.now(); const w = vocabulary(); const again = performance.now() - t;
+      const found = w.includes('zebracrossing');
+      state.notes.pop(); vocabCache.at = 0; vocabulary(); const gone = !vocabCache.words.includes('zebracrossing');
+      state.notes = keep; vocabCache.at = 0; vocabulary();
+      return { first: Math.round(first), again: Math.round(again), found: found, gone: gone }; }""")
+    check("2,000 notes: after one edit, only that note is read again (fast)", big["again"] < 40 and big["found"], str(big))
+    check("...and a deleted note's words go", big["gone"], str(big))
     check("no errors", not errs, errs[:2])
     b.close()
 print("ALL PASS" if ok else "FAILURES"); sys.exit(0 if ok else 1)

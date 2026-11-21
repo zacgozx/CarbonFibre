@@ -19,6 +19,8 @@ function paneColumns() {
   return cols;
 }
 function layoutPanes() {
+  /* moving an element resets its scroll position: every pane's is put back afterwards */
+  const scrolls = panes.map(function (p) { return [p.editorEl, p.srcEl, p.prevEl].map(function (el) { return el ? el.scrollTop : 0; }); });
   Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter, .pane-stack")).forEach(function (g) {
     if (g.classList.contains("pane-stack")) while (g.firstChild) workarea.appendChild(g.firstChild);
     g.remove();
@@ -60,6 +62,7 @@ function layoutPanes() {
     r.style.left = f.x + "px"; r.style.top = f.y + "px"; r.style.width = f.w + "px"; r.style.height = f.h + "px";
     workarea.appendChild(r);
   });
+  panes.forEach(function (p, i) { [p.editorEl, p.srcEl, p.prevEl].forEach(function (el, k) { if (el && scrolls[i][k]) el.scrollTop = scrolls[i][k]; }); });
   const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
   dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its × first" : "Split: another pane beside this one (Ctrl+\\). Alt+click splits down";
 }
@@ -383,34 +386,19 @@ function floatMenu(items, x, y, after) {
 let tabMenuEl = null;
 function tabMenuClose() { if (tabMenuEl) { tabMenuEl.remove(); tabMenuEl = null; } }
 function tabMenu(p, id, x, y) {
-  tabMenuClose();
-  const m = document.createElement("div");
-  m.className = "tab-menu"; m.setAttribute("role", "menu");
-  const add = function (label, fn, disabled, hint) {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "tab-menu-item"; b.setAttribute("role", "menuitem"); b.disabled = !!disabled;
-    b.innerHTML = '<span>' + esc(label) + "</span>" + (hint ? "<kbd>" + esc(hint) + "</kbd>" : "");
-    b.addEventListener("click", function () { tabMenuClose(); fn(); });
-    m.appendChild(b);
-  };
-  const me = panes.indexOf(p);
+  const me = panes.indexOf(p), full = panes.length >= MAX_PANES || p.tabs.length < 2, items = [];
   panes.forEach(function (q, k) {
     if (q === p) return;
     const n = q.type === "note" && q.note ? q.note() : null;
     const name = panes.length === 2 ? (k > me ? "the right pane" : "the left pane") : "pane " + (k + 1) + (n ? " (" + n.title + ")" : "");
-    add("Move to " + name, function () { moveTab(p, id, q, q.tabs.length); }, false, panes.length === 2 ? (k > me ? "Ctrl+Alt+\u2192" : "Ctrl+Alt+\u2190") : "");
+    items.push({ label: "Move to " + name, fn: function () { moveTab(p, id, q, q.tabs.length); }, hint: panes.length === 2 ? (k > me ? "Ctrl+Alt+\u2192" : "Ctrl+Alt+\u2190") : "" });
   });
-  add("Move to a new split", function () { moveTabToNewSplit(p, id); }, panes.length >= MAX_PANES || p.tabs.length < 2);
-  add("Move to a split below", function () { moveTabToNewSplit(p, id, "down"); }, panes.length >= MAX_PANES || p.tabs.length < 2);
-  add("Move into a new window", function () { PopOut.open(p, id); }, false, "");
-  const sep = document.createElement("div"); sep.className = "tab-menu-sep"; m.appendChild(sep);
-  add("Close", function () { p.closeTab(id); }, false, "");
-  document.body.appendChild(m);
-  tabMenuEl = m;
-  const r = m.getBoundingClientRect();
-  m.style.left = Math.min(x, window.innerWidth - r.width - 8) + "px";
-  m.style.top = Math.min(y, window.innerHeight - r.height - 8) + "px";
-  const first = m.querySelector("button:not(:disabled)"); if (first) first.focus();
+  items.push({ label: "Move to a new split", fn: function () { moveTabToNewSplit(p, id); }, off: full },
+    { label: "Move to a split below", fn: function () { moveTabToNewSplit(p, id, "down"); }, off: full },
+    { label: "Move into a new window", fn: function () { PopOut.open(p, id); } },
+    null,
+    { label: "Close", fn: function () { p.closeTab(id); } });
+  floatMenu(items, x, y);
 }
 document.addEventListener("mousedown", function (e) { if (tabMenuEl && !tabMenuEl.contains(e.target)) tabMenuClose(); }, true);
 document.addEventListener("keydown", function (e) { if (tabMenuEl && e.key === "Escape") { e.preventDefault(); tabMenuClose(); } }, true);

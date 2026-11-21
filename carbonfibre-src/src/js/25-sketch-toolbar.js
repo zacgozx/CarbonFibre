@@ -17,7 +17,7 @@ function skSwatch(hex, name) {
 }
 function skBuildColorUI() {
   const grid = document.getElementById("skGrid");
-  grid.innerHTML = "";
+  grid.replaceChildren();
   SK_PALETTE.forEach(function (c) { grid.appendChild(skSwatch(c.hex, c.name)); });
   skRenderRecent();
   skColorUI();
@@ -25,7 +25,7 @@ function skBuildColorUI() {
 function skRenderRecent() {
   const r = document.getElementById("skRecent");
   if (!r) return;
-  r.innerHTML = "";
+  r.replaceChildren();
   skRecent.slice(0, 6).forEach(function (hex) { r.appendChild(skSwatch(hex, "Recent")); });
 }
 function skPushRecent(hex) {

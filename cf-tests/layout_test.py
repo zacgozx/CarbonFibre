@@ -18,9 +18,12 @@ with sync_playwright() as p:
     E = lambda js, *a: pg.evaluate(js, *a)
     cols = lambda: E("() => [...document.querySelectorAll('#workarea > .pane-stack')].map(s => [...s.querySelectorAll(':scope > .pane-col')].map(c => { const q = panes.find(p => p.root === c); return q.note() ? q.note().title : '-'; }))")
     E("() => openInPane(1, panes[0])"); pg.wait_for_timeout(100)
+    E("() => { const n = findNote(1); n.content += '\\n' + Array.from({ length: 300 }, (_, i) => 'line ' + i).join('\\n'); panes[0].reload(); panes[0].render(); panes[0].editorEl.scrollTop = 2000; }"); pg.wait_for_timeout(100)
+    sc0 = E("() => panes[0].editorEl.scrollTop")
 
     pg.keyboard.down("Alt"); pg.locator("#btnDual").click(); pg.keyboard.up("Alt"); pg.wait_for_timeout(150)
     check("Alt+click on Split splits down: two panes in one column", cols() == [["Alpha", "Alpha"]], str(cols()))
+    check("splitting keeps where the other pane was scrolled to", sc0 > 1000 and abs(E("() => panes[0].editorEl.scrollTop") - sc0) < 5, str([sc0, E("() => panes[0].editorEl.scrollTop")]))
     E("() => { panes[1].open(2); splitPane(panes[1], 'right', 3); }"); pg.wait_for_timeout(150)
     check("split right of the lower pane makes a new column", cols() == [["Alpha", "Bravo"], ["Charlie"]], str(cols()))
     check("the lower pane is under the upper one", E("() => panes[1].root.getBoundingClientRect().top > panes[0].root.getBoundingClientRect().bottom - 2"))
@@ -96,6 +99,17 @@ with sync_playwright() as p:
     check("a tab let go outside the window comes out into its own window", pop2.evaluate("() => document.body.classList.contains('cf-popout') && panes[0].note() && panes[0].note().title") == "Charlie")
     check("...and leaves the pane", "3" not in E("() => panes[0].tabs.map(String)"))
     pop2.close(); pg.wait_for_timeout(300)
+
+    print("POP OUT: THE NOTE DELETED IN THE MAIN WINDOW")
+    E("() => openInPane(4, panes[0])"); pg.wait_for_timeout(100)
+    with ctx.expect_page() as pi3:
+        E("() => PopOut.open(panes[0], 4)")
+    pop3 = pi3.value; pop3.wait_for_timeout(900)
+    E("() => { state.notes = state.notes.filter(n => n.id !== 4); renderSidebar(); }")
+    pop3.evaluate("() => { const q = panes[0]; q.setActive(0, q.lines[0].length); }"); pop3.keyboard.type(" lost?"); pop3.wait_for_timeout(2200)
+    bar3 = pop3.evaluate("() => { const b = document.getElementById('popOffline'); return b ? b.textContent : null; }")
+    check("a popped-out note deleted (or renamed) in the main window: a bar says edits aren't saved, with Copy", bar3 and "renamed, moved or deleted" in bar3 and "Copy this note" in bar3, str(bar3))
+    pop3.close(); pg.wait_for_timeout(200)
 
     print("POP OUT: THE MAIN WINDOW RELOADED OR CLOSED")
     E("() => flushPersist()"); pg.reload(); pg.wait_for_timeout(200)

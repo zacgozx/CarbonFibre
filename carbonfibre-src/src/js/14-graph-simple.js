@@ -41,7 +41,7 @@ const SimpleGraph = {
      a link's length from the one that reached it; groups sit on a sunflower spiral. Starting
      close to the answer leaves fewer crossings, and the same vault opens the same way. */
   plan(g) {
-    const nodes = g.nodes.slice().sort(function (a, b) { return b.deg - a.deg || (a.title < b.title ? -1 : 1); });
+    const nodes = g.nodes.toSorted(function (a, b) { return b.deg - a.deg || (a.title < b.title ? -1 : 1); });
     const adj = {}, L = SimpleGraph.LINK;
     g.simple = true; g.order = nodes; g.adj = adj; g.planets = []; g.drawList = null;
     nodes.forEach(function (n) { adj[n.id] = []; });
@@ -177,7 +177,7 @@ const SimpleGraph = {
        that would overlap one already drawn (or run off screen) is left out until you zoom in */
     gctx.font = "12px " + GRAPH_FONT;
     gctx.textAlign = "center"; gctx.textBaseline = "top";
-    const placed = [], order = g.order.slice().sort(function (a, b) {
+    const placed = [], order = g.order.toSorted(function (a, b) {
       const la = a === hot ? 2 : near[a.id] ? 1 : 0, lb = b === hot ? 2 : near[b.id] ? 1 : 0;
       return lb - la || b.deg - a.deg;
     });

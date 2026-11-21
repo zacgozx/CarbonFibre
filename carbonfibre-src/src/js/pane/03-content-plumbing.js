@@ -108,7 +108,7 @@
   });
   p.renderTabs = function () {
     tabTreeSoon();
-    p.tabsEl.innerHTML = "";
+    p.tabsEl.replaceChildren();
     if (p.type === "taskboard" || p.type === "sheet") {   /* the Notes panel's or sheet's own tab: closing it goes back to the note */
       const isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
       const bt = document.createElement("div");

@@ -97,7 +97,7 @@ function skFindZones(pool) {
   });
   /* a shape inside several boxes belongs to the smallest */
   const owner = {};
-  zones.slice().sort(function (a, b) { return a.area - b.area; }).forEach(function (z) {
+  zones.toSorted(function (a, b) { return a.area - b.area; }).forEach(function (z) {
     z.members = z.members.filter(function (id) { if (owner[id]) return false; owner[id] = z; return true; });
   });
   return zones.filter(function (z) { return z.members.length; });
@@ -152,7 +152,7 @@ function skArrangeSet(ids, inPool, links, dir, zones, anchorAt) {
       g.groups.push(grp);
       grp.members.forEach(function (m) { g.nodes[m].group = grp; });
     });
-    g.order = ids.slice().sort(function (a, b) { return (inPool[a].x - inPool[b].x) || (inPool[a].y - inPool[b].y); });
+    g.order = ids.toSorted(function (a, b) { return (inPool[a].x - inPool[b].x) || (inPool[a].y - inPool[b].y); });
     /* thicker links get wider corridors: rows and columns spread with the thickest link, so
        the gaps between parallel runs still fit */
     const thick = links.reduce(function (m, c) { return g.nodes[c.fromId] && g.nodes[c.toId] ? Math.max(m, c.strokeWidth || 2) : m; }, 2);
@@ -305,8 +305,8 @@ function skArrangeSet(ids, inPool, links, dir, zones, anchorAt) {
 
   function placeShapes() {
     /* anchored on one shape (or a given point) and snapped once, so arranging is repeatable */
-    const lead = ids.slice().sort(function (a, b) { return (g.nodes[a].x + g.nodes[a].offx - g.nodes[b].x - g.nodes[b].offx) || (g.nodes[a].y - g.nodes[b].y); })[0];
-    const topId = ids.slice().sort(function (a, b) { return g.nodes[a].y - g.nodes[b].y; })[0];
+    const lead = ids.toSorted(function (a, b) { return (g.nodes[a].x + g.nodes[a].offx - g.nodes[b].x - g.nodes[b].offx) || (g.nodes[a].y - g.nodes[b].y); })[0];
+    const topId = ids.toSorted(function (a, b) { return g.nodes[a].y - g.nodes[b].y; })[0];
     if (anchorAt) { x0 = anchorAt[0]; y0 = anchorAt[1]; }
     else { x0 = skSnapTo(inPool[lead].x - g.nodes[lead].x - g.nodes[lead].offx); y0 = skSnapTo(inPool[topId].y - g.nodes[topId].y); }
     ids.forEach(function (id) {

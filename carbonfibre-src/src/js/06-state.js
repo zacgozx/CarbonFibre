@@ -254,6 +254,7 @@ function sketchSave(path, text) {
   let done;
   if (sketchCanWrite()) {
     const sp = sketchSplit(f.path);
+    writesInFlight++;                                     /* closing the page now asks first (unsavedOnDisk) */
     /* one save at a time per drawing (a save mid-write would see the first as a change on disk) */
     done = f.saving = (f.saving || Promise.resolve()).then(function () {
       if (f.text !== text) return;                       /* a newer save is queued behind this one */
@@ -268,7 +269,7 @@ function sketchSave(path, text) {
           },
           onWritten: function (fh, m) { f.diskTime = m; } });
       });
-    }).catch(function (e) { console.error(e); pushToastLike("Couldn't save " + f.path + ": " + e.message); });
+    }).catch(function (e) { console.error(e); pushToastLike("Couldn't save " + f.path + ": " + e.message); }).then(function () { writesInFlight--; });
   } else { pushToastLike("Choose a sketch folder first (Sketch library \u2192 Choose folder)."); done = Promise.resolve(); }
   sketchChanged();
   return done;

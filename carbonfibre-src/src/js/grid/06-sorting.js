@@ -5,7 +5,7 @@
       if (rs.length < 3) return;
       g.sortState = g.sortState && g.sortState.c === c ? g.sortState : { c: c, dir: 0, original: null };
       g.snapshot();
-      if (g.sortState.dir === 0) g.sortState.original = JSON.parse(JSON.stringify(rs));
+      if (g.sortState.dir === 0) g.sortState.original = structuredClone(rs);
       g.sortState.dir = g.sortState.dir === 0 ? 1 : g.sortState.dir === 1 ? -1 : 0;
       if (g.sortState.dir === 0) {
         g.sheet.rows = g.sortState.original;

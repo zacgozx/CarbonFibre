@@ -550,7 +550,7 @@ function skDuplicate() {
   if (!sk.sels.length) return;
   skSnapshot();
   const copies = sk.sels.map(function (el) {
-    const c = JSON.parse(JSON.stringify(el));
+    const c = structuredClone(el);
     c.id = skId(); c.x += 18; c.y += 18;
     c.fromId = null; c.toId = null;        /* a copied link would point at the originals */
     return c;

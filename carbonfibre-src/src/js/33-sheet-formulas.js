@@ -55,11 +55,12 @@ function shNums(args) {                               /* numbers in ranges; plai
 const SH_FN = {
   SUM: function (a) { return shNums(a).reduce(function (s, x) { return s + x; }, 0); },
   AVERAGE: function (a) { const n = shNums(a); if (!n.length) throw shErr("#DIV/0!"); return n.reduce(function (s, x) { return s + x; }, 0) / n.length; },
-  MIN: function (a) { const n = shNums(a); return n.length ? Math.min.apply(null, n) : 0; },
-  MAX: function (a) { const n = shNums(a); return n.length ? Math.max.apply(null, n) : 0; },
+  MIN: function (a) { const n = shNums(a); return n.length ? n.reduce(function (m, x) { return x < m ? x : m; }) : 0; },   /* not Math.min.apply: it fails past ~120,000 values */
+  MAX: function (a) { const n = shNums(a); return n.length ? n.reduce(function (m, x) { return x > m ? x : m; }) : 0; },
   COUNT: function (a) { return shFlat(a).filter(function (v) { return typeof v === "number"; }).length; },
   COUNTA: function (a) { return shFlat(a).filter(function (v) { return v !== ""; }).length; },
-  ROUND: function (a) { const d = a.length > 1 ? shNum(a[1]) : 0, f = Math.pow(10, d); return Math.round(shNum(a[0]) * f) / f; },
+  /* as Excel: halves away from zero (-2.5 -> -3), and 1.005 -> 1.01 despite binary floating point */
+  ROUND: function (a) { const d = a.length > 1 ? shNum(a[1]) : 0, f = Math.pow(10, d), x = shNum(a[0]); return Math.sign(x) * Math.round(Math.abs(x) * f * (1 + Number.EPSILON)) / f; },
   ABS: function (a) { return Math.abs(shNum(a[0])); },
   SQRT: function (a) { const x = shNum(a[0]); if (x < 0) throw shErr("#NUM!"); return Math.sqrt(x); },
   POWER: function (a) { return Math.pow(shNum(a[0]), shNum(a[1])); },
@@ -183,7 +184,33 @@ function resetSheetCalcs() { Object.keys(SHEET_CALCS).forEach(function (k) { SHE
 function makeSheetCalc(getRows, selfTitle) {
   const cache = new Map(), visiting = new Set(), parsed = new Map(), lookIdx = new Map();
   const raw = function (r, c) { const row = getRows()[r]; return row && row[c] != null ? String(row[c]) : ""; };
+  let depth = 0, overflow = false;
+  /* A long chain (=A1+1, =A2+1, ...) asked for from its far end runs out of stack. Then the whole sheet
+     is worked out top down, so each cell only goes a step back; a cell that still ran out (it points
+     further down) is forgotten and the pass repeats, each one getting further, then the cell is tried again. */
   function value(r, c) {
+    if (depth > 0) return value1(r, c);
+    depth++; overflow = false;
+    let v;
+    try { v = value1(r, c); } finally { depth--; }
+    if (overflow) {
+      const forgetFailed = function () { cache.forEach(function (x, k) { if (x instanceof ShErr && x.err === "#ERROR!") cache.delete(k); }); };
+      forgetFailed(); lookIdx.clear(); visiting.clear();
+      depth++;
+      try {
+        const rs = getRows(), w = (rs[0] || []).length;
+        for (let pass = 0; pass < 6; pass++) {
+          overflow = false;
+          for (let i = 0; i < rs.length; i++) for (let k = 0; k < w; k++) value1(i, k);
+          if (!overflow) break;
+          forgetFailed(); lookIdx.clear(); visiting.clear();
+        }
+        v = value1(r, c);
+      } finally { depth--; overflow = false; }
+    }
+    return v;
+  }
+  function value1(r, c) {
     const key = r * 16384 + c;
     if (cache.has(key)) return cache.get(key);
     const src = raw(r, c), f = shFormulaOf(src);
@@ -193,8 +220,8 @@ function makeSheetCalc(getRows, selfTitle) {
     else {
       visiting.add(key);
       try { let tree = parsed.get(f); if (!tree) { tree = shParse(f); parsed.set(f, tree); } v = ev(tree); if (v && v.range) v = v.range.length === 1 ? v.range[0] : shErr("#VALUE!"); }
-      catch (e) { v = shIsErr(e) ? e : shErr("#ERROR!"); }
-      visiting.delete(key);
+      catch (e) { if (e instanceof RangeError) overflow = true; v = e instanceof ShErr ? e : shErr("#ERROR!"); }
+      finally { visiting.delete(key); }                  /* even when the stack ran out inside the catch */
     }
     if (typeof v === "number" && !isFinite(v)) v = shErr("#NUM!");
     cache.set(key, v);

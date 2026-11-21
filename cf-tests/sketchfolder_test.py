@@ -27,8 +27,9 @@ with sync_playwright() as p:
     pg.add_init_script("try { localStorage.setItem('carbonfibre-welcomed', '1'); } catch (e) {}")   # a returning user: no first-visit dialog
     errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
     pg.goto("file://" + CF); pg.evaluate("() => localStorage.clear()")
-    pg.evaluate("d => localStorage.setItem('carbonfibre-sketches', JSON.stringify({ 'Old one': { text: d, mtime: 1 } }))", DRAW)
     pg.reload(); pg.wait_for_timeout(400)
+    # set after the reload: a value written just before one can be read back missing (the browser saves it a moment later)
+    pg.evaluate("d => localStorage.setItem('carbonfibre-sketches', JSON.stringify({ 'Old one': { text: d, mtime: 1 } }))", DRAW)
     E = lambda js, *a: pg.evaluate(js, *a)
     E(SETUP, DRAW)
     print("NO FOLDER YET (browser storage mode)")
@@ -41,10 +42,14 @@ with sync_playwright() as p:
     pg.locator("#sklWin [data-skchoose]").first.click()
     for _ in range(25):             # the folder scan and the move finish in either order: wait for both (up to 5 s)
         pg.wait_for_timeout(200)
-        if E("() => ['Old one', 'Quick box'].every(n => sketchFiles.some(f => f.path === n))"): break
+        if E("() => ['Old one', 'Quick box'].every(n => sketchFiles.some(f => f.path === n)) && __get(__mine, 'Old one.excalidraw') != null"): break   # listed, and written to the folder
     paths = sorted(E("() => sketchFiles.map(f => f.path)"))
     check("its drawings, subfolders included, become the library", "network/splunk/cluster" in paths and "Quick box" in paths, str(paths))
-    check("drawings that were in browser storage are moved into it (asked once)", "Old one" in paths and E("() => __get(__mine, 'Old one.excalidraw')") is not None)
+    check("drawings that were in browser storage are moved into it (asked once)", "Old one" in paths and E("() => __get(__mine, 'Old one.excalidraw')") is not None,
+          str(E("() => [sketchFiles.map(f => f.path), localStorage.getItem(SKETCH_KEY) ? 'still in storage' : 'storage cleared', __get(__mine, 'Old one.excalidraw') ? 'on disk' : 'not on disk']")))
+    busy = E("() => { const p = sketchSave('Slow one', '{\"type\":\"excalidraw\",\"elements\":[]}'); const during = unsavedOnDisk(); return p.then(() => [during, unsavedOnDisk()]); }")
+    check("a sketch file still being written counts as unsaved (closing the page asks first)", busy[0] is True, str(busy))
+    check("...and once written it doesn't", busy[1] is False, str(busy))
     check("...and browser storage is cleared of them", E("() => localStorage.getItem('carbonfibre-sketches')") is None)
     check("the library says where it reads from", "root" in E("() => document.querySelector('#sklWin .skl-where').textContent"))
     E("() => newSketchFile('network')"); pg.wait_for_timeout(400)

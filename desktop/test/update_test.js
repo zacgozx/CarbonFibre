@@ -32,7 +32,7 @@ async function main() {
   };
   process.env.APPIMAGE = target;
   let quit = 0;
-  app.quit = () => { quit++; };
+  app.quit = () => { quit++; app.emit("will-quit", { preventDefault() {} }); };   /* as quitting does */
   const { Updater, newer, assetName } = require("../updater");
 
   check("version order", newer("1.0.12", "1.0.9") && !newer("1.0.9", "1.0.9") && newer("v2.0.0", "1.9.99") && !newer("1.0.0", "1.0.1"));
@@ -63,7 +63,9 @@ async function main() {
   digest = "sha256:" + crypto.createHash("sha256").update(fresh).digest("hex");
   st = await u.check();
   await u.install();
-  await wait(1200);
+  await wait(100);
+  check("the new one isn't started before this one quits (it would find this one still open and close)", !fs.existsSync(marker));
+  await wait(1100);
   check("progress is reported", states.some((s) => s.status === "downloading" && s.progress === 100));
   check("the AppImage is replaced with the new one", fs.readFileSync(target).equals(fresh));
   check("the new one is started", fs.existsSync(marker) && fs.readFileSync(marker, "utf8").trim() === "new");

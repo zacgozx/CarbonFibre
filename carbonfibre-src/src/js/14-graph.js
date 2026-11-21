@@ -545,7 +545,7 @@ function graphSelect(n) {
 
 function renderGraphSide(n) {
   const note = findNote(n.id);
-  graphSide.innerHTML = "";
+  graphSide.replaceChildren();
   if (!note) return;
   const head = document.createElement("div");
   head.className = "gs-head";

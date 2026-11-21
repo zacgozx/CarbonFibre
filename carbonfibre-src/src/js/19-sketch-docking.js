@@ -106,7 +106,7 @@ function skPark() {
   host.parked = {
     noteId: sk.noteId, open: sk.open,
     json: JSON.stringify(skDocFor(sk)),
-    elements: JSON.parse(JSON.stringify(sk.elements)),
+    elements: structuredClone(sk.elements),
     cam: { x: sk.cam.x, y: sk.cam.y, k: sk.cam.k }
   };
   sketchEl.classList.remove("show");

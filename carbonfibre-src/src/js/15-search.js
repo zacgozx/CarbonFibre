@@ -80,7 +80,7 @@ function renderSheetList() {
   const list = document.getElementById("sheetList");
   if (!head || !list) return;
   head.classList.toggle("show", true);
-  list.innerHTML = "";
+  list.replaceChildren();
   if (!sheets.length) {
     const e0 = document.createElement("div");
     e0.className = "side-empty";
@@ -91,7 +91,7 @@ function renderSheetList() {
     return;
   }
   const openIds = panes.filter(function (p) { return p.type === "sheet"; }).map(function (p) { return String(p.sheetId); });
-  sheets.slice().sort(function (a, b) { return a.title.localeCompare(b.title); }).forEach(function (sh) {
+  sheets.toSorted(function (a, b) { return a.title.localeCompare(b.title); }).forEach(function (sh) {
     const it = document.createElement("div");
     it.className = "sheet-item" + (openIds.indexOf(String(sh.id)) !== -1 ? " on" : "");
     it.innerHTML = '<span class="grid-icon">' + ico("table") + '</span><span class="nm"></span>';
@@ -135,7 +135,7 @@ function renderSidebar() {
 }
 
 function renderList(listEl, q) {
-  listEl.innerHTML = "";
+  listEl.replaceChildren();
   const countEl = document.getElementById("searchCount");
   const isSearch = listEl === searchListEl;
   const fp = focusedPane || panes[0];
@@ -157,7 +157,7 @@ function renderList(listEl, q) {
   let rows = [], totalHits = 0;
   let ordered = state.notes;
   if (sortMode === "recent") {
-    ordered = state.notes.slice().sort(function (a, b) {
+    ordered = state.notes.toSorted(function (a, b) {
       const d = noteStamp(b) - noteStamp(a);
       return d || (a.path || a.title).localeCompare(b.path || b.title);
     });

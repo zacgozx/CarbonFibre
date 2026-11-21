@@ -19,7 +19,7 @@ function crumbHeading(p) {
 function renderCrumbs(p) {
   if (!p || !p.crumbEl) return;
   const n = p.type === "note" ? p.note() : null;
-  if (!n) { p.crumbEl.innerHTML = ""; return; }
+  if (!n) { p.crumbEl.replaceChildren(); return; }
   const parts = n.path ? n.path.split("/").slice(0, -1) : [];
   const sep = ico("chevronRight", "crumb-sep");
   let html = parts.map(function (f) { return '<span class="crumb">' + esc(f) + "</span>" + sep; }).join("");

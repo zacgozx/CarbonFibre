@@ -38,7 +38,7 @@
         const q = m[1];
         const titles = q
           ? Complete.rank(q, state.notes.map(function (n) { return n.title; }), 8, true)
-          : state.notes.slice().sort(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 8).map(function (n) { return { word: n.title, hits: [] }; });
+          : state.notes.toSorted(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 8).map(function (n) { return { word: n.title, hits: [] }; });
         return titles.length ? { kind: "link", start: s - q.length, typed: q, items: titles } : null;
       }
       if (p.fmeta[p.activeLine] && p.fmeta[p.activeLine].fence) return null;

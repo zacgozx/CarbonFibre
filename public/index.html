@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <!-- Content Security Policy: the app makes no network requests and runs only its own scripts.
      build.py puts the hashes of the page's script blocks after script-src. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-hSB3H5CPydl9CQHfGo7uk9nkp1eDSDBfpnZvqga4W+o='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-066pRZoZT+BjMj/LuUal4ubNC8/FXprKWIAHbYufkL8=' 'sha256-CbGtmBQnxHKrPExE3UwFCFMxfB9JMVdzeGGqpN4kdRM=' 'sha256-oQQcyTvHTrvpv5iZK009EJobX7hj51js8QJnepsrIFI='; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>CarbonFibre</title>
 <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:,">
 <style>
@@ -5607,7 +5607,7 @@ class PluginWorkspace extends PluginEvents {
       }
     });
   }
-  getLastOpenFiles() { return state.notes.slice().sort(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 10).map(PluginApp.notePath); }
+  getLastOpenFiles() { return state.notes.toSorted(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 10).map(PluginApp.notePath); }
   getLayout() { return {}; }
   changeLayout() { return Promise.resolve(); }
   updateOptions() {}
@@ -8933,6 +8933,7 @@ function sketchSave(path, text) {
   let done;
   if (sketchCanWrite()) {
     const sp = sketchSplit(f.path);
+    writesInFlight++;                                     /* closing the page now asks first (unsavedOnDisk) */
     /* one save at a time per drawing (a save mid-write would see the first as a change on disk) */
     done = f.saving = (f.saving || Promise.resolve()).then(function () {
       if (f.text !== text) return;                       /* a newer save is queued behind this one */
@@ -8947,7 +8948,7 @@ function sketchSave(path, text) {
           },
           onWritten: function (fh, m) { f.diskTime = m; } });
       });
-    }).catch(function (e) { console.error(e); pushToastLike("Couldn't save " + f.path + ": " + e.message); });
+    }).catch(function (e) { console.error(e); pushToastLike("Couldn't save " + f.path + ": " + e.message); }).then(function () { writesInFlight--; });
   } else { pushToastLike("Choose a sketch folder first (Sketch library \u2192 Choose folder)."); done = Promise.resolve(); }
   sketchChanged();
   return done;
@@ -9390,29 +9391,42 @@ const AUTOCORRECT = {
 };
 
 /* words the completion popup can offer: every 5+ letter word in the vault, with how often it's used
-   and whether it's in a note edited in the last three days; rebuilt at most every 1.5s */
-const vocabCache = { key: "", at: 0, words: [], freq: new Map(), recent: new Set() };
+   and whether it's in a note edited in the last three days. Each note's words are counted once and
+   kept; only notes whose text changed are read again (at most every 1.5 s), so a big vault doesn't
+   stall typing. */
+const vocabCache = { at: 0, words: [], freq: new Map(), form: new Map(), recent: new Set(), per: new Map() };
 function vocabulary() {
-  const now = Date.now();
-  if (now - vocabCache.at < 1500) return vocabCache.words;
+  const now = Date.now(), V = vocabCache;
+  if (now - V.at < 1500) return V.words;
+  V.at = now;
   syncAllPanes();
-  const key = state.notes.length + ":" + state.notes.reduce(function (a, n) { return a + n.content.length; }, 0);
-  vocabCache.at = now;
-  if (key === vocabCache.key) return vocabCache.words;
-  const freq = new Map(), form = new Map(), recent = new Set(), out = [];
-  const fresh = now - 3 * 864e5;
-  state.notes.forEach(function (n) {
-    const isNew = noteStamp(n) > fresh;
-    (n.content.match(/[A-Za-z][A-Za-z0-9_-]{4,}/g) || []).forEach(function (w) {
-      const k = w.toLowerCase();
-      freq.set(k, (freq.get(k) || 0) + 1);
-      if (!form.has(k)) { form.set(k, w); out.push(w); }
-      if (isNew) recent.add(k);
+  const seen = new Set(), add = function (counts, sign) {
+    counts.forEach(function (e, k) {
+      const t = (V.freq.get(k) || 0) + sign * e.n;
+      if (t > 0) { V.freq.set(k, t); if (!V.form.has(k)) V.form.set(k, e.w); } else { V.freq.delete(k); V.form.delete(k); }
     });
+  };
+  let changed = false;
+  state.notes.forEach(function (n) {
+    const id = String(n.id), had = V.per.get(id);
+    seen.add(id);
+    if (had && had.c === n.content) return;
+    changed = true;
+    if (had) add(had.counts, -1);
+    const counts = new Map();
+    (n.content.match(/[A-Za-z][A-Za-z0-9_-]{4,}/g) || []).forEach(function (w) {
+      const k = w.toLowerCase(), e = counts.get(k);
+      if (e) e.n++; else counts.set(k, { n: 1, w: w });
+    });
+    V.per.set(id, { c: n.content, counts: counts });
+    add(counts, 1);
   });
-  out.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
-  vocabCache.key = key; vocabCache.words = out; vocabCache.freq = freq; vocabCache.recent = recent;
-  return out;
+  V.per.forEach(function (e, id) { if (!seen.has(id)) { add(e.counts, -1); V.per.delete(id); changed = true; } });
+  if (changed) V.words = Array.from(V.form.values()).sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+  const fresh = now - 3 * 864e5;
+  V.recent = new Set();
+  state.notes.forEach(function (n) { if (noteStamp(n) > fresh) { const e = V.per.get(String(n.id)); if (e) e.counts.forEach(function (_, k) { V.recent.add(k); }); } });
+  return V.words;
 }
 
 /* ============================================================
@@ -10073,7 +10087,7 @@ function createPane(index) {
   });
   p.renderTabs = function () {
     tabTreeSoon();
-    p.tabsEl.innerHTML = "";
+    p.tabsEl.replaceChildren();
     if (p.type === "taskboard" || p.type === "sheet") {   /* the Notes panel's or sheet's own tab: closing it goes back to the note */
       const isSheet = p.type === "sheet", shObj = isSheet && findSheet(p.sheetId);
       const bt = document.createElement("div");
@@ -10195,7 +10209,7 @@ function createPane(index) {
   }
 
   function renderAllLines() {
-    p.linesEl.innerHTML = "";
+    p.linesEl.replaceChildren();
     const frag = document.createDocumentFragment();
     for (let j = 0; j < p.lines.length; j++) frag.appendChild(makeRenderedNode(p.lines[j], p.fmeta[j], j));
     p.linesEl.appendChild(frag);
@@ -10453,7 +10467,7 @@ function createPane(index) {
   p.editCarets = function (fn) {
     if (!p.carets.length) return;
     histBreak(p);
-    const list = p.carets.slice().sort(function (a, b) { return b.line - a.line; });
+    const list = p.carets.toSorted(function (a, b) { return b.line - a.line; });
     list.forEach(function (c) {
       const col = Math.min(c.col, p.lines[c.line].length);
       const res = fn(p.lines[c.line], col);
@@ -10985,7 +10999,7 @@ function createPane(index) {
         const q = m[1];
         const titles = q
           ? Complete.rank(q, state.notes.map(function (n) { return n.title; }), 8, true)
-          : state.notes.slice().sort(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 8).map(function (n) { return { word: n.title, hits: [] }; });
+          : state.notes.toSorted(function (a, b) { return noteStamp(b) - noteStamp(a); }).slice(0, 8).map(function (n) { return { word: n.title, hits: [] }; });
         return titles.length ? { kind: "link", start: s - q.length, typed: q, items: titles } : null;
       }
       if (p.fmeta[p.activeLine] && p.fmeta[p.activeLine].fence) return null;
@@ -11773,7 +11787,7 @@ function createPane(index) {
 
   p.renderBacklinks = function () {
     const n = p.note();
-    p.blBody.innerHTML = "";
+    p.blBody.replaceChildren();
     if (!n) { p.blEl.style.display = "none"; return; }
     p.blEl.style.display = "";
     const refs = backlinksFor(n.title);
@@ -11869,7 +11883,7 @@ function createPane(index) {
     p.editorEl.classList.toggle("show", !!n && p.mode === "live");
     p.splitEl.classList.toggle("show", !!n && p.mode === "split");
     p.closeBtn.style.display = panes.length > 1 ? "" : "none";
-    if (!n) { p.linesEl.innerHTML = ""; p.prevEl.innerHTML = ""; p.blEl.style.display = "none"; return; }
+    if (!n) { p.linesEl.replaceChildren(); p.prevEl.replaceChildren(); p.blEl.style.display = "none"; return; }
     if (p.mode === "live") renderAllLines();
     else {
       if (p.srcEl.value !== n.content) p.srcEl.value = n.content;
@@ -11931,6 +11945,8 @@ function paneColumns() {
   return cols;
 }
 function layoutPanes() {
+  /* moving an element resets its scroll position: every pane's is put back afterwards */
+  const scrolls = panes.map(function (p) { return [p.editorEl, p.srcEl, p.prevEl].map(function (el) { return el ? el.scrollTop : 0; }); });
   Array.prototype.slice.call(workarea.querySelectorAll(".pane-gutter, .pane-stack")).forEach(function (g) {
     if (g.classList.contains("pane-stack")) while (g.firstChild) workarea.appendChild(g.firstChild);
     g.remove();
@@ -11972,6 +11988,7 @@ function layoutPanes() {
     r.style.left = f.x + "px"; r.style.top = f.y + "px"; r.style.width = f.w + "px"; r.style.height = f.h + "px";
     workarea.appendChild(r);
   });
+  panes.forEach(function (p, i) { [p.editorEl, p.srcEl, p.prevEl].forEach(function (el, k) { if (el && scrolls[i][k]) el.scrollTop = scrolls[i][k]; }); });
   const dual = document.getElementById("btnDual");                 /* Split only adds (toggleDual): no on/off look */
   dual.title = panes.length >= MAX_PANES ? "Already " + MAX_PANES + " panes: close one with its × first" : "Split: another pane beside this one (Ctrl+\\). Alt+click splits down";
 }
@@ -12295,34 +12312,19 @@ function floatMenu(items, x, y, after) {
 let tabMenuEl = null;
 function tabMenuClose() { if (tabMenuEl) { tabMenuEl.remove(); tabMenuEl = null; } }
 function tabMenu(p, id, x, y) {
-  tabMenuClose();
-  const m = document.createElement("div");
-  m.className = "tab-menu"; m.setAttribute("role", "menu");
-  const add = function (label, fn, disabled, hint) {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "tab-menu-item"; b.setAttribute("role", "menuitem"); b.disabled = !!disabled;
-    b.innerHTML = '<span>' + esc(label) + "</span>" + (hint ? "<kbd>" + esc(hint) + "</kbd>" : "");
-    b.addEventListener("click", function () { tabMenuClose(); fn(); });
-    m.appendChild(b);
-  };
-  const me = panes.indexOf(p);
+  const me = panes.indexOf(p), full = panes.length >= MAX_PANES || p.tabs.length < 2, items = [];
   panes.forEach(function (q, k) {
     if (q === p) return;
     const n = q.type === "note" && q.note ? q.note() : null;
     const name = panes.length === 2 ? (k > me ? "the right pane" : "the left pane") : "pane " + (k + 1) + (n ? " (" + n.title + ")" : "");
-    add("Move to " + name, function () { moveTab(p, id, q, q.tabs.length); }, false, panes.length === 2 ? (k > me ? "Ctrl+Alt+\u2192" : "Ctrl+Alt+\u2190") : "");
+    items.push({ label: "Move to " + name, fn: function () { moveTab(p, id, q, q.tabs.length); }, hint: panes.length === 2 ? (k > me ? "Ctrl+Alt+\u2192" : "Ctrl+Alt+\u2190") : "" });
   });
-  add("Move to a new split", function () { moveTabToNewSplit(p, id); }, panes.length >= MAX_PANES || p.tabs.length < 2);
-  add("Move to a split below", function () { moveTabToNewSplit(p, id, "down"); }, panes.length >= MAX_PANES || p.tabs.length < 2);
-  add("Move into a new window", function () { PopOut.open(p, id); }, false, "");
-  const sep = document.createElement("div"); sep.className = "tab-menu-sep"; m.appendChild(sep);
-  add("Close", function () { p.closeTab(id); }, false, "");
-  document.body.appendChild(m);
-  tabMenuEl = m;
-  const r = m.getBoundingClientRect();
-  m.style.left = Math.min(x, window.innerWidth - r.width - 8) + "px";
-  m.style.top = Math.min(y, window.innerHeight - r.height - 8) + "px";
-  const first = m.querySelector("button:not(:disabled)"); if (first) first.focus();
+  items.push({ label: "Move to a new split", fn: function () { moveTabToNewSplit(p, id); }, off: full },
+    { label: "Move to a split below", fn: function () { moveTabToNewSplit(p, id, "down"); }, off: full },
+    { label: "Move into a new window", fn: function () { PopOut.open(p, id); } },
+    null,
+    { label: "Close", fn: function () { p.closeTab(id); } });
+  floatMenu(items, x, y);
 }
 document.addEventListener("mousedown", function (e) { if (tabMenuEl && !tabMenuEl.contains(e.target)) tabMenuClose(); }, true);
 document.addEventListener("keydown", function (e) { if (tabMenuEl && e.key === "Escape") { e.preventDefault(); tabMenuClose(); } }, true);
@@ -13514,7 +13516,7 @@ function graphSelect(n) {
 
 function renderGraphSide(n) {
   const note = findNote(n.id);
-  graphSide.innerHTML = "";
+  graphSide.replaceChildren();
   if (!note) return;
   const head = document.createElement("div");
   head.className = "gs-head";
@@ -13677,7 +13679,7 @@ const SimpleGraph = {
      a link's length from the one that reached it; groups sit on a sunflower spiral. Starting
      close to the answer leaves fewer crossings, and the same vault opens the same way. */
   plan(g) {
-    const nodes = g.nodes.slice().sort(function (a, b) { return b.deg - a.deg || (a.title < b.title ? -1 : 1); });
+    const nodes = g.nodes.toSorted(function (a, b) { return b.deg - a.deg || (a.title < b.title ? -1 : 1); });
     const adj = {}, L = SimpleGraph.LINK;
     g.simple = true; g.order = nodes; g.adj = adj; g.planets = []; g.drawList = null;
     nodes.forEach(function (n) { adj[n.id] = []; });
@@ -13813,7 +13815,7 @@ const SimpleGraph = {
        that would overlap one already drawn (or run off screen) is left out until you zoom in */
     gctx.font = "12px " + GRAPH_FONT;
     gctx.textAlign = "center"; gctx.textBaseline = "top";
-    const placed = [], order = g.order.slice().sort(function (a, b) {
+    const placed = [], order = g.order.toSorted(function (a, b) {
       const la = a === hot ? 2 : near[a.id] ? 1 : 0, lb = b === hot ? 2 : near[b.id] ? 1 : 0;
       return lb - la || b.deg - a.deg;
     });
@@ -13934,7 +13936,7 @@ function renderSheetList() {
   const list = document.getElementById("sheetList");
   if (!head || !list) return;
   head.classList.toggle("show", true);
-  list.innerHTML = "";
+  list.replaceChildren();
   if (!sheets.length) {
     const e0 = document.createElement("div");
     e0.className = "side-empty";
@@ -13945,7 +13947,7 @@ function renderSheetList() {
     return;
   }
   const openIds = panes.filter(function (p) { return p.type === "sheet"; }).map(function (p) { return String(p.sheetId); });
-  sheets.slice().sort(function (a, b) { return a.title.localeCompare(b.title); }).forEach(function (sh) {
+  sheets.toSorted(function (a, b) { return a.title.localeCompare(b.title); }).forEach(function (sh) {
     const it = document.createElement("div");
     it.className = "sheet-item" + (openIds.indexOf(String(sh.id)) !== -1 ? " on" : "");
     it.innerHTML = '<span class="grid-icon">' + ico("table") + '</span><span class="nm"></span>';
@@ -13989,7 +13991,7 @@ function renderSidebar() {
 }
 
 function renderList(listEl, q) {
-  listEl.innerHTML = "";
+  listEl.replaceChildren();
   const countEl = document.getElementById("searchCount");
   const isSearch = listEl === searchListEl;
   const fp = focusedPane || panes[0];
@@ -14011,7 +14013,7 @@ function renderList(listEl, q) {
   let rows = [], totalHits = 0;
   let ordered = state.notes;
   if (sortMode === "recent") {
-    ordered = state.notes.slice().sort(function (a, b) {
+    ordered = state.notes.toSorted(function (a, b) {
       const d = noteStamp(b) - noteStamp(a);
       return d || (a.path || a.title).localeCompare(b.path || b.title);
     });
@@ -14769,7 +14771,7 @@ function skToExcalidraw(elements) {
   const out = [], files = {}, boundTo = {};
   let uid = 0;
   const nid = function () { uid++; return skId() + "x" + uid; };
-  const keep = function (el) { return JSON.parse(JSON.stringify(el)); };
+  const keep = function (el) { return structuredClone(el); };
   const text = function (str, x, y, w, h, colour, size, container, align) {
     return skFullEl({ id: nid(), type: "text", x: x, y: y, width: w, height: h, strokeColor: colour, strokeWidth: 1,
       text: str, originalText: str, fontSize: size, fontFamily: 2, textAlign: align || "center", verticalAlign: container ? "middle" : "top",
@@ -15541,7 +15543,7 @@ function skPark() {
   host.parked = {
     noteId: sk.noteId, open: sk.open,
     json: JSON.stringify(skDocFor(sk)),
-    elements: JSON.parse(JSON.stringify(sk.elements)),
+    elements: structuredClone(sk.elements),
     cam: { x: sk.cam.x, y: sk.cam.y, k: sk.cam.k }
   };
   sketchEl.classList.remove("show");
@@ -16552,7 +16554,7 @@ function skFindZones(pool) {
   });
   /* a shape inside several boxes belongs to the smallest */
   const owner = {};
-  zones.slice().sort(function (a, b) { return a.area - b.area; }).forEach(function (z) {
+  zones.toSorted(function (a, b) { return a.area - b.area; }).forEach(function (z) {
     z.members = z.members.filter(function (id) { if (owner[id]) return false; owner[id] = z; return true; });
   });
   return zones.filter(function (z) { return z.members.length; });
@@ -16607,7 +16609,7 @@ function skArrangeSet(ids, inPool, links, dir, zones, anchorAt) {
       g.groups.push(grp);
       grp.members.forEach(function (m) { g.nodes[m].group = grp; });
     });
-    g.order = ids.slice().sort(function (a, b) { return (inPool[a].x - inPool[b].x) || (inPool[a].y - inPool[b].y); });
+    g.order = ids.toSorted(function (a, b) { return (inPool[a].x - inPool[b].x) || (inPool[a].y - inPool[b].y); });
     /* thicker links get wider corridors: rows and columns spread with the thickest link, so
        the gaps between parallel runs still fit */
     const thick = links.reduce(function (m, c) { return g.nodes[c.fromId] && g.nodes[c.toId] ? Math.max(m, c.strokeWidth || 2) : m; }, 2);
@@ -16760,8 +16762,8 @@ function skArrangeSet(ids, inPool, links, dir, zones, anchorAt) {
 
   function placeShapes() {
     /* anchored on one shape (or a given point) and snapped once, so arranging is repeatable */
-    const lead = ids.slice().sort(function (a, b) { return (g.nodes[a].x + g.nodes[a].offx - g.nodes[b].x - g.nodes[b].offx) || (g.nodes[a].y - g.nodes[b].y); })[0];
-    const topId = ids.slice().sort(function (a, b) { return g.nodes[a].y - g.nodes[b].y; })[0];
+    const lead = ids.toSorted(function (a, b) { return (g.nodes[a].x + g.nodes[a].offx - g.nodes[b].x - g.nodes[b].offx) || (g.nodes[a].y - g.nodes[b].y); })[0];
+    const topId = ids.toSorted(function (a, b) { return g.nodes[a].y - g.nodes[b].y; })[0];
     if (anchorAt) { x0 = anchorAt[0]; y0 = anchorAt[1]; }
     else { x0 = skSnapTo(inPool[lead].x - g.nodes[lead].x - g.nodes[lead].offx); y0 = skSnapTo(inPool[topId].y - g.nodes[topId].y); }
     ids.forEach(function (id) {
@@ -17078,7 +17080,7 @@ function skInsertAutoSplitters() {
     return j;
   };
   const trunk = function (id, from, to, like) {
-    const t = JSON.parse(JSON.stringify(like));
+    const t = structuredClone(like);
     t.id = id; t.fromId = from; t.toId = to; t.label = ""; t.startArrowhead = null; skLinkHintsClear(t);
     return t;
   };
@@ -17823,7 +17825,7 @@ function skDuplicate() {
   if (!sk.sels.length) return;
   skSnapshot();
   const copies = sk.sels.map(function (el) {
-    const c = JSON.parse(JSON.stringify(el));
+    const c = structuredClone(el);
     c.id = skId(); c.x += 18; c.y += 18;
     c.fromId = null; c.toId = null;        /* a copied link would point at the originals */
     return c;
@@ -17958,7 +17960,7 @@ function skSwatch(hex, name) {
 }
 function skBuildColorUI() {
   const grid = document.getElementById("skGrid");
-  grid.innerHTML = "";
+  grid.replaceChildren();
   SK_PALETTE.forEach(function (c) { grid.appendChild(skSwatch(c.hex, c.name)); });
   skRenderRecent();
   skColorUI();
@@ -17966,7 +17968,7 @@ function skBuildColorUI() {
 function skRenderRecent() {
   const r = document.getElementById("skRecent");
   if (!r) return;
-  r.innerHTML = "";
+  r.replaceChildren();
   skRecent.slice(0, 6).forEach(function (hex) { r.appendChild(skSwatch(hex, "Recent")); });
 }
 function skPushRecent(hex) {
@@ -18325,7 +18327,7 @@ function skSerialiseSel() {
   return {
     carbonfibre: "sketch-clip", v: 1,
     elements: picked.map(function (el) {
-      const c = JSON.parse(JSON.stringify(el));
+      const c = structuredClone(el);
       /* a link is only worth keeping if both ends came along */
       if (c.fromId && !ids[c.fromId]) c.fromId = null;
       if (c.toId && !ids[c.toId]) c.toId = null;
@@ -18351,7 +18353,7 @@ function skPasteElements(list, atCursor) {
   if (!list || !list.length) return;
   skSnapshot();
   const map = {}, copies = list.map(function (el) {
-    const c = JSON.parse(JSON.stringify(el));
+    const c = structuredClone(el);
     const old = c.id;
     c.id = skId();
     map[old] = c.id;
@@ -18431,7 +18433,7 @@ function skRenamePreview() {
   err.textContent = "";
   if (find) {
     try { rx = new RegExp(useRx ? find : find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), ci ? "gi" : "g"); }
-    catch (e) { err.textContent = "Pattern: " + e.message; rows.innerHTML = ""; return null; }
+    catch (e) { err.textContent = "Pattern: " + e.message; rows.replaceChildren(); return null; }
   }
   const out = targets.map(function (el, i) {
     const before = skLabelGet(el);
@@ -18943,7 +18945,7 @@ function skSplitLink(L, wx, wy) {
   }
   const sp = skBase("stencil", best[0] - 8, best[1] - 8, L.strokeColor, L.strokeWidth);
   sp.shape = "splitter"; sp.width = 16; sp.height = 16; sp.label = ""; sp.fill = "transparent";
-  const rest = JSON.parse(JSON.stringify(L));
+  const rest = structuredClone(L);
   rest.id = skId(); rest.fromId = sp.id; rest.label = ""; rest.startArrowhead = null;
   [L, rest].forEach(skLinkHintsClear);
   L.toId = sp.id;
@@ -19997,11 +19999,12 @@ function shNums(args) {                               /* numbers in ranges; plai
 const SH_FN = {
   SUM: function (a) { return shNums(a).reduce(function (s, x) { return s + x; }, 0); },
   AVERAGE: function (a) { const n = shNums(a); if (!n.length) throw shErr("#DIV/0!"); return n.reduce(function (s, x) { return s + x; }, 0) / n.length; },
-  MIN: function (a) { const n = shNums(a); return n.length ? Math.min.apply(null, n) : 0; },
-  MAX: function (a) { const n = shNums(a); return n.length ? Math.max.apply(null, n) : 0; },
+  MIN: function (a) { const n = shNums(a); return n.length ? n.reduce(function (m, x) { return x < m ? x : m; }) : 0; },   /* not Math.min.apply: it fails past ~120,000 values */
+  MAX: function (a) { const n = shNums(a); return n.length ? n.reduce(function (m, x) { return x > m ? x : m; }) : 0; },
   COUNT: function (a) { return shFlat(a).filter(function (v) { return typeof v === "number"; }).length; },
   COUNTA: function (a) { return shFlat(a).filter(function (v) { return v !== ""; }).length; },
-  ROUND: function (a) { const d = a.length > 1 ? shNum(a[1]) : 0, f = Math.pow(10, d); return Math.round(shNum(a[0]) * f) / f; },
+  /* as Excel: halves away from zero (-2.5 -> -3), and 1.005 -> 1.01 despite binary floating point */
+  ROUND: function (a) { const d = a.length > 1 ? shNum(a[1]) : 0, f = Math.pow(10, d), x = shNum(a[0]); return Math.sign(x) * Math.round(Math.abs(x) * f * (1 + Number.EPSILON)) / f; },
   ABS: function (a) { return Math.abs(shNum(a[0])); },
   SQRT: function (a) { const x = shNum(a[0]); if (x < 0) throw shErr("#NUM!"); return Math.sqrt(x); },
   POWER: function (a) { return Math.pow(shNum(a[0]), shNum(a[1])); },
@@ -20125,7 +20128,33 @@ function resetSheetCalcs() { Object.keys(SHEET_CALCS).forEach(function (k) { SHE
 function makeSheetCalc(getRows, selfTitle) {
   const cache = new Map(), visiting = new Set(), parsed = new Map(), lookIdx = new Map();
   const raw = function (r, c) { const row = getRows()[r]; return row && row[c] != null ? String(row[c]) : ""; };
+  let depth = 0, overflow = false;
+  /* A long chain (=A1+1, =A2+1, ...) asked for from its far end runs out of stack. Then the whole sheet
+     is worked out top down, so each cell only goes a step back; a cell that still ran out (it points
+     further down) is forgotten and the pass repeats, each one getting further, then the cell is tried again. */
   function value(r, c) {
+    if (depth > 0) return value1(r, c);
+    depth++; overflow = false;
+    let v;
+    try { v = value1(r, c); } finally { depth--; }
+    if (overflow) {
+      const forgetFailed = function () { cache.forEach(function (x, k) { if (x instanceof ShErr && x.err === "#ERROR!") cache.delete(k); }); };
+      forgetFailed(); lookIdx.clear(); visiting.clear();
+      depth++;
+      try {
+        const rs = getRows(), w = (rs[0] || []).length;
+        for (let pass = 0; pass < 6; pass++) {
+          overflow = false;
+          for (let i = 0; i < rs.length; i++) for (let k = 0; k < w; k++) value1(i, k);
+          if (!overflow) break;
+          forgetFailed(); lookIdx.clear(); visiting.clear();
+        }
+        v = value1(r, c);
+      } finally { depth--; overflow = false; }
+    }
+    return v;
+  }
+  function value1(r, c) {
     const key = r * 16384 + c;
     if (cache.has(key)) return cache.get(key);
     const src = raw(r, c), f = shFormulaOf(src);
@@ -20135,8 +20164,8 @@ function makeSheetCalc(getRows, selfTitle) {
     else {
       visiting.add(key);
       try { let tree = parsed.get(f); if (!tree) { tree = shParse(f); parsed.set(f, tree); } v = ev(tree); if (v && v.range) v = v.range.length === 1 ? v.range[0] : shErr("#VALUE!"); }
-      catch (e) { v = shIsErr(e) ? e : shErr("#ERROR!"); }
-      visiting.delete(key);
+      catch (e) { if (e instanceof RangeError) overflow = true; v = e instanceof ShErr ? e : shErr("#ERROR!"); }
+      finally { visiting.delete(key); }                  /* even when the stack ran out inside the catch */
     }
     if (typeof v === "number" && !isFinite(v)) v = shErr("#NUM!");
     cache.set(key, v);
@@ -20674,7 +20703,7 @@ function makeGrid(p) {
 
   function defineRender() {
     g.render = function () {
-      if (!g.sheet) { g.head.innerHTML = ""; g.body.innerHTML = ""; return; }
+      if (!g.sheet) { g.head.replaceChildren(); g.body.replaceChildren(); return; }
       g.titleEl.textContent = g.sheet.title + (g.sheet.note ? "  (table in " + g.sheet.note.title + ")" : "");
       g.computeView();
       g.renderHead();
@@ -21037,7 +21066,7 @@ function makeGrid(p) {
       if (rs.length < 3) return;
       g.sortState = g.sortState && g.sortState.c === c ? g.sortState : { c: c, dir: 0, original: null };
       g.snapshot();
-      if (g.sortState.dir === 0) g.sortState.original = JSON.parse(JSON.stringify(rs));
+      if (g.sortState.dir === 0) g.sortState.original = structuredClone(rs);
       g.sortState.dir = g.sortState.dir === 0 ? 1 : g.sortState.dir === 1 ? -1 : 0;
       if (g.sortState.dir === 0) {
         g.sheet.rows = g.sortState.original;
@@ -22459,7 +22488,7 @@ function crumbHeading(p) {
 function renderCrumbs(p) {
   if (!p || !p.crumbEl) return;
   const n = p.type === "note" ? p.note() : null;
-  if (!n) { p.crumbEl.innerHTML = ""; return; }
+  if (!n) { p.crumbEl.replaceChildren(); return; }
   const parts = n.path ? n.path.split("/").slice(0, -1) : [];
   const sep = ico("chevronRight", "crumb-sep");
   let html = parts.map(function (f) { return '<span class="crumb">' + esc(f) + "</span>" + sep; }).join("");
@@ -23912,7 +23941,7 @@ function mermaidToElements(src) {
     return (rectOf[gr.id] = r);
   };
   const depthOf = function (gr) { let d = 0; while (gr.parent) { gr = gr.parent; d++; } return d; };
-  g.groups.slice().sort(function (a, b) { return depthOf(a) - depthOf(b); }).forEach(function (gr) {
+  g.groups.toSorted(function (a, b) { return depthOf(a) - depthOf(b); }).forEach(function (gr) {
     const rb = boundsOf(gr);
     if (!rb) return;
     const x1 = rb.x1, y1 = rb.y1, x2 = rb.x2, y2 = rb.y2;
@@ -24422,7 +24451,7 @@ function setTheme(t) {
   appIconApply();                                /* the icon follows the theme */
   ["skPalette", "skTemplates"].forEach(function (id) {
     const el = document.getElementById(id);
-    if (el && el.dataset.built) { const open = el.classList.contains("show"); el.innerHTML = ""; delete el.dataset.built;
+    if (el && el.dataset.built) { const open = el.classList.contains("show"); el.replaceChildren(); delete el.dataset.built;
       if (open) { if (id === "skPalette") skBuildPalette(); else sketchLibRender(document.getElementById("skTemplates")); } }
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-ink]"), function (b) { b.style.background = skInk(b.dataset.ink); });
@@ -25108,7 +25137,7 @@ const PopOut = {
         if (PopOut.timers.has(PopOut.satId)) PopOut.flush(PopOut.satId);
         PopOut.post(window.opener, { cf: "pop-hello", id: PopOut.satId, content: PopOut.dirty && n ? n.content : null });
       }
-      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : null);
+      PopOut.offline(gone ? "closed" : Date.now() - PopOut.lastAck > 4000 ? "lost" : PopOut.gone ? "gone" : null);
     }, 1500);
   },
   /* the bar shown while edits here can't reach the main window */
@@ -25128,6 +25157,7 @@ const PopOut = {
     }
     bar.querySelector(".pop-offline-text").textContent = why === "closed"
       ? "The main CarbonFibre window is closed, so changes here aren't saved. Copy this note before you close this window."
+      : why === "gone" ? "This note was renamed, moved or deleted in the main window, so changes here aren't saved. Copy this note before you close this window."
       : "Lost touch with the main CarbonFibre window, so changes here aren't being saved yet. They'll be saved when it's back.";
   },
   start(d) {
@@ -25149,7 +25179,7 @@ const PopOut = {
       if (!d || typeof d.cf !== "string" || d.cf.indexOf("pop-") !== 0) return;
       if (PopOut.sat) {
         if (e.source !== window.opener) return;                 /* only the window that opened this one */
-        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.offline(null); }
+        if (d.cf === "pop-ack") { PopOut.lastAck = Date.now(); if (d.saved) PopOut.dirty = false; PopOut.gone = !!d.gone; PopOut.offline(d.gone ? "gone" : null); }
         else if (d.cf === "pop-note") PopOut.start(d);
         else if (d.cf === "pop-update" && String(d.id) === PopOut.satId) PopOut.take(PopOut.satId, d.content);
         return;
@@ -25167,7 +25197,7 @@ const PopOut = {
       } else if (d.cf === "pop-edit" || d.cf === "pop-hello") {
         if (n && typeof d.content === "string") PopOut.take(key, d.content);
         /* saved: true only once the note is here to take it (a folder may still be loading) */
-        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string" });
+        PopOut.post(e.source, { cf: "pop-ack", id: key, saved: !!n && typeof d.content === "string", gone: !n && !!PluginHost.notesAreReady });   /* loaded and still not there: renamed or deleted */
       }
       else if (d.cf === "pop-open" && findNote(d.to)) { window.focus(); openInPane(findNote(d.to).id); }
       else if (d.cf === "pop-closed") setTimeout(function () { if (e.source.closed) PopOut.wins.delete(key); }, 500);   /* a reload says it too */

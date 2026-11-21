@@ -171,7 +171,7 @@ function mermaidToElements(src) {
     return (rectOf[gr.id] = r);
   };
   const depthOf = function (gr) { let d = 0; while (gr.parent) { gr = gr.parent; d++; } return d; };
-  g.groups.slice().sort(function (a, b) { return depthOf(a) - depthOf(b); }).forEach(function (gr) {
+  g.groups.toSorted(function (a, b) { return depthOf(a) - depthOf(b); }).forEach(function (gr) {
     const rb = boundsOf(gr);
     if (!rb) return;
     const x1 = rb.x1, y1 = rb.y1, x2 = rb.x2, y2 = rb.y2;

@@ -235,7 +235,7 @@ function skSplitLink(L, wx, wy) {
   }
   const sp = skBase("stencil", best[0] - 8, best[1] - 8, L.strokeColor, L.strokeWidth);
   sp.shape = "splitter"; sp.width = 16; sp.height = 16; sp.label = ""; sp.fill = "transparent";
-  const rest = JSON.parse(JSON.stringify(L));
+  const rest = structuredClone(L);
   rest.id = skId(); rest.fromId = sp.id; rest.label = ""; rest.startArrowhead = null;
   [L, rest].forEach(skLinkHintsClear);
   L.toId = sp.id;

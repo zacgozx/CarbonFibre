@@ -16,29 +16,42 @@ const AUTOCORRECT = {
 };
 
 /* words the completion popup can offer: every 5+ letter word in the vault, with how often it's used
-   and whether it's in a note edited in the last three days; rebuilt at most every 1.5s */
-const vocabCache = { key: "", at: 0, words: [], freq: new Map(), recent: new Set() };
+   and whether it's in a note edited in the last three days. Each note's words are counted once and
+   kept; only notes whose text changed are read again (at most every 1.5 s), so a big vault doesn't
+   stall typing. */
+const vocabCache = { at: 0, words: [], freq: new Map(), form: new Map(), recent: new Set(), per: new Map() };
 function vocabulary() {
-  const now = Date.now();
-  if (now - vocabCache.at < 1500) return vocabCache.words;
+  const now = Date.now(), V = vocabCache;
+  if (now - V.at < 1500) return V.words;
+  V.at = now;
   syncAllPanes();
-  const key = state.notes.length + ":" + state.notes.reduce(function (a, n) { return a + n.content.length; }, 0);
-  vocabCache.at = now;
-  if (key === vocabCache.key) return vocabCache.words;
-  const freq = new Map(), form = new Map(), recent = new Set(), out = [];
-  const fresh = now - 3 * 864e5;
-  state.notes.forEach(function (n) {
-    const isNew = noteStamp(n) > fresh;
-    (n.content.match(/[A-Za-z][A-Za-z0-9_-]{4,}/g) || []).forEach(function (w) {
-      const k = w.toLowerCase();
-      freq.set(k, (freq.get(k) || 0) + 1);
-      if (!form.has(k)) { form.set(k, w); out.push(w); }
-      if (isNew) recent.add(k);
+  const seen = new Set(), add = function (counts, sign) {
+    counts.forEach(function (e, k) {
+      const t = (V.freq.get(k) || 0) + sign * e.n;
+      if (t > 0) { V.freq.set(k, t); if (!V.form.has(k)) V.form.set(k, e.w); } else { V.freq.delete(k); V.form.delete(k); }
     });
+  };
+  let changed = false;
+  state.notes.forEach(function (n) {
+    const id = String(n.id), had = V.per.get(id);
+    seen.add(id);
+    if (had && had.c === n.content) return;
+    changed = true;
+    if (had) add(had.counts, -1);
+    const counts = new Map();
+    (n.content.match(/[A-Za-z][A-Za-z0-9_-]{4,}/g) || []).forEach(function (w) {
+      const k = w.toLowerCase(), e = counts.get(k);
+      if (e) e.n++; else counts.set(k, { n: 1, w: w });
+    });
+    V.per.set(id, { c: n.content, counts: counts });
+    add(counts, 1);
   });
-  out.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
-  vocabCache.key = key; vocabCache.words = out; vocabCache.freq = freq; vocabCache.recent = recent;
-  return out;
+  V.per.forEach(function (e, id) { if (!seen.has(id)) { add(e.counts, -1); V.per.delete(id); changed = true; } });
+  if (changed) V.words = Array.from(V.form.values()).sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+  const fresh = now - 3 * 864e5;
+  V.recent = new Set();
+  state.notes.forEach(function (n) { if (noteStamp(n) > fresh) { const e = V.per.get(String(n.id)); if (e) e.counts.forEach(function (_, k) { V.recent.add(k); }); } });
+  return V.words;
 }
 
 /* ============================================================

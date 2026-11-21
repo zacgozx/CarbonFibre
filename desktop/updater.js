@@ -176,9 +176,10 @@ class Updater {
     ].join("\n") + "\n", { mode: 0o755 });
     spawn("/bin/bash", [script], { detached: true, stdio: "ignore" }).unref();
   }
-  /* Windows: the installer, silent, over the same install; --force-run opens the app when it's done */
+  /* Windows: the installer, silent, over the same install; --force-run opens the app when it's done.
+     It starts as this app quits (not before), so it never finds the app still running. */
   runInstaller(exe) {
-    spawn(exe, ["/S", "--updated", "--force-run"], { detached: true, stdio: "ignore" }).unref();
+    app.once("will-quit", () => spawn(exe, ["/S", "--updated", "--force-run"], { detached: true, stdio: "ignore" }).unref());
   }
   /* Linux: the new AppImage replaces the old file, then starts (outside this AppImage's environment) */
   async swapAppImage(file, target) {
@@ -189,7 +190,9 @@ class Updater {
     await fsp.rm(path.dirname(file), { recursive: true, force: true });
     const env = Object.assign({}, process.env);
     ["APPIMAGE", "APPDIR", "ARGV0", "OWD"].forEach((k) => { delete env[k]; });
-    spawn(target, [], { detached: true, stdio: "ignore", env }).unref();
+    /* started as this one quits: started sooner, it would find this copy still holding the
+       one-copy-at-a-time lock (main.js) and close at once, leaving no app open */
+    app.once("will-quit", () => spawn(target, [], { detached: true, stdio: "ignore", env }).unref());
   }
 }
 

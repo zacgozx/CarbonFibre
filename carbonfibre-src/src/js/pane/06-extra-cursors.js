@@ -60,7 +60,7 @@
   p.editCarets = function (fn) {
     if (!p.carets.length) return;
     histBreak(p);
-    const list = p.carets.slice().sort(function (a, b) { return b.line - a.line; });
+    const list = p.carets.toSorted(function (a, b) { return b.line - a.line; });
     list.forEach(function (c) {
       const col = Math.min(c.col, p.lines[c.line].length);
       const res = fn(p.lines[c.line], col);

@@ -179,7 +179,7 @@ function skInsertAutoSplitters() {
     return j;
   };
   const trunk = function (id, from, to, like) {
-    const t = JSON.parse(JSON.stringify(like));
+    const t = structuredClone(like);
     t.id = id; t.fromId = from; t.toId = to; t.label = ""; t.startArrowhead = null; skLinkHintsClear(t);
     return t;
   };
